@@ -79,12 +79,19 @@ function listEvents() {
     debug("✅ API-Antwort erhalten");
     debug("📦 Rohdaten: " + JSON.stringify(response.result));
 
-    const events = response.result.items;
     const list = document.getElementById("events");
     list.innerHTML = "";
 
-    if (!events || events.length === 0) {
-      debug("ℹ️ Keine Termine gefunden");
+    if (!response.result || typeof response.result.items === "undefined") {
+      debug("⚠️ Antwort enthält keine 'items'-Liste");
+      list.innerHTML = "<li>Antwort enthält keine Termine.</li>";
+      return;
+    }
+
+    const events = response.result.items;
+
+    if (events.length === 0) {
+      debug("ℹ️ 'items' ist leer – keine Termine im Zeitraum");
       list.innerHTML = "<li>Keine Termine gefunden.</li>";
     } else {
       debug(`📋 ${events.length} Termine gefunden`);
