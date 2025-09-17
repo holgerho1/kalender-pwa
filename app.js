@@ -1,4 +1,4 @@
-const API_KEY = 'DEIN_FUNKTIONSFÄHIGER_API_KEY';
+const API_KEY = 'AIzaSyCrdofa2LI8e-JKMyNow4oYMWcNLw6zLoQ'; // Dein gültiger API-Key
 
 // Debug-Ausgabe direkt auf der Seite
 function debug(msg) {
