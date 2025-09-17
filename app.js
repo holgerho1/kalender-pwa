@@ -4,6 +4,7 @@ const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
 
 let accessToken = null;
 let tokenClient = null;
+let usePublicCalendar = true; // Umschalter für Test
 
 // Debug-Ausgabe direkt auf der Seite
 function debug(msg) {
@@ -65,8 +66,14 @@ function listEvents() {
 
   gapi.client.setToken({ access_token: accessToken });
 
+  const calendarId = usePublicCalendar
+    ? 'de.german#holiday@group.v.calendar.google.com'
+    : 'primary';
+
+  debug("📂 Kalender-ID: " + calendarId);
+
   gapi.client.calendar.events.list({
-    calendarId: 'primary',
+    calendarId: calendarId,
     timeMin: now.toISOString(),
     timeMax: nextWeek.toISOString(),
     maxResults: 10,
