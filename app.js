@@ -106,10 +106,13 @@ function listEvents() {
       events.forEach((event, index) => {
         const summary = event.summary || "🕵️ Kein Titel";
         const startDate = event.start?.dateTime || event.start?.date || "❓ Kein Datum";
+        const description = event.description || "📄 Keine Beschreibung";
+
         debug(`📌 Event ${index + 1}: ${summary} – ${startDate}`);
+        debug(`📝 Beschreibung: ${description}`);
 
         const li = document.createElement("li");
-        li.textContent = `${summary} – ${startDate}`;
+        li.innerHTML = `<strong>${summary}</strong><br>${startDate}<br><em>${description}</em>`;
         list.appendChild(li);
       });
     }
