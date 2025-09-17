@@ -55,20 +55,37 @@ function handleAuthClick() {
   tokenClient.requestAccessToken();
 }
 
+// Dynamischer Zeitraum: Dieser Sonntag bis 6 Wochen zurück
+function getDateRange() {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = Sonntag, 6 = Samstag
+  const daysUntilSunday = (7 - dayOfWeek) % 7;
+  const thisSunday = new Date(today);
+  thisSunday.setDate(today.getDate() + daysUntilSunday);
+  thisSunday.setHours(23, 59, 59, 999);
+
+  const sixWeeksAgo = new Date(thisSunday);
+  sixWeeksAgo.setDate(thisSunday.getDate() - 42);
+  sixWeeksAgo.setHours(0, 0, 0, 0);
+
+  return {
+    start: sixWeeksAgo.toISOString(),
+    end: thisSunday.toISOString()
+  };
+}
+
 // Termine abrufen
 function listEvents() {
+  const { start, end } = getDateRange();
   debug("📅 Lade Termine...");
-
-  const start = new Date();
-  const end = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  debug("⏱️ Zeitraum: " + start.toISOString() + " bis " + end.toISOString());
+  debug("⏱️ Zeitraum: " + start + " bis " + end);
 
   gapi.client.setToken({ access_token: accessToken });
 
   gapi.client.calendar.events.list({
     calendarId: 'primary',
-    timeMin: start.toISOString(),
-    timeMax: end.toISOString(),
+    timeMin: start,
+    timeMax: end,
     maxResults: 100,
     singleEvents: true,
     orderBy: 'startTime'
