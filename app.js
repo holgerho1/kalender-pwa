@@ -61,6 +61,7 @@ function listEvents() {
 
   const now = new Date();
   const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  debug("⏱️ Zeitraum: " + now.toISOString() + " bis " + nextWeek.toISOString());
 
   gapi.client.setToken({ access_token: accessToken });
 
@@ -73,7 +74,8 @@ function listEvents() {
     orderBy: 'startTime'
   }).then(response => {
     debug("✅ API-Antwort erhalten");
-    console.log("📦 API-Antwort:", response);
+    console.log("📦 Vollständige API-Antwort:", response);
+    debug("📦 Rohdaten: " + JSON.stringify(response.result));
 
     const events = response.result.items;
     const list = document.getElementById("events");
