@@ -1,4 +1,4 @@
-const CLIENT_ID = '308466566217-7sq652obvoksi3ff6nsnp32brh9vlro1.apps.googleusercontent.com';
+const CLIENT_ID = '408466566217-7sq652obvoksi3ff6nsnp32brh9vlro1.apps.googleusercontent.com';
 const API_KEY = 'AIzaSyCrdofa2LI8e-JKMyNow4oYMWcNLw6zLoQ';
 const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
 
