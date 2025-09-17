@@ -5,7 +5,7 @@ const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
 let accessToken = null;
 let tokenClient = null;
 
-// Debug-Ausgabe direkt auf der Seite
+// Debug-Ausgabe direkt auf der Seiten
 function debug(msg) {
   const log = document.getElementById("debug-log");
   const entry = document.createElement("div");
