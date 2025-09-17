@@ -74,7 +74,6 @@ function listEvents() {
     orderBy: 'startTime'
   }).then(response => {
     debug("✅ API-Antwort erhalten");
-    console.log("📦 Vollständige API-Antwort:", response);
     debug("📦 Rohdaten: " + JSON.stringify(response.result));
 
     const events = response.result.items;
