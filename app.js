@@ -1,11 +1,6 @@
-const CLIENT_ID = '308466566217-7sq652obvoksi3ff6nsnp32brh9vlro1.apps.googleusercontent.com';
-const API_KEY = 'AIzaSyCrdofa2LI8e-JKMyNow4oYMWcNLw6zLoQ';
-const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+const API_KEY = 'DEIN_FUNKTIONSFÄHIGER_API_KEY';
 
-let accessToken = null;
-let tokenClient = null;
-
-// Debug-Ausgabe direkt auf der Seiten
+// Debug-Ausgabe direkt auf der Seite
 function debug(msg) {
   const log = document.getElementById("debug-log");
   const entry = document.createElement("div");
@@ -16,45 +11,23 @@ function debug(msg) {
 // Erweiterte Fehlerausgabe
 function showDetailedError(error, context = "Fehler") {
   debug(`❌ ${context}: ${error.message || "Unbekannter Fehler"}`);
-  if (error.error) debug(`🔍 error.error: ${JSON.stringify(error.error)}`);
-  if (error.details) debug(`🔍 error.details: ${JSON.stringify(error.details)}`);
-  if (error.stack) debug(`🧵 Stacktrace: ${error.stack}`);
-  if (error.status) debug(`📡 Status: ${error.status}`);
   if (error.result) debug(`📦 result: ${JSON.stringify(error.result)}`);
 }
 
 // Initialisierung nach Laden der Seite
 window.onload = () => {
   gapi.load('client', () => {
-    gapi.client.init({ apiKey: API_KEY }).then(() => {
+    gapi.client.init({
+      apiKey: API_KEY,
+      discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"]
+    }).then(() => {
       debug("✅ gapi initialisiert");
+      listEvents();
     }).catch(error => {
       showDetailedError(error, "Fehler bei gapi Initialisierung");
     });
   });
-
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    callback: (response) => {
-      if (response.error) {
-        showDetailedError(response, "Token-Antwortfehler");
-        return;
-      }
-      accessToken = response.access_token;
-      debug("🔑 Access Token erhalten");
-      listEvents();
-    }
-  });
-
-  debug("🚀 GIS TokenClient initialisiert");
 };
-
-// Wird durch Button-Klick ausgelöst
-function handleAuthClick() {
-  debug("🔘 Button wurde geklickt");
-  tokenClient.requestAccessToken();
-}
 
 function listEvents() {
   debug("📅 Lade Termine...");
@@ -62,8 +35,6 @@ function listEvents() {
   const start = new Date('2025-10-01T00:00:00Z');
   const end = new Date('2025-10-31T23:59:59Z');
   debug("⏱️ Zeitraum: " + start.toISOString() + " bis " + end.toISOString());
-
-  gapi.client.setToken({ access_token: accessToken });
 
   const calendarId = 'de.german#holiday@group.v.calendar.google.com';
   debug("📂 Kalender-ID: " + calendarId);
@@ -92,9 +63,7 @@ function listEvents() {
       events.forEach((event, index) => {
         const summary = event.summary || "🕵️ Kein Titel";
         const startDate = event.start?.dateTime || event.start?.date || "❓ Kein Datum";
-        const endDate = event.end?.dateTime || event.end?.date || "❓ Kein Enddatum";
-
-        debug(`📌 Event ${index + 1}: ${summary} – ${startDate} bis ${endDate}`);
+        debug(`📌 Event ${index + 1}: ${summary} – ${startDate}`);
 
         const li = document.createElement("li");
         li.textContent = `${summary} – ${startDate}`;
