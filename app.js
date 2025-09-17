@@ -67,6 +67,6 @@ function listEvents() {
       });
     }
   }).catch(error => {
-    debug("❌ Fehler beim Laden der Termine: " + (error.message || "Unbekannter Fehler"));
+    debug("❌ Fehler beim Laden der Termine: " + (error.message || "Unbekannter Fehler2"));
   });
 }
