@@ -89,10 +89,15 @@ function listEvents() {
       list.innerHTML = "<li>Keine Termine gefunden.</li>";
     } else {
       debug(`📋 ${events.length} Termine gefunden`);
-      events.forEach(event => {
-        const startDate = event.start.dateTime || event.start.date || "Unbekanntes Datum";
+      events.forEach((event, index) => {
+        const summary = event.summary || "🕵️ Kein Titel";
+        const startDate = event.start?.dateTime || event.start?.date || "❓ Kein Datum";
+        const endDate = event.end?.dateTime || event.end?.date || "❓ Kein Enddatum";
+
+        debug(`📌 Event ${index + 1}: ${summary} – ${startDate} bis ${endDate}`);
+
         const li = document.createElement("li");
-        li.textContent = `${event.summary} – ${startDate}`;
+        li.textContent = `${summary} – ${startDate}`;
         list.appendChild(li);
       });
     }
