@@ -8,7 +8,7 @@ function debug(msg) {
   log.appendChild(entry);
 }
 
-// Erweiterte Fehlerausgabe
+// Fehlerausgabe
 function showDetailedError(error, context = "Fehler") {
   debug(`❌ ${context}: ${error.message || "Unbekannter Fehler"}`);
   if (error.result) debug(`📦 result: ${JSON.stringify(error.result)}`);
