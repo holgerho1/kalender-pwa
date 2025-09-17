@@ -82,22 +82,17 @@ function listEvents() {
     const list = document.getElementById("events");
     list.innerHTML = "";
 
-    if (!response.result || typeof response.result.items === "undefined") {
-      debug("⚠️ Antwort enthält keine 'items'-Liste");
-      list.innerHTML = "<li>Antwort enthält keine Termine.</li>";
-      return;
-    }
-
     const events = response.result.items;
 
-    if (events.length === 0) {
-      debug("ℹ️ 'items' ist leer – keine Termine im Zeitraum");
+    if (!events || events.length === 0) {
+      debug("ℹ️ Keine Termine gefunden");
       list.innerHTML = "<li>Keine Termine gefunden.</li>";
     } else {
       debug(`📋 ${events.length} Termine gefunden`);
       events.forEach(event => {
+        const startDate = event.start.dateTime || event.start.date || "Unbekanntes Datum";
         const li = document.createElement("li");
-        li.textContent = `${event.summary} – ${event.start.date}`;
+        li.textContent = `${event.summary} – ${startDate}`;
         list.appendChild(li);
       });
     }
