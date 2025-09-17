@@ -72,7 +72,7 @@ function listEvents() {
     calendarId: calendarId,
     timeMin: start.toISOString(),
     timeMax: end.toISOString(),
-    maxResults: 20,
+    maxResults: 100,
     singleEvents: true,
     orderBy: 'startTime'
   }).then(response => {
