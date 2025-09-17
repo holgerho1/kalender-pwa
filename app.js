@@ -4,7 +4,6 @@ const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
 
 let accessToken = null;
 let tokenClient = null;
-let usePublicCalendar = true; // Umschalter für Test
 
 // Debug-Ausgabe direkt auf der Seite
 function debug(msg) {
@@ -60,23 +59,20 @@ function handleAuthClick() {
 function listEvents() {
   debug("📅 Lade Termine...");
 
-  const now = new Date();
-  const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  debug("⏱️ Zeitraum: " + now.toISOString() + " bis " + nextWeek.toISOString());
+  const start = new Date('2025-10-01T00:00:00Z');
+  const end = new Date('2025-10-31T23:59:59Z');
+  debug("⏱️ Zeitraum: " + start.toISOString() + " bis " + end.toISOString());
 
   gapi.client.setToken({ access_token: accessToken });
 
-  const calendarId = usePublicCalendar
-    ? 'de.german#holiday@group.v.calendar.google.com'
-    : 'primary';
-
+  const calendarId = 'de.german#holiday@group.v.calendar.google.com';
   debug("📂 Kalender-ID: " + calendarId);
 
   gapi.client.calendar.events.list({
     calendarId: calendarId,
-    timeMin: now.toISOString(),
-    timeMax: nextWeek.toISOString(),
-    maxResults: 10,
+    timeMin: start.toISOString(),
+    timeMax: end.toISOString(),
+    maxResults: 20,
     singleEvents: true,
     orderBy: 'startTime'
   }).then(response => {
@@ -94,7 +90,7 @@ function listEvents() {
       debug(`📋 ${events.length} Termine gefunden`);
       events.forEach(event => {
         const li = document.createElement("li");
-        li.textContent = `${event.summary} – ${event.start.dateTime || event.start.date}`;
+        li.textContent = `${event.summary} – ${event.start.date}`;
         list.appendChild(li);
       });
     }
