@@ -2,7 +2,8 @@ const CLIENT_ID = '308466566217-7sq652obvoksi3ff6nsnp32brh9vlro1.apps.googleuser
 const API_KEY = 'AIzaSyCrdofa2LI8e-JKMyNow4oYMWcNLw6zLoQ';
 const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
 
-let jwtToken = null;
+let accessToken = null;
+let tokenClient = null;
 
 // Debug-Ausgabe direkt auf der Seite
 function debug(msg) {
@@ -24,44 +25,35 @@ function showDetailedError(error, context = "Fehler") {
 
 // Initialisierung nach Laden der Seite
 window.onload = () => {
-  google.accounts.id.initialize({
-    client_id: CLIENT_ID,
-    callback: handleCredentialResponse
-  });
-
-  google.accounts.id.renderButton(
-    document.getElementById("g_id_signin"),
-    { theme: "outline", size: "large" }
-  );
-
-  debug("🚀 Google Identity Services initialisiert");
-};
-
-// Wird nach erfolgreichem Login aufgerufen
-function handleCredentialResponse(response) {
-  debug("🔑 Token erhalten");
-  jwtToken = response.credential;
-
-  // Login ist erfolgt – jetzt auf Klick warten
-}
-
-// Wird durch Button-Klick ausgelöst
-function handleAuthClick() {
-  if (!jwtToken) {
-    debug("⚠️ Kein Token vorhanden – bitte zuerst einloggen");
-    return;
-  }
-
-  debug("📦 Lade gapi client...");
-
   gapi.load('client', () => {
     gapi.client.init({ apiKey: API_KEY }).then(() => {
-      debug("✅ gapi initialisiert – Kalender wird geladen");
-      listEvents();
+      debug("✅ gapi initialisiert");
     }).catch(error => {
       showDetailedError(error, "Fehler bei gapi Initialisierung");
     });
   });
+
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: (response) => {
+      if (response.error) {
+        showDetailedError(response, "Token-Antwortfehler");
+        return;
+      }
+      accessToken = response.access_token;
+      debug("🔑 Access Token erhalten");
+      listEvents();
+    }
+  });
+
+  debug("🚀 GIS TokenClient initialisiert");
+};
+
+// Wird durch Button-Klick ausgelöst
+function handleAuthClick() {
+  debug("🔘 Button wurde geklickt");
+  tokenClient.requestAccessToken();
 }
 
 function listEvents() {
@@ -69,6 +61,8 @@ function listEvents() {
 
   const now = new Date();
   const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  gapi.client.setToken({ access_token: accessToken });
 
   gapi.client.calendar.events.list({
     calendarId: 'primary',

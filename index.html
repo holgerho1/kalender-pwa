@@ -4,8 +4,16 @@
   <meta charset="UTF-8">
   <title>📅 Holgers Kalender</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Google Identity Services für OAuth -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- Google API Client für Kalenderzugriff -->
+  <script src="https://apis.google.com/js/api.js"></script>
+
+  <!-- Deine App-Logik -->
   <script src="app.js" defer></script>
+
   <style>
     body {
       font-family: sans-serif;
@@ -16,6 +24,7 @@
       padding: 10px 20px;
       margin: 5px 0;
       font-size: 16px;
+      cursor: pointer;
     }
     #debug-log {
       margin-top: 20px;
@@ -23,6 +32,8 @@
       padding: 10px;
       border: 1px solid #ccc;
       font-family: monospace;
+      max-height: 300px;
+      overflow-y: auto;
     }
     ul#events {
       list-style: none;
@@ -40,13 +51,13 @@
 <body>
   <h1>📅 Holgers Kalender</h1>
 
-  <!-- Neuer Google Login-Button -->
-  <div id="g_id_signin"></div>
+  <!-- Login-Button -->
+  <button onclick="handleAuthClick()">Google verbinden</button>
 
-  <!-- Optionaler Testbutton -->
-  <button onclick="debug(typeof google)">Ist GIS da?</button>
-
+  <!-- Kalender-Einträge -->
   <ul id="events"></ul>
+
+  <!-- Debug-Ausgabe -->
   <div id="debug-log"></div>
 </body>
 </html>
