@@ -86,7 +86,7 @@ function listEvents() {
     calendarId: 'primary',
     timeMin: start,
     timeMax: end,
-    maxResults: 500,
+    maxResults: 1000,
     singleEvents: true,
     orderBy: 'startTime'
   }).then(response => {
