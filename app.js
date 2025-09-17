@@ -1,4 +1,4 @@
-const CLIENT_ID = '408466566217-7sq652obvoksi3ff6nsnp32brh9vlro1.apps.googleusercontent.com';
+const CLIENT_ID = '308466566217-7sq652obvoksi3ff6nsnp32brh9vlro1.apps.googleusercontent.com';
 const API_KEY = 'AIzaSyCrdofa2LI8e-JKMyNow4oYMWcNLw6zLoQ';
 const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
 
@@ -8,6 +8,27 @@ function debug(msg) {
   const entry = document.createElement("div");
   entry.textContent = "🛠️ " + msg;
   log.appendChild(entry);
+}
+
+// Erweiterte Fehlerausgabe
+function showDetailedError(error, context = "Fehler") {
+  debug(`❌ ${context}: ${error.message || "Unbekannter Fehler"}`);
+
+  if (error.error) {
+    debug(`🔍 error.error: ${JSON.stringify(error.error)}`);
+  }
+  if (error.details) {
+    debug(`🔍 error.details: ${JSON.stringify(error.details)}`);
+  }
+  if (error.stack) {
+    debug(`🧵 Stacktrace: ${error.stack}`);
+  }
+  if (error.status) {
+    debug(`📡 Status: ${error.status}`);
+  }
+  if (error.result) {
+    debug(`📦 result: ${JSON.stringify(error.result)}`);
+  }
 }
 
 function handleAuthClick() {
@@ -23,7 +44,11 @@ function handleAuthClick() {
     }).then(() => {
       debug("✅ Init erfolgreich – jetzt anmelden");
 
-      return gapi.auth2.getAuthInstance().signIn();
+      // Optional: Redirect-Modus statt Popup
+      return gapi.auth2.getAuthInstance().signIn({
+        ux_mode: 'popup', // oder 'redirect'
+        prompt: 'select_account'
+      });
     }).then(() => {
       debug("✅ Anmeldung erfolgreich");
 
@@ -35,7 +60,7 @@ function handleAuthClick() {
         debug("❌ Kein Access Token erhalten – Anmeldung blockiert?");
       }
     }).catch(error => {
-      debug("❌ Authentifizierungsfehler: " + (error.message || "Unbekannter Fehler"));
+      showDetailedError(error, "Authentifizierungsfehler");
     });
   });
 }
@@ -67,6 +92,6 @@ function listEvents() {
       });
     }
   }).catch(error => {
-    debug("❌ Fehler beim Laden der Termine: " + (error.message || "Unbekannter Fehler2"));
+    showDetailedError(error, "Fehler beim Laden der Termine");
   });
 }
