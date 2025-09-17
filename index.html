@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>📅 Holgers Kalender</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="app.js" defer></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px 0;
+      font-size: 16px;
+    }
+    #debug-log {
+      margin-top: 20px;
+      background: #fff;
+      padding: 10px;
+      border: 1px solid #ccc;
+      font-family: monospace;
+    }
+    ul#events {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+    ul#events li {
+      background: #fff;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-left: 4px solid #0077cc;
+    }
+  </style>
+</head>
+<body>
+  <h1>📅 Holgers Kalender</h1>
+  <button onclick="handleAuthClick()">Google verbinden</button>
+  <button onclick="debug(typeof gapi)">Ist gapi da?</button>
+
+  <ul id="events"></ul>
+
+  <div id="debug-log"></div>
+</body>
+</html>
