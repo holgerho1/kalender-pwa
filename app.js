@@ -65,11 +65,8 @@ function listEvents() {
 
   gapi.client.setToken({ access_token: accessToken });
 
-  const calendarId = 'primary';
-  debug("📂 Kalender-ID: " + calendarId);
-
   gapi.client.calendar.events.list({
-    calendarId: calendarId,
+    calendarId: 'primary',
     timeMin: start.toISOString(),
     timeMax: end.toISOString(),
     maxResults: 100,
