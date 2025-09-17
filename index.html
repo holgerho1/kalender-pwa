@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>📅 Holgers Kalender</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="app.js" defer></script>
   <style>
     body {
@@ -38,12 +38,15 @@
   </style>
 </head>
 <body>
-  <h1>📅 Holgers Kalenderr</h1>
-  <button onclick="handleAuthClick()">Google verbinden</button>
-  <button onclick="debug(typeof gapi)">Ist gapi da?</button>
+  <h1>📅 Holgers Kalender</h1>
+
+  <!-- Neuer Google Login-Button -->
+  <div id="g_id_signin"></div>
+
+  <!-- Optionaler Testbutton -->
+  <button onclick="debug(typeof google)">Ist GIS da?</button>
 
   <ul id="events"></ul>
-
   <div id="debug-log"></div>
 </body>
 </html>
