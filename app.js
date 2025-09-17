@@ -28,45 +28,34 @@ window.onload = () => {
     }).then(() => {
       debug("✅ gapi initialisiert");
 
-      // Silent Token Refresh versuchen
-      google.accounts.oauth2.hasGrantedAllScopes({
-        client_id: CLIENT_ID,
-        scope: SCOPES
-      }) && google.accounts.oauth2.initTokenClient({
+      // TokenClient einmalig initialisieren
+      tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
-        prompt: 'none',
         callback: (response) => {
           if (response && response.access_token) {
             accessToken = response.access_token;
-            debug("🔄 Silent Token Refresh erfolgreich");
+            debug("🔑 Token erhalten");
             listEvents();
           } else {
-            debug("⚠️ Silent Refresh nicht möglich – manuelle Anmeldung nötig");
+            debug("⚠️ Kein Token erhalten");
           }
         }
-      }).requestAccessToken();
+      });
+
+      // Silent Refresh versuchen
+      if (google.accounts.oauth2.hasGrantedAllScopes({ client_id: CLIENT_ID, scope: SCOPES })) {
+        debug("🔄 Versuche Silent Refresh");
+        tokenClient.requestAccessToken({ prompt: 'none' });
+      } else {
+        debug("🔐 Noch keine Zustimmung – bitte anmelden");
+      }
     }).catch(error => {
       showDetailedError(error, "Fehler bei gapi Initialisierung");
     });
   });
 
-  // TokenClient für manuellen Login
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    callback: (response) => {
-      if (response.error) {
-        showDetailedError(response, "Token-Antwortfehler");
-        return;
-      }
-      accessToken = response.access_token;
-      debug("🔑 Access Token erhalten");
-      listEvents();
-    }
-  });
-
-  debug("🚀 GIS TokenClient initialisiert");
+  debug("🚀 GIS TokenClient bereit");
 };
 
 // Button-Klick
