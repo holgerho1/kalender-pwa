@@ -5,12 +5,6 @@
   <title>📅 Holgers Kalender</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Google Identity Services für OAuth -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-  <!-- Google API Client für Kalenderzugriff -->
-  <script src="https://apis.google.com/js/api.js"></script>
-
   <!-- Deine App-Logik -->
   <script src="app.js" defer></script>
 
@@ -20,11 +14,16 @@
       padding: 20px;
       background: #f0f0f0;
     }
-    button {
-      padding: 10px 20px;
-      margin: 5px 0;
-      font-size: 16px;
-      cursor: pointer;
+    h1 {
+      color: #333;
+    }
+    #termine {
+      white-space: pre-wrap;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-top: 20px;
     }
     #debug-log {
       margin-top: 20px;
@@ -35,27 +34,13 @@
       max-height: 300px;
       overflow-y: auto;
     }
-    ul#events {
-      list-style: none;
-      padding: 0;
-      margin-top: 20px;
-    }
-    ul#events li {
-      background: #fff;
-      margin-bottom: 10px;
-      padding: 10px;
-      border-left: 4px solid #0077cc;
-    }
   </style>
 </head>
 <body>
   <h1>📅 Holgers Kalender</h1>
 
-  <!-- Login-Button -->
-  <button onclick="handleAuthClick()">Google verbinden</button>
-
-  <!-- Kalender-Einträge -->
-  <ul id="events"></ul>
+  <!-- Terminliste -->
+  <div id="termine">Lade Termine…</div>
 
   <!-- Debug-Ausgabe -->
   <div id="debug-log"></div>
