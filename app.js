@@ -9,32 +9,32 @@ function debug(msg) {
   }
 }
 
-// 📅 Aktuelle Kalenderwoche berechnen
-function getAktuelleKW() {
+// 📅 KW-Zeitraum berechnen: Montag bis Sonntag dieser Woche
+function getKWZeitraum() {
   const heute = new Date();
-  const ersterJanuar = new Date(heute.getFullYear(), 0, 1);
-  const tageSeitJahresbeginn = Math.floor((heute - ersterJanuar) / (24 * 60 * 60 * 1000));
-  const tagOffset = ersterJanuar.getDay() <= 4 ? ersterJanuar.getDay() - 1 : ersterJanuar.getDay() - 8;
-  return Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
-}
+  const tag = heute.getDay(); // 0 = Sonntag, 1 = Montag, ..., 6 = Samstag
+  const montag = new Date(heute);
+  montag.setDate(heute.getDate() - ((tag + 6) % 7));
+  montag.setHours(0, 0, 0, 0);
 
-// 📆 KW eines Datums berechnen
-function getKWVonDatum(datumString) {
-  const teile = datumString.split(".");
-  const datum = new Date(`${teile[2]}-${teile[1]}-${teile[0]}`);
-  const ersterJanuar = new Date(datum.getFullYear(), 0, 1);
-  const tageSeitJahresbeginn = Math.floor((datum - ersterJanuar) / (24 * 60 * 60 * 1000));
-  const tagOffset = ersterJanuar.getDay() <= 4 ? ersterJanuar.getDay() - 1 : ersterJanuar.getDay() - 8;
-  return Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
+  const sonntag = new Date(montag);
+  sonntag.setDate(montag.getDate() + 6);
+  sonntag.setHours(23, 59, 59, 999);
+
+  return { montag, sonntag };
 }
 
 // Termine anzeigen (nur aktuelle KW)
 function zeigeTermine() {
-  const aktuelleKW = getAktuelleKW();
+  const { montag, sonntag } = getKWZeitraum();
   const container = document.getElementById("termine");
   container.innerHTML = "";
 
-  const gefiltert = termine.filter(e => getKWVonDatum(e.datum) === aktuelleKW);
+  const gefiltert = termine.filter(e => {
+    const teile = e.datum.split(".");
+    const datum = new Date(`${teile[2]}-${teile[1]}-${teile[0]}`);
+    return datum >= montag && datum <= sonntag;
+  });
 
   gefiltert.forEach((event, index) => {
     const block = document.createElement("div");
