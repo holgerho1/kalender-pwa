@@ -9,12 +9,34 @@ function debug(msg) {
   }
 }
 
-// Termine anzeigen
+// 📅 Aktuelle Kalenderwoche berechnen
+function getAktuelleKW() {
+  const heute = new Date();
+  const ersterJanuar = new Date(heute.getFullYear(), 0, 1);
+  const tageSeitJahresbeginn = Math.floor((heute - ersterJanuar) / (24 * 60 * 60 * 1000));
+  const tagOffset = ersterJanuar.getDay() <= 4 ? ersterJanuar.getDay() - 1 : ersterJanuar.getDay() - 8;
+  return Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
+}
+
+// 📆 KW eines Datums berechnen
+function getKWVonDatum(datumString) {
+  const teile = datumString.split(".");
+  const datum = new Date(`${teile[2]}-${teile[1]}-${teile[0]}`);
+  const ersterJanuar = new Date(datum.getFullYear(), 0, 1);
+  const tageSeitJahresbeginn = Math.floor((datum - ersterJanuar) / (24 * 60 * 60 * 1000));
+  const tagOffset = ersterJanuar.getDay() <= 4 ? ersterJanuar.getDay() - 1 : ersterJanuar.getDay() - 8;
+  return Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
+}
+
+// Termine anzeigen (nur aktuelle KW)
 function zeigeTermine() {
+  const aktuelleKW = getAktuelleKW();
   const container = document.getElementById("termine");
   container.innerHTML = "";
 
-  termine.forEach((event, index) => {
+  const gefiltert = termine.filter(e => getKWVonDatum(e.datum) === aktuelleKW);
+
+  gefiltert.forEach((event, index) => {
     const block = document.createElement("div");
     block.style.marginBottom = "1rem";
     block.style.padding = "1rem";
@@ -50,10 +72,13 @@ function zeigeTermine() {
     loeschen.textContent = "❌ Löschen";
     loeschen.style.marginLeft = "10px";
     loeschen.onclick = () => {
-      termine.splice(index, 1);
-      localStorage.setItem("termine", JSON.stringify(termine));
-      zeigeTermine();
-      debug(`🗑️ Termin ${index + 1} gelöscht`);
+      const indexImOriginal = termine.findIndex(t => t.id === event.id);
+      if (indexImOriginal !== -1) {
+        termine.splice(indexImOriginal, 1);
+        localStorage.setItem("termine", JSON.stringify(termine));
+        zeigeTermine();
+        debug(`🗑️ Termin gelöscht`);
+      }
     };
 
     block.appendChild(datum);
