@@ -49,7 +49,7 @@ export default async function handler(req, res) {
       orderBy: 'startTime'
     });
 
-    // 📦 Formatierte Ausgabe
+    // 📦 Formatierte Ausgaben
     const formattedEvents = response.data.items.map(event => {
       const start = new Date(event.start.dateTime || event.start.date);
       const end = new Date(event.end.dateTime || event.end.date);
