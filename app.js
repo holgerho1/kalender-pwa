@@ -24,16 +24,39 @@ function getKWZeitraum() {
   return { montag, sonntag };
 }
 
+// 🧮 Hilfsfunktion für zweistellige Zahlen
 function pad(n) {
   return n.toString().padStart(2, "0");
 }
 
+// 📆 ISO-Datum aus Date erzeugen
 function toISODateString(date) {
   return date.toISOString().split("T")[0];
 }
 
-// 📆 Nur Termine dieser Woche anzeigen
+// 📆 Wochenüberschrift anzeigen
+function zeigeWocheninfo() {
+  const { montag, sonntag } = getKWZeitraum();
+
+  const formatter = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
+  const von = formatter.format(montag);
+  const bis = formatter.format(sonntag);
+
+  const ersterJanuar = new Date(montag.getFullYear(), 0, 1);
+  const tageSeitJahresbeginn = Math.floor((montag - ersterJanuar) / (24 * 60 * 60 * 1000));
+  const tagOffset = ersterJanuar.getDay() <= 4 ? ersterJanuar.getDay() - 1 : ersterJanuar.getDay() - 8;
+  const kw = Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
+
+  const info = document.getElementById("wocheninfo");
+  if (info) {
+    info.textContent = `📆 KW ${kw}: ${von} – ${bis}`;
+  }
+}
+
+// 📋 Termine anzeigen (nur aktuelle KW)
 function zeigeTermine() {
+  zeigeWocheninfo();
+
   const { montag, sonntag } = getKWZeitraum();
   const startTag = toISODateString(montag);
   const endTag = toISODateString(sonntag);
@@ -120,6 +143,7 @@ function zeigeTermine() {
   container.appendChild(neuerBtn);
 }
 
+// 📦 Termine laden
 function ladeTermine() {
   const gespeicherte = localStorage.getItem("termine");
   if (gespeicherte) {
