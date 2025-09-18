@@ -105,7 +105,6 @@ function zeigeTermine() {
         termine.splice(indexImOriginal, 1);
         localStorage.setItem("termine", JSON.stringify(termine));
         zeigeTermine();
-        zeigeSteuerung();
         debug(`🗑️ Termin gelöscht`);
       }
     };
@@ -117,10 +116,15 @@ function zeigeTermine() {
     block.appendChild(loeschen);
     container.appendChild(block);
   });
+
+  zeigeSteuerung();
 }
 
 function zeigeSteuerung() {
   const container = document.getElementById("termine");
+
+  const steuerung = document.createElement("div");
+  steuerung.style.marginTop = "1rem";
 
   const neuerBtn = document.createElement("button");
   neuerBtn.textContent = "➕ Neuer Termin";
@@ -142,7 +146,6 @@ function zeigeSteuerung() {
     termine.push(neu);
     localStorage.setItem("termine", JSON.stringify(termine));
     zeigeTermine();
-    zeigeSteuerung();
     debug("➕ Neuer Termin hinzugefügt");
   };
 
@@ -159,7 +162,6 @@ function zeigeSteuerung() {
   prevBtn.onclick = () => {
     kwOffset--;
     zeigeTermine();
-    zeigeSteuerung();
   };
 
   const nextBtn = document.createElement("button");
@@ -168,7 +170,6 @@ function zeigeSteuerung() {
   nextBtn.onclick = () => {
     kwOffset++;
     zeigeTermine();
-    zeigeSteuerung();
   };
 
   const toggleBtn = document.createElement("button");
@@ -177,14 +178,14 @@ function zeigeSteuerung() {
   toggleBtn.onclick = () => {
     filterAktiv = !filterAktiv;
     zeigeTermine();
-    zeigeSteuerung();
   };
 
-  container.appendChild(neuerBtn);
-  container.appendChild(reloadBtn);
-  container.appendChild(prevBtn);
-  container.appendChild(nextBtn);
-  container.appendChild(toggleBtn);
+  steuerung.appendChild(neuerBtn);
+  steuerung.appendChild(reloadBtn);
+  steuerung.appendChild(prevBtn);
+  steuerung.appendChild(nextBtn);
+  steuerung.appendChild(toggleBtn);
+  container.appendChild(steuerung);
 }
 
 function ladeTermine() {
@@ -199,7 +200,6 @@ function ladeTermine() {
       });
       debug("📦 Termine aus localStorage geladen");
       zeigeTermine();
-      zeigeSteuerung();
     } catch (e) {
       debug("❌ Fehler beim Parsen von localStorage");
       console.error(e);
@@ -211,4 +211,24 @@ function ladeTermine() {
         termine = data.map(e => {
           const [tag, monat, jahr] = e.datum.split(".");
           const zeit = e.start === "Ganztägig" ? "00:00" : e.start;
-          e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T
+          e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
+          return e;
+        });
+        localStorage.setItem("termine", JSON.stringify(termine));
+        debug("🌐 Termine vom Backend geladen");
+        zeigeTermine();
+      })
+      .catch(err => {
+        debug("❌ Fehler beim Laden der Termine vom Backend");
+        console.error(err);
+      });
+  }
+}
+
+function neuLaden() {
+  localStorage.removeItem("termine");
+  debug("🧹 Lokale Termine gelöscht");
+  ladeTermine();
+}
+
+window.addEventListener("load", ladeTermine);
