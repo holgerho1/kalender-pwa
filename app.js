@@ -1,4 +1,4 @@
-let termine = []; // Lokale Liste
+let termine = [];
 
 function debug(msg) {
   const log = document.getElementById("debug-log");
@@ -9,12 +9,12 @@ function debug(msg) {
   }
 }
 
-// 📅 KW-Zeitraum berechnen: Montag bis Sonntag dieser Woche
+// 📅 Montag bis Sonntag dieser Woche berechnen
 function getKWZeitraum() {
   const heute = new Date();
-  const tag = heute.getDay(); // 0 = Sonntag, 1 = Montag, ..., 6 = Samstag
+  const wochentag = heute.getDay(); // 0 = Sonntag, 1 = Montag, ..., 6 = Samstag
   const montag = new Date(heute);
-  montag.setDate(heute.getDate() - ((tag + 6) % 7));
+  montag.setDate(heute.getDate() - ((wochentag + 6) % 7));
   montag.setHours(0, 0, 0, 0);
 
   const sonntag = new Date(montag);
@@ -24,17 +24,15 @@ function getKWZeitraum() {
   return { montag, sonntag };
 }
 
-// 🧮 Hilfsfunktion für zweistellige Zahlen
 function pad(n) {
   return n.toString().padStart(2, "0");
 }
 
-// 📆 ISO-Datum aus Date erzeugen
 function toISODateString(date) {
   return date.toISOString().split("T")[0];
 }
 
-// Termine anzeigen (nur aktuelle KW)
+// 📆 Nur Termine dieser Woche anzeigen
 function zeigeTermine() {
   const { montag, sonntag } = getKWZeitraum();
   const startTag = toISODateString(montag);
@@ -102,7 +100,6 @@ function zeigeTermine() {
     container.appendChild(block);
   });
 
-  // ➕ Neuer Termin
   const neuerBtn = document.createElement("button");
   neuerBtn.textContent = "➕ Neuer Termin";
   neuerBtn.onclick = () => {
@@ -123,7 +120,6 @@ function zeigeTermine() {
   container.appendChild(neuerBtn);
 }
 
-// Termine laden
 function ladeTermine() {
   const gespeicherte = localStorage.getItem("termine");
   if (gespeicherte) {
@@ -154,7 +150,7 @@ function ladeTermine() {
 function neuLaden() {
   localStorage.removeItem("termine");
   debug("🧹 Lokale Termine gelöscht");
-  ladeTermine(); // Holt neue vom Backend
+  ladeTermine();
 }
 
 window.addEventListener("load", ladeTermine);
