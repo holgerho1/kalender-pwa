@@ -8,12 +8,6 @@ export default async function handler(req, res) {
     REFRESH_TOKEN
   } = process.env;
 
-  // 🔍 Logging zur Diagnose
-  console.log("🔧 CLIENT_ID vorhanden:", !!CLIENT_ID);
-  console.log("🔧 CLIENT_SECRET vorhanden:", !!CLIENT_SECRET);
-  console.log("🔧 REDIRECT_URI vorhanden:", !!REDIRECT_URI);
-  console.log("🔧 REFRESH_TOKEN vorhanden:", !!REFRESH_TOKEN);
-
   if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI || !REFRESH_TOKEN) {
     console.error("❌ Fehlende OAuth2-Konfiguration");
     return res.status(500).send("Fehlende OAuth2-Konfiguration.");
@@ -51,7 +45,6 @@ export default async function handler(req, res) {
       const end = new Date(event.end.dateTime || event.end.date);
 
       if (isAllDay) {
-        // Ganztagstermin: jeden Tag einzeln
         for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
           formattedEvents.push({
             id: event.id + "_" + d.toISOString().split('T')[0],
@@ -59,32 +52,29 @@ export default async function handler(req, res) {
             start: "Ganztägig",
             ende: "",
             titel: event.summary || '(Kein Titel)',
-            beschreibung: event.description || ''
+            beschreibung: event.description || '',
+            sortKey: new Date(d).toISOString()
           });
         }
       } else {
-        // Normale Termine
         formattedEvents.push({
           id: event.id,
           datum: start.toLocaleDateString('de-DE'),
           start: start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
           ende: end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
           titel: event.summary || '(Kein Titel)',
-          beschreibung: event.description || ''
+          beschreibung: event.description || '',
+          sortKey: start.toISOString()
         });
       }
     });
-    
-    formattedEvents.sort((a, b) => {
-  const dateA = new Date(`${a.datum} ${a.start === "Ganztägig" ? "00:00" : a.start}`);
-  const dateB = new Date(`${b.datum} ${b.start === "Ganztägig" ? "00:00" : b.start}`);
-  return dateA - dateB;
-});
+
+    // ✅ Sortieren nach sortKey
+    formattedEvents.sort((a, b) => new Date(a.sortKey) - new Date(b.sortKey));
 
     res.status(200).json(formattedEvents);
   } catch (error) {
     console.error("❌ Fehler beim Abrufen der Termine:", error.message);
-    console.error("📄 Stacktrace:", error.stack);
     res.status(500).send("Fehler beim Abrufen der Termine: " + error.message);
   }
 }
