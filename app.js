@@ -85,9 +85,9 @@ function zeigeTermine() {
     const datum = document.createElement("div");
     datum.textContent = `📅 ${event.datum} (${event.start} – ${event.ende})`;
 
-    const titel = document.createElement("input");
-    titel.type = "text";
+    const titel = document.createElement("textarea");
     titel.value = event.titel;
+    titel.rows = 2;
     titel.style.width = "100%";
     titel.style.marginTop = "0.5rem";
 
@@ -97,9 +97,9 @@ function zeigeTermine() {
     beschreibung.style.width = "100%";
     beschreibung.style.marginTop = "0.5rem";
 
-    const mitarbeiterInput = document.createElement("input");
-    mitarbeiterInput.type = "text";
+    const mitarbeiterInput = document.createElement("textarea");
     mitarbeiterInput.value = event.mitarbeiter || "";
+    mitarbeiterInput.rows = 2;
     mitarbeiterInput.placeholder = "Mitarbeiter";
     mitarbeiterInput.style.width = "100%";
     mitarbeiterInput.style.marginTop = "0.5rem";
