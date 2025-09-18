@@ -13,7 +13,7 @@ function debug(msg) {
 
 function getKWZeitraum(offset = 0) {
   const heute = new Date();
-  const wochentag = heute.getDay(); // 0 = Sonntag, 1 = Montag, ..., 6 = Samstag
+  const wochentag = heute.getDay();
   const montag = new Date(heute);
   montag.setDate(heute.getDate() - ((wochentag + 6) % 7) + offset * 7);
   montag.setHours(0, 0, 0, 0);
@@ -33,13 +33,13 @@ function zeigeWocheninfo() {
   const bis = formatter.format(sonntag);
 
   const ersterJanuar = new Date(montag.getFullYear(), 0, 1);
-  const tageSeitJahresbeginn = Math.floor((montag - ersterJanuar) / (24  60  60 * 1000));
+  const tageSeitJahresbeginn = Math.floor((montag - ersterJanuar) / (24 * 60 * 60 * 1000));
   const tagOffset = ersterJanuar.getDay() <= 4 ? ersterJanuar.getDay() - 1 : ersterJanuar.getDay() - 8;
   const kw = Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
 
   const info = document.getElementById("wocheninfo");
   if (info) {
-    info.textContent = 📆 KW ${kw}: ${von} – ${bis} + (filterAktiv ? "" : " (alle Termine)");
+    info.textContent = `📆 KW ${kw}: ${von} – ${bis}${filterAktiv ? "" : " (alle Termine)"}`;
   }
 }
 
@@ -73,7 +73,7 @@ function zeigeTermine() {
     block.style.borderRadius = "6px";
 
     const datum = document.createElement("div");
-    datum.textContent = 📅 ${event.datum} (${event.start} – ${event.ende});
+    datum.textContent = `📅 ${event.datum} (${event.start} – ${event.ende})`;
 
     const titel = document.createElement("input");
     titel.type = "text";
@@ -93,7 +93,7 @@ function zeigeTermine() {
       event.titel = titel.value;
       event.beschreibung = beschreibung.value;
       localStorage.setItem("termine", JSON.stringify(termine));
-      debug(✅ Termin gespeichert);
+      debug("✅ Termin gespeichert");
     };
 
     const loeschen = document.createElement("button");
@@ -105,7 +105,7 @@ function zeigeTermine() {
         termine.splice(indexImOriginal, 1);
         localStorage.setItem("termine", JSON.stringify(termine));
         zeigeTermine();
-        debug(🗑️ Termin gelöscht);
+        debug("🗑️ Termin gelöscht");
       }
     };
 
@@ -132,7 +132,7 @@ function zeigeSteuerung() {
     const jetzt = new Date();
     const datum = jetzt.toLocaleDateString('de-DE');
     const start = jetzt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    const timestamp = new Date(${datum.split(".").reverse().join("-")}T${start}).getTime();
+    const timestamp = new Date(`${datum.split(".").reverse().join("-")}T${start}`).getTime();
 
     const neu = {
       id: Date.now().toString(),
@@ -195,7 +195,7 @@ function ladeTermine() {
       termine = JSON.parse(gespeicherte).map(e => {
         const [tag, monat, jahr] = e.datum.split(".");
         const zeit = e.start === "Ganztägig" ? "00:00" : e.start;
-        e.timestamp = new Date(${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}).getTime();
+        e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
         return e;
       });
       debug("📦 Termine aus localStorage geladen");
@@ -211,7 +211,7 @@ function ladeTermine() {
         termine = data.map(e => {
           const [tag, monat, jahr] = e.datum.split(".");
           const zeit = e.start === "Ganztägig" ? "00:00" : e.start;
-          e.timestamp = new Date(${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}).getTime();
+          e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
           return e;
         });
         localStorage.setItem("termine", JSON.stringify(termine));
