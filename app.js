@@ -24,12 +24,10 @@ function getKWZeitraum() {
   return { montag, sonntag };
 }
 
-// 🧮 Hilfsfunktion für zweistellige Zahlen
 function pad(n) {
   return n.toString().padStart(2, "0");
 }
 
-// 📆 ISO-Datum aus Date erzeugen
 function toISODateString(date) {
   return date.toISOString().split("T")[0];
 }
@@ -99,7 +97,7 @@ function zeigeTermine() {
       event.titel = titel.value;
       event.beschreibung = beschreibung.value;
       localStorage.setItem("termine", JSON.stringify(termine));
-      debug(`✅ Termin ${index + 1} gespeichert`);
+      debug(`✅ Termin gespeichert`);
     };
 
     const loeschen = document.createElement("button");
@@ -123,6 +121,7 @@ function zeigeTermine() {
     container.appendChild(block);
   });
 
+  // ➕ Neuer Termin
   const neuerBtn = document.createElement("button");
   neuerBtn.textContent = "➕ Neuer Termin";
   neuerBtn.onclick = () => {
@@ -141,6 +140,15 @@ function zeigeTermine() {
     debug("➕ Neuer Termin hinzugefügt");
   };
   container.appendChild(neuerBtn);
+
+  // 🧹 Neu laden Button
+  const reloadBtn = document.createElement("button");
+  reloadBtn.textContent = "🧹 Neu laden";
+  reloadBtn.style.marginLeft = "10px";
+  reloadBtn.onclick = () => {
+    neuLaden();
+  };
+  container.appendChild(reloadBtn);
 }
 
 // 📦 Termine laden
