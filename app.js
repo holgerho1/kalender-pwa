@@ -29,16 +29,24 @@ function pad(n) {
   return n.toString().padStart(2, "0");
 }
 
+// 📆 ISO-Datum aus Date erzeugen
+function toISODateString(date) {
+  return date.toISOString().split("T")[0];
+}
+
 // Termine anzeigen (nur aktuelle KW)
 function zeigeTermine() {
   const { montag, sonntag } = getKWZeitraum();
+  const startTag = toISODateString(montag);
+  const endTag = toISODateString(sonntag);
+
   const container = document.getElementById("termine");
   container.innerHTML = "";
 
   const gefiltert = termine.filter(e => {
     const [tag, monat, jahr] = e.datum.split(".");
-    const datum = new Date(`${jahr}-${pad(monat)}-${pad(tag)}T00:00:00`);
-    return datum >= montag && datum <= sonntag;
+    const datum = `${jahr}-${pad(monat)}-${pad(tag)}`;
+    return datum >= startTag && datum <= endTag;
   });
 
   gefiltert.forEach((event, index) => {
