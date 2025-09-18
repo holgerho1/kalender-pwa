@@ -49,8 +49,22 @@ export default async function handler(req, res) {
       orderBy: 'startTime'
     });
 
+    // 📦 Formatierte Ausgabe
+    const formattedEvents = response.data.items.map(event => {
+      const start = new Date(event.start.dateTime || event.start.date);
+      const end = new Date(event.end.dateTime || event.end.date);
+
+      return {
+        datum: start.toLocaleDateString('de-DE'),
+        start: start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+        ende: end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+        titel: event.summary || '(Kein Titel)',
+        beschreibung: event.description || ''
+      };
+    });
+
     // ✅ Termine zurückgeben
-    res.status(200).json(response.data.items);
+    res.status(200).json(formattedEvents);
   } catch (error) {
     console.error("❌ Fehler beim Abrufen der Termine:", error.message);
     console.error("📄 Stacktrace:", error.stack);
