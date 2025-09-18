@@ -24,14 +24,6 @@ function getKWZeitraum() {
   return { montag, sonntag };
 }
 
-function pad(n) {
-  return n.toString().padStart(2, "0");
-}
-
-function toISODateString(date) {
-  return date.toISOString().split("T")[0];
-}
-
 // 📆 Wochenüberschrift anzeigen
 function zeigeWocheninfo() {
   const { montag, sonntag } = getKWZeitraum();
@@ -56,19 +48,23 @@ function zeigeTermine() {
   zeigeWocheninfo();
 
   const { montag, sonntag } = getKWZeitraum();
-  const startTag = toISODateString(montag);
-  const endTag = toISODateString(sonntag);
-
   const container = document.getElementById("termine");
   container.innerHTML = "";
 
   const gefiltert = termine.filter(e => {
     const [tag, monat, jahr] = e.datum.split(".");
-    const datum = `${jahr}-${pad(monat)}-${pad(tag)}`;
-    return datum >= startTag && datum <= endTag;
+    const datumObj = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T00:00:00`);
+    return datumObj >= montag && datumObj <= sonntag;
   });
 
-  gefiltert.forEach((event, index) => {
+  if (gefiltert.length === 0) {
+    const leer = document.createElement("div");
+    leer.textContent = "Keine Termine in dieser Woche.";
+    leer.style.fontStyle = "italic";
+    container.appendChild(leer);
+  }
+
+  gefiltert.forEach((event) => {
     const block = document.createElement("div");
     block.style.marginBottom = "1rem";
     block.style.padding = "1rem";
@@ -120,8 +116,12 @@ function zeigeTermine() {
     block.appendChild(loeschen);
     container.appendChild(block);
   });
+}
 
-  // ➕ Neuer Termin
+// ➕ Neuer Termin + 🧹 Neu laden Buttons
+function zeigeSteuerung() {
+  const container = document.getElementById("termine");
+
   const neuerBtn = document.createElement("button");
   neuerBtn.textContent = "➕ Neuer Termin";
   neuerBtn.onclick = () => {
@@ -137,17 +137,18 @@ function zeigeTermine() {
     termine.push(neu);
     localStorage.setItem("termine", JSON.stringify(termine));
     zeigeTermine();
+    zeigeSteuerung();
     debug("➕ Neuer Termin hinzugefügt");
   };
-  container.appendChild(neuerBtn);
 
-  // 🧹 Neu laden Button
   const reloadBtn = document.createElement("button");
   reloadBtn.textContent = "🧹 Neu laden";
   reloadBtn.style.marginLeft = "10px";
   reloadBtn.onclick = () => {
     neuLaden();
   };
+
+  container.appendChild(neuerBtn);
   container.appendChild(reloadBtn);
 }
 
@@ -159,6 +160,7 @@ function ladeTermine() {
       termine = JSON.parse(gespeicherte);
       debug("📦 Termine aus localStorage geladen");
       zeigeTermine();
+      zeigeSteuerung();
     } catch (e) {
       debug("❌ Fehler beim Parsen von localStorage");
       console.error(e);
@@ -171,6 +173,7 @@ function ladeTermine() {
         localStorage.setItem("termine", JSON.stringify(termine));
         debug("🌐 Termine vom Backend geladen");
         zeigeTermine();
+        zeigeSteuerung();
       })
       .catch(err => {
         debug("❌ Fehler beim Laden der Termine");
