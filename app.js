@@ -84,9 +84,6 @@ function zeigeTermine() {
 
     const datum = document.createElement("div");
     datum.textContent = `📅 ${event.datum} (${event.start} – ${event.ende})`;
-    const mitarbeiter = document.createElement("div");
-mitarbeiter.textContent = `👥 Mitarbeiter: ${event.mitarbeiter || "-"}`;
-block.appendChild(mitarbeiter);
 
     const titel = document.createElement("input");
     titel.type = "text";
@@ -100,11 +97,19 @@ block.appendChild(mitarbeiter);
     beschreibung.style.width = "100%";
     beschreibung.style.marginTop = "0.5rem";
 
+    const mitarbeiterInput = document.createElement("input");
+    mitarbeiterInput.type = "text";
+    mitarbeiterInput.value = event.mitarbeiter || "";
+    mitarbeiterInput.placeholder = "Mitarbeiter";
+    mitarbeiterInput.style.width = "100%";
+    mitarbeiterInput.style.marginTop = "0.5rem";
+
     const speichern = document.createElement("button");
     speichern.textContent = "💾 Speichern";
     speichern.onclick = () => {
       event.titel = titel.value;
       event.beschreibung = beschreibung.value;
+      event.mitarbeiter = mitarbeiterInput.value;
       localStorage.setItem("termine", JSON.stringify(termine));
       debug("✅ Termin gespeichert");
     };
@@ -125,6 +130,7 @@ block.appendChild(mitarbeiter);
     block.appendChild(datum);
     block.appendChild(titel);
     block.appendChild(beschreibung);
+    block.appendChild(mitarbeiterInput);
     block.appendChild(speichern);
     block.appendChild(loeschen);
     container.appendChild(block);
