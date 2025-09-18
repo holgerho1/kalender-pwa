@@ -113,4 +113,10 @@ function ladeTermine() {
   }
 }
 
+function neuLaden() {
+  localStorage.removeItem("termine");
+  debug("🧹 Lokale Termine gelöscht");
+  ladeTermine(); // Holt neue vom Backend
+}
+
 window.addEventListener("load", ladeTermine);
