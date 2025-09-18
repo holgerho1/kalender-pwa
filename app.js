@@ -1,6 +1,16 @@
 let termine = [];
 let kwOffset = 0;
 let filterAktiv = true;
+const kuerzelNamen = {
+  SW: "Weber",
+  CM: "Magarin",
+  DK: "Kollat",
+  HB: "Behrend",
+  CK: "Kannenberg",
+  XX: "Platz1",
+  QQ: "Platz2",
+  YY: "Platz3"
+};
 
 function debug(msg) {
   const log = document.getElementById("debug-log");
@@ -74,6 +84,9 @@ function zeigeTermine() {
 
     const datum = document.createElement("div");
     datum.textContent = `📅 ${event.datum} (${event.start} – ${event.ende})`;
+    const mitarbeiter = document.createElement("div");
+mitarbeiter.textContent = `👥 Mitarbeiter: ${event.mitarbeiter || "-"}`;
+block.appendChild(mitarbeiter);
 
     const titel = document.createElement("input");
     titel.type = "text";
@@ -192,12 +205,9 @@ function ladeTermine() {
   const gespeicherte = localStorage.getItem("termine");
   if (gespeicherte) {
     try {
-      termine = JSON.parse(gespeicherte).map(e => {
-        const [tag, monat, jahr] = e.datum.split(".");
-        const zeit = e.start === "Ganztägig" ? "00:00" : e.start;
-        e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
-        return e;
-      });
+      termine = JSON.parse(gespeicherte)
+        .map(e => verarbeiteTermin(e))
+        .filter(Boolean);
       debug("📦 Termine aus localStorage geladen");
       zeigeTermine();
     } catch (e) {
@@ -208,12 +218,9 @@ function ladeTermine() {
     fetch("/api/events")
       .then(res => res.json())
       .then(data => {
-        termine = data.map(e => {
-          const [tag, monat, jahr] = e.datum.split(".");
-          const zeit = e.start === "Ganztägig" ? "00:00" : e.start;
-          e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
-          return e;
-        });
+        termine = data
+          .map(e => verarbeiteTermin(e))
+          .filter(Boolean);
         localStorage.setItem("termine", JSON.stringify(termine));
         debug("🌐 Termine vom Backend geladen");
         zeigeTermine();
@@ -223,6 +230,35 @@ function ladeTermine() {
         console.error(err);
       });
   }
+}
+
+function verarbeiteTermin(e) {
+  const [tag, monat, jahr] = e.datum.split(".");
+  const zeit = e.start === "Ganztägig" ? "00:00" : e.start;
+  e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
+
+  const originalTitel = e.titel || "";
+  const match = originalTitel.match(/^(HH|SW|CM|DK|HB|CK|XX|YY|QQ)+/);
+  if (!match) {
+    e.mitarbeiter = "";
+    return e;
+  }
+
+  const kuerzelBlock = match[0];
+  const kuerzelListe = kuerzelBlock.match(/HH|SW|CM|DK|HB|CK|XX|YY|QQ/g) || [];
+
+  if (!kuerzelListe.includes("HH")) {
+    return null; // löschen
+  }
+
+  const mitarbeiter = kuerzelListe
+    .filter(k => k !== "HH")
+    .map(k => kuerzelNamen[k])
+    .filter(Boolean);
+
+  e.mitarbeiter = mitarbeiter.join(", ");
+  e.titel = originalTitel.replace(kuerzelBlock, "").trimStart();
+  return e;
 }
 
 function neuLaden() {
