@@ -31,8 +31,8 @@ function zeigeTermine() {
   container.innerHTML = "";
 
   const gefiltert = termine.filter(e => {
-    const teile = e.datum.split(".");
-    const datum = new Date(`${teile[2]}-${teile[1]}-${teile[0]}`);
+    const [tag, monat, jahr] = e.datum.split(".");
+    const datum = new Date(`${jahr}-${monat}-${tag}T00:00:00`);
     return datum >= montag && datum <= sonntag;
   });
 
