@@ -96,12 +96,12 @@ function zeigeTermine() {
     beschreibung.style.width = "100%";
     beschreibung.style.marginTop = "0.5rem";
 
-
-  const mitarbeiterInput = document.createElement("textarea");
-  mitarbeiterInput.value = event.mitarbeiter;
-  mitarbeiterInput.rows = 2;
-  mitarbeiterInput.style.width = "100%";
-  mitarbeiterInput.style.marginTop = "0.5rem";
+    const mitarbeiterInput = document.createElement("textarea");
+    mitarbeiterInput.value = event.mitarbeiter || "";
+    mitarbeiterInput.rows = 2;
+    mitarbeiterInput.placeholder = "Mitarbeiter";
+    mitarbeiterInput.style.width = "100%";
+    mitarbeiterInput.style.marginTop = "0.5rem";
 
     const speichern = document.createElement("button");
     speichern.textContent = "💾 Speichern";
