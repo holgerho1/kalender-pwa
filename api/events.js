@@ -49,36 +49,23 @@ export default async function handler(req, res) {
       orderBy: 'startTime'
     });
 
-    // 📦 Formatierte Textausgabe
-    const formattedText = response.data.items.map(event => {
+    // 📦 Formatierte JSON-Ausgabe
+    const formattedEvents = response.data.items.map(event => {
       const start = new Date(event.start.dateTime || event.start.date);
       const end = new Date(event.end.dateTime || event.end.date);
 
-      const datum = start.toLocaleDateString('de-DE', {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric'
-      });
+      return {
+        id: event.id || Date.now().toString(), // Fallback-ID
+        datum: start.toLocaleDateString('de-DE'),
+        start: start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+        ende: end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+        titel: event.summary || '(Kein Titel)',
+        beschreibung: event.description || ''
+      };
+    });
 
-      const startTime = start.toLocaleTimeString('de-DE', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      const endTime = end.toLocaleTimeString('de-DE', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      const titel = event.summary || '(Kein Titel)';
-      const beschreibung = event.description ? `Beschreibung: ${event.description}` : '';
-
-      return `📅 ${datum}\n${startTime} – ${endTime} | ${titel}\n${beschreibung}\n`;
-    }).join('\n');
-
-    // ✅ Textliste zurückgeben
-    res.status(200).send(formattedText);
+    // ✅ JSON zurückgeben
+    res.status(200).json(formattedEvents);
   } catch (error) {
     console.error("❌ Fehler beim Abrufen der Termine:", error.message);
     console.error("📄 Stacktrace:", error.stack);
