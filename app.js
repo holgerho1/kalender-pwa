@@ -24,6 +24,11 @@ function getKWZeitraum() {
   return { montag, sonntag };
 }
 
+// 🧮 Hilfsfunktion für zweistellige Zahlen
+function pad(n) {
+  return n.toString().padStart(2, "0");
+}
+
 // Termine anzeigen (nur aktuelle KW)
 function zeigeTermine() {
   const { montag, sonntag } = getKWZeitraum();
@@ -32,7 +37,7 @@ function zeigeTermine() {
 
   const gefiltert = termine.filter(e => {
     const [tag, monat, jahr] = e.datum.split(".");
-    const datum = new Date(`${jahr}-${monat}-${tag}T00:00:00`);
+    const datum = new Date(`${jahr}-${pad(monat)}-${pad(tag)}T00:00:00`);
     return datum >= montag && datum <= sonntag;
   });
 
