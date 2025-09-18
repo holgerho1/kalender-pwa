@@ -1,4 +1,6 @@
 let termine = [];
+let kwOffset = 0;
+let filterAktiv = true;
 
 function debug(msg) {
   const log = document.getElementById("debug-log");
@@ -9,12 +11,11 @@ function debug(msg) {
   }
 }
 
-// 📅 Montag bis Sonntag dieser Woche berechnen
-function getKWZeitraum() {
+function getKWZeitraum(offset = 0) {
   const heute = new Date();
   const wochentag = heute.getDay(); // 0 = Sonntag, 1 = Montag, ..., 6 = Samstag
   const montag = new Date(heute);
-  montag.setDate(heute.getDate() - ((wochentag + 6) % 7));
+  montag.setDate(heute.getDate() - ((wochentag + 6) % 7) + offset * 7);
   montag.setHours(0, 0, 0, 0);
 
   const sonntag = new Date(montag);
@@ -24,9 +25,8 @@ function getKWZeitraum() {
   return { montag, sonntag };
 }
 
-// 📆 Wochenüberschrift anzeigen
 function zeigeWocheninfo() {
-  const { montag, sonntag } = getKWZeitraum();
+  const { montag, sonntag } = getKWZeitraum(kwOffset);
 
   const formatter = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
   const von = formatter.format(montag);
@@ -39,26 +39,27 @@ function zeigeWocheninfo() {
 
   const info = document.getElementById("wocheninfo");
   if (info) {
-    info.textContent = `📆 KW ${kw}: ${von} – ${bis}`;
+    info.textContent = `📆 KW ${kw}: ${von} – ${bis}` + (filterAktiv ? "" : " (alle Termine)");
   }
 }
 
-// 📋 Termine anzeigen (nur aktuelle KW)
 function zeigeTermine() {
   zeigeWocheninfo();
-
-  const { montag, sonntag } = getKWZeitraum();
-  const startMillis = montag.getTime();
-  const endMillis = sonntag.getTime();
 
   const container = document.getElementById("termine");
   container.innerHTML = "";
 
-  const gefiltert = termine.filter(e => e.timestamp >= startMillis && e.timestamp <= endMillis);
+  const { montag, sonntag } = getKWZeitraum(kwOffset);
+  const startMillis = montag.getTime();
+  const endMillis = sonntag.getTime();
+
+  const gefiltert = filterAktiv
+    ? termine.filter(e => e.timestamp >= startMillis && e.timestamp <= endMillis)
+    : termine;
 
   if (gefiltert.length === 0) {
     const leer = document.createElement("div");
-    leer.textContent = "Keine Termine in dieser Woche.";
+    leer.textContent = "Keine Termine im gewählten Zeitraum.";
     leer.style.fontStyle = "italic";
     container.appendChild(leer);
   }
@@ -118,7 +119,6 @@ function zeigeTermine() {
   });
 }
 
-// ➕ Neuer Termin + 🧹 Neu laden Buttons
 function zeigeSteuerung() {
   const container = document.getElementById("termine");
 
@@ -153,11 +153,40 @@ function zeigeSteuerung() {
     neuLaden();
   };
 
+  const prevBtn = document.createElement("button");
+  prevBtn.textContent = "◀️ Vorige Woche";
+  prevBtn.style.marginLeft = "10px";
+  prevBtn.onclick = () => {
+    kwOffset--;
+    zeigeTermine();
+    zeigeSteuerung();
+  };
+
+  const nextBtn = document.createElement("button");
+  nextBtn.textContent = "▶️ Nächste Woche";
+  nextBtn.style.marginLeft = "10px";
+  nextBtn.onclick = () => {
+    kwOffset++;
+    zeigeTermine();
+    zeigeSteuerung();
+  };
+
+  const toggleBtn = document.createElement("button");
+  toggleBtn.textContent = filterAktiv ? "🔄 Filter aus" : "🔄 Filter an";
+  toggleBtn.style.marginLeft = "10px";
+  toggleBtn.onclick = () => {
+    filterAktiv = !filterAktiv;
+    zeigeTermine();
+    zeigeSteuerung();
+  };
+
   container.appendChild(neuerBtn);
   container.appendChild(reloadBtn);
+  container.appendChild(prevBtn);
+  container.appendChild(nextBtn);
+  container.appendChild(toggleBtn);
 }
 
-// 📦 Termine laden
 function ladeTermine() {
   const gespeicherte = localStorage.getItem("termine");
   if (gespeicherte) {
@@ -182,25 +211,4 @@ function ladeTermine() {
         termine = data.map(e => {
           const [tag, monat, jahr] = e.datum.split(".");
           const zeit = e.start === "Ganztägig" ? "00:00" : e.start;
-          e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
-          return e;
-        });
-        localStorage.setItem("termine", JSON.stringify(termine));
-        debug("🌐 Termine vom Backend geladen");
-        zeigeTermine();
-        zeigeSteuerung();
-      })
-      .catch(err => {
-        debug("❌ Fehler beim Laden der Termine");
-        console.error(err);
-      });
-  }
-}
-
-function neuLaden() {
-  localStorage.removeItem("termine");
-  debug("🧹 Lokale Termine gelöscht");
-  ladeTermine();
-}
-
-window.addEventListener("load", ladeTermine);
+          e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T
