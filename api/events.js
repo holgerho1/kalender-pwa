@@ -74,6 +74,12 @@ export default async function handler(req, res) {
         });
       }
     });
+    
+    formattedEvents.sort((a, b) => {
+  const dateA = new Date(`${a.datum} ${a.start === "Ganztägig" ? "00:00" : a.start}`);
+  const dateB = new Date(`${b.datum} ${b.start === "Ganztägig" ? "00:00" : b.start}`);
+  return dateA - dateB;
+});
 
     res.status(200).json(formattedEvents);
   } catch (error) {
