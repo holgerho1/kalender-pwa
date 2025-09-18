@@ -48,14 +48,13 @@ function zeigeTermine() {
   zeigeWocheninfo();
 
   const { montag, sonntag } = getKWZeitraum();
+  const startMillis = montag.getTime();
+  const endMillis = sonntag.getTime();
+
   const container = document.getElementById("termine");
   container.innerHTML = "";
 
-  const gefiltert = termine.filter(e => {
-    const [tag, monat, jahr] = e.datum.split(".");
-    const datumObj = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T00:00:00`);
-    return datumObj >= montag && datumObj <= sonntag;
-  });
+  const gefiltert = termine.filter(e => e.timestamp >= startMillis && e.timestamp <= endMillis);
 
   if (gefiltert.length === 0) {
     const leer = document.createElement("div");
@@ -105,6 +104,7 @@ function zeigeTermine() {
         termine.splice(indexImOriginal, 1);
         localStorage.setItem("termine", JSON.stringify(termine));
         zeigeTermine();
+        zeigeSteuerung();
         debug(`🗑️ Termin gelöscht`);
       }
     };
@@ -126,13 +126,18 @@ function zeigeSteuerung() {
   neuerBtn.textContent = "➕ Neuer Termin";
   neuerBtn.onclick = () => {
     const jetzt = new Date();
+    const datum = jetzt.toLocaleDateString('de-DE');
+    const start = jetzt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const timestamp = new Date(`${datum.split(".").reverse().join("-")}T${start}`).getTime();
+
     const neu = {
       id: Date.now().toString(),
-      datum: jetzt.toLocaleDateString('de-DE'),
-      start: jetzt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
-      ende: jetzt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+      datum,
+      start,
+      ende: start,
       titel: "Neuer Termin",
-      beschreibung: ""
+      beschreibung: "",
+      timestamp
     };
     termine.push(neu);
     localStorage.setItem("termine", JSON.stringify(termine));
@@ -157,7 +162,12 @@ function ladeTermine() {
   const gespeicherte = localStorage.getItem("termine");
   if (gespeicherte) {
     try {
-      termine = JSON.parse(gespeicherte);
+      termine = JSON.parse(gespeicherte).map(e => {
+        const [tag, monat, jahr] = e.datum.split(".");
+        const zeit = e.start === "Ganztägig" ? "00:00" : e.start;
+        e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
+        return e;
+      });
       debug("📦 Termine aus localStorage geladen");
       zeigeTermine();
       zeigeSteuerung();
@@ -169,7 +179,12 @@ function ladeTermine() {
     fetch("/api/events")
       .then(res => res.json())
       .then(data => {
-        termine = data;
+        termine = data.map(e => {
+          const [tag, monat, jahr] = e.datum.split(".");
+          const zeit = e.start === "Ganztägig" ? "00:00" : e.start;
+          e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
+          return e;
+        });
         localStorage.setItem("termine", JSON.stringify(termine));
         debug("🌐 Termine vom Backend geladen");
         zeigeTermine();
