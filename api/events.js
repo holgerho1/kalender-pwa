@@ -28,10 +28,13 @@ export default async function handler(req, res) {
     const sixWeeksAgo = new Date();
     sixWeeksAgo.setDate(now.getDate() - 42);
 
+    const inVierWochen = new Date();
+    inVierWochen.setDate(now.getDate() + 28);
+
     const response = await calendar.events.list({
       calendarId: 'primary',
       timeMin: sixWeeksAgo.toISOString(),
-      timeMax: now.toISOString(),
+      timeMax: inVierWochen.toISOString(),
       maxResults: 1000,
       singleEvents: true,
       orderBy: 'startTime'
@@ -69,7 +72,6 @@ export default async function handler(req, res) {
       }
     });
 
-    // ✅ Sortieren nach sortKey
     formattedEvents.sort((a, b) => new Date(a.sortKey) - new Date(b.sortKey));
 
     res.status(200).json(formattedEvents);
