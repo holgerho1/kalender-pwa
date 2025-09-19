@@ -76,6 +76,29 @@ export function zeigeTermine() {
     titel.style.width = "100%";
     titel.style.marginTop = "0.5rem";
 
+    // 🔧 Neue Zeile mit Arbeit/Fahr/Über
+    const stundenZeile = document.createElement("div");
+    stundenZeile.style.display = "flex";
+    stundenZeile.style.gap = "8px";
+    stundenZeile.style.marginTop = "0.5rem";
+
+    const feldInputs = {};
+
+    ["arbeit", "fahr", "über"].forEach(feld => {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = event[feld] || "";
+      input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
+      input.style.flex = "1";
+      input.style.padding = "4px 6px";
+      input.style.fontSize = "1em";
+      input.style.border = "1px solid #ccc";
+      input.style.borderRadius = "4px";
+      input.dataset.feld = feld;
+      feldInputs[feld] = input;
+      stundenZeile.appendChild(input);
+    });
+
     const beschreibung = document.createElement("textarea");
     beschreibung.value = event.beschreibung;
     beschreibung.rows = 3;
@@ -94,6 +117,9 @@ export function zeigeTermine() {
       event.titel = titel.value;
       event.beschreibung = beschreibung.value;
       event.mitarbeiter = mitarbeiterInput.value;
+      event.arbeit = feldInputs.arbeit.value;
+      event.fahr = feldInputs.fahr.value;
+      event.über = feldInputs.über.value;
 
       const neuVerarbeitet = verarbeiteTermin(event);
       if (neuVerarbeitet) {
@@ -103,10 +129,7 @@ export function zeigeTermine() {
       } else {
         debug("🚫 Kürzel ungültig – Termin bleibt unverändert");
       }
-
-      /*localStorage.setItem("termine", JSON.stringify(getTermine()));
-      debug("✅ Termin gespeichert");
-    */};
+    };
 
     const loeschen = document.createElement("button");
     loeschen.textContent = "❌ Löschen";
@@ -117,7 +140,6 @@ export function zeigeTermine() {
       if (indexImOriginal !== -1) {
         termine.splice(indexImOriginal, 1);
         setTermine(termine);
-        /*localStorage.setItem("termine", JSON.stringify(termine));*/
         zeigeTermine();
         debug("🗑️ Termin gelöscht");
       }
@@ -125,6 +147,7 @@ export function zeigeTermine() {
 
     block.appendChild(datum);
     block.appendChild(titel);
+    block.appendChild(stundenZeile); // ✅ neue Zeile unter Titel
     block.appendChild(beschreibung);
     block.appendChild(mitarbeiterInput);
     block.appendChild(speichern);
@@ -162,7 +185,6 @@ function zeigeSteuerung() {
     const termine = getTermine();
     termine.push(neu);
     setTermine(termine);
-    /*localStorage.setItem("termine", JSON.stringify(termine));*/
     zeigeTermine();
     debug("➕ Neuer Termin hinzugefügt");
   };
