@@ -95,7 +95,8 @@ function zeigeTermine() {
     beschreibung.rows = 3;
     beschreibung.style.width = "100%";
     beschreibung.style.marginTop = "0.5rem";
-
+    
+debug("👥 Mitarbeiterwert: " + (event.mitarbeiter ?? "[leer]"));
     const mitarbeiterInput = document.createElement("textarea");
     mitarbeiterInput.value = event.mitarbeiter || "";
     mitarbeiterInput.rows = 2;
