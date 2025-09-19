@@ -1,4 +1,11 @@
-import { getTermine, setTermine, getKwOffset, setKwOffset, getFilterAktiv, setFilterAktiv } from "./state.js";
+import {
+  getTermine,
+  setTermine,
+  getKwOffset,
+  setKwOffset,
+  getFilterAktiv,
+  setFilterAktiv
+} from "./state.js";
 import { debug } from "./debug.js";
 import { verarbeiteTermin } from "./verarbeiteTermin.js";
 import { neuLaden } from "./neuLaden.js";
@@ -20,18 +27,29 @@ function getKWZeitraum(offset = 0) {
 function zeigeWocheninfo() {
   const { montag, sonntag } = getKWZeitraum(getKwOffset());
 
-  const formatter = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
+  const formatter = new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  });
   const von = formatter.format(montag);
   const bis = formatter.format(sonntag);
 
   const ersterJanuar = new Date(montag.getFullYear(), 0, 1);
-  const tageSeitJahresbeginn = Math.floor((montag - ersterJanuar) / (24 * 60 * 60 * 1000));
-  const tagOffset = ersterJanuar.getDay() <= 4 ? ersterJanuar.getDay() - 1 : ersterJanuar.getDay() - 8;
+  const tageSeitJahresbeginn = Math.floor(
+    (montag - ersterJanuar) / (24 * 60 * 60 * 1000)
+  );
+  const tagOffset =
+    ersterJanuar.getDay() <= 4
+      ? ersterJanuar.getDay() - 1
+      : ersterJanuar.getDay() - 8;
   const kw = Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
 
   const info = document.getElementById("wocheninfo");
   if (info) {
-    info.textContent = `📆 KW ${kw}: ${von} – ${bis}${getFilterAktiv() ? "" : " (alle Termine)"}`;
+    info.textContent = `📆 KW ${kw}: ${von} – ${bis}${
+      getFilterAktiv() ? "" : " (alle Termine)"
+    }`;
   }
 }
 
@@ -47,7 +65,9 @@ export function zeigeTermine() {
 
   const termine = getTermine();
   const gefiltert = getFilterAktiv()
-    ? termine.filter(e => e.timestamp >= startMillis && e.timestamp <= endMillis)
+    ? termine.filter(
+        (e) => e.timestamp >= startMillis && e.timestamp <= endMillis
+      )
     : termine;
 
   if (gefiltert.length === 0) {
@@ -75,8 +95,11 @@ export function zeigeTermine() {
     titel.rows = 2;
     titel.style.width = "100%";
     titel.style.marginTop = "0.5rem";
+    titel.style.fontSize = "1em";
+    titel.style.padding = "4px 6px";
+    titel.style.border = "1px solid #ccc";
+    titel.style.borderRadius = "4px";
 
-    // 🔧 Neue Zeile mit Arbeit/Fahr/Über
     const stundenZeile = document.createElement("div");
     stundenZeile.style.display = "flex";
     stundenZeile.style.gap = "8px";
@@ -84,21 +107,21 @@ export function zeigeTermine() {
 
     const feldInputs = {};
 
-["arbeit", "fahr", "über"].forEach(feld => {
-  const input = document.createElement("input");
-  input.type = "text";
-  input.value = event[feld] || "";
-  input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
-  input.style.flex = "1";
-  input.style.padding = "4px 6px";
-  input.style.fontSize = "1em"; // ✅ gleiche Schriftgröße wie Titel
-  input.style.border = "1px solid #ccc";
-  input.style.borderRadius = "4px";
-  input.style.width = "100%"; // optional für volle Breite
-  input.dataset.feld = feld;
-  feldInputs[feld] = input;
-  stundenZeile.appendChild(input);
-});
+    ["arbeit", "fahr", "über"].forEach((feld) => {
+      const input = document.createElement("textarea");
+      input.rows = 1;
+      input.value = event[feld] || "";
+      input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
+      input.style.flex = "1";
+      input.style.width = "100%";
+      input.style.marginTop = "0.5rem";
+      input.style.fontSize = "1em";
+      input.style.padding = "4px 6px";
+      input.style.border = "1px solid #ccc";
+      input.style.borderRadius = "4px";
+      feldInputs[feld] = input;
+      stundenZeile.appendChild(input);
+    });
 
     const beschreibung = document.createElement("textarea");
     beschreibung.value = event.beschreibung;
@@ -137,7 +160,7 @@ export function zeigeTermine() {
     loeschen.style.marginLeft = "10px";
     loeschen.onclick = () => {
       const termine = getTermine();
-      const indexImOriginal = termine.findIndex(t => t.id === event.id);
+      const indexImOriginal = termine.findIndex((t) => t.id === event.id);
       if (indexImOriginal !== -1) {
         termine.splice(indexImOriginal, 1);
         setTermine(termine);
@@ -148,7 +171,7 @@ export function zeigeTermine() {
 
     block.appendChild(datum);
     block.appendChild(titel);
-    block.appendChild(stundenZeile); // ✅ neue Zeile unter Titel
+    block.appendChild(stundenZeile);
     block.appendChild(beschreibung);
     block.appendChild(mitarbeiterInput);
     block.appendChild(speichern);
@@ -169,9 +192,14 @@ function zeigeSteuerung() {
   neuerBtn.textContent = "➕ Neuer Termin";
   neuerBtn.onclick = () => {
     const jetzt = new Date();
-    const datum = jetzt.toLocaleDateString('de-DE');
-    const start = jetzt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    const timestamp = new Date(`${datum.split(".").reverse().join("-")}T${start}`).getTime();
+    const datum = jetzt.toLocaleDateString("de-DE");
+    const start = jetzt.toLocaleTimeString("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+    const timestamp = new Date(
+      `${datum.split(".").reverse().join("-")}T${start}`
+    ).getTime();
 
     const neu = {
       id: Date.now().toString(),
@@ -208,23 +236,3 @@ function zeigeSteuerung() {
   const nextBtn = document.createElement("button");
   nextBtn.textContent = "▶️ Nächste Woche";
   nextBtn.style.marginLeft = "10px";
-  nextBtn.onclick = () => {
-    setKwOffset(getKwOffset() + 1);
-    zeigeTermine();
-  };
-
-  const toggleBtn = document.createElement("button");
-  toggleBtn.textContent = getFilterAktiv() ? "🔄 Filter aus" : "🔄 Filter an";
-  toggleBtn.style.marginLeft = "10px";
-  toggleBtn.onclick = () => {
-    setFilterAktiv(!getFilterAktiv());
-    zeigeTermine();
-  };
-
-  steuerung.appendChild(neuerBtn);
-  steuerung.appendChild(reloadBtn);
-  steuerung.appendChild(prevBtn);
-  steuerung.appendChild(nextBtn);
-  steuerung.appendChild(toggleBtn);
-  container.appendChild(steuerung);
-}
