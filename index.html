@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Holgers Terminplaner</title>
+
+  <!-- jsPDF für PDF-Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
     body {
       font-family: sans-serif;
@@ -50,9 +54,13 @@
   <!-- Terminliste + Steuerung -->
   <div id="termine"></div>
 
+  <!-- PDF-Export-Button (optional) -->
+  <button id="pdf-export">📄 PDF Export</button>
+
   <!-- Debug-Ausgabe -->
   <div id="debug-log"></div>
 
+  <!-- Haupt-App -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
