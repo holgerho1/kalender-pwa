@@ -25,8 +25,8 @@ export function neuLaden() {
         debug("🧾 " + e.titel + " → " + e.mitarbeiter);
       });
 
-      localStorage.setItem("termine", JSON.stringify(verarbeitet));
-      debug("💾 Termine gespeichert");
+     /* localStorage.setItem("termine", JSON.stringify(verarbeitet));
+      debug("💾 Termine gespeichert");*/
 
       setTermine(verarbeitet);
       zeigeTermine();

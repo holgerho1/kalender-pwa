@@ -104,9 +104,9 @@ export function zeigeTermine() {
         debug("🚫 Kürzel ungültig – Termin bleibt unverändert");
       }
 
-      localStorage.setItem("termine", JSON.stringify(getTermine()));
+      /*localStorage.setItem("termine", JSON.stringify(getTermine()));
       debug("✅ Termin gespeichert");
-    };
+    */};
 
     const loeschen = document.createElement("button");
     loeschen.textContent = "❌ Löschen";
@@ -117,7 +117,7 @@ export function zeigeTermine() {
       if (indexImOriginal !== -1) {
         termine.splice(indexImOriginal, 1);
         setTermine(termine);
-        localStorage.setItem("termine", JSON.stringify(termine));
+        /*localStorage.setItem("termine", JSON.stringify(termine));*/
         zeigeTermine();
         debug("🗑️ Termin gelöscht");
       }
@@ -162,7 +162,7 @@ function zeigeSteuerung() {
     const termine = getTermine();
     termine.push(neu);
     setTermine(termine);
-    localStorage.setItem("termine", JSON.stringify(termine));
+    /*localStorage.setItem("termine", JSON.stringify(termine));*/
     zeigeTermine();
     debug("➕ Neuer Termin hinzugefügt");
   };
