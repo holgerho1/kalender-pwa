@@ -248,54 +248,61 @@ function ladeTermine() {
 }
 
 function verarbeiteTermin(e) {
-  const [tag, monat, jahr] = e.datum.split(".");
-  const zeit = e.start === "Ganztägig" ? "00:00" : e.start;
-  e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
-
   const originalTitel = e.titel || "";
 
-  // Kürzelblock am Anfang extrahieren (alle gültigen Kürzel ohne Leerzeichen)
-  const kuerzelRegex = /^(HH|SW|CM|DK|HB|CK|XX|YY|QQ)+/;
-  const match = originalTitel.match(kuerzelRegex);
+  // Kürzel erkennen
+  const kuerzelListe = originalTitel.match(/HH|SW|CM|DK|HB|CK|XX|YY|QQ/g) || [];
 
-  if (!match) {
-    e.mitarbeiter = "";
-    return e;
-  }
-
-  const kuerzelBlock = match[0];
-
-  // Alle Kürzel extrahieren aus dem Block
-  const kuerzelListe = kuerzelBlock.match(/HH|SW|CM|DK|HB|CK|XX|YY|QQ/g) || [];
-
-  // Wenn HH fehlt → Termin ignorieren
   if (!kuerzelListe.includes("HH")) {
-    return null;
+    return null; // Termin ignorieren
   }
 
-  // Duplikate entfernen
-  const eindeutigeKuerzel = [...new Set(kuerzelListe)];
-
-  // Mitarbeiter-Namen zuordnen (außer HH)
-  const mitarbeiter = eindeutigeKuerzel
+  // Mitarbeiter berechnen
+  const mitarbeiter = [...new Set(kuerzelListe)]
     .filter(k => k !== "HH")
     .map(k => kuerzelNamen[k])
     .filter(Boolean);
 
-  e.mitarbeiter = mitarbeiter.join(", ");
+  // Kürzel entfernen
+  const kuerzelBlock = kuerzelListe.join("");
   e.titel = originalTitel.replace(kuerzelBlock, "").trimStart();
-  
-  debug("🔍 Titel: " + originalTitel);
-debug("📋 KürzelListe: " + kuerzelListe.join(", "));
-debug("👥 Mitarbeiter gesetzt: " + e.mitarbeiter);
-  return e;
+  e.mitarbeiter = mitarbeiter.join(", ");
 
+  // Datum/Uhrzeit verarbeiten
+  const [tag, monat, jahr] = e.datum.split(".");
+  const zeit = e.start === "Ganztägig" ? "00:00" : e.start;
+  e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
+
+  return e;
 }
 
 function neuLaden() {
-  localStorage.removeItem("termine");
-  debug("🧹 Lokale Termine gelöscht");
-  ladeTermine();
+  debug("🔄 Starte Neu-Laden…");
+
+  fetch("/api/events")
+    .then(res => res.json())
+    .then(data => {
+      debug("🌐 Daten vom Server erhalten");
+
+      // Verarbeitung: Kürzel erkennen, Mitarbeiter berechnen, Kürzel entfernen
+      const verarbeitet = data
+        .map(e => verarbeiteTermin(e))
+        .filter(Boolean);
+
+      debug("🛠️ Termine verarbeitet: " + verarbeitet.length);
+
+      // Speichern in localStorage
+      localStorage.setItem("termine", JSON.stringify(verarbeitet));
+      debug("💾 Termine gespeichert");
+
+      // Anzeige aktualisieren
+      termine = verarbeitet;
+      zeigeTermine();
+    })
+    .catch(err => {
+      debug("❌ Fehler beim Laden der Termine vom Server");
+      console.error(err);
+    });
 }
 
 window.addEventListener("load", ladeTermine);
