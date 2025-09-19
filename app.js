@@ -12,7 +12,7 @@ let filterAktiv = true;
 //  YY: "Platz3"
 //};
 
-import { kuerzelNamen } from "/code/variable.js";
+import { kuerzelNamen } from "./code/variable.js";
 
 function debug(msg) {
   const log = document.getElementById("debug-log");
