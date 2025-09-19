@@ -11,10 +11,10 @@ export function neuLaden() {
     .then(data => {
       debug("🌐 Daten vom Server erhalten");
 
-      const verarbeitet = data.map(verarbeiteTermin).filter(Boolean);
-      debug("🛠️ Termine verarbeitet: " + verarbeitet.length);
+      const verarbeitet = data.map(verarbeiteTermin).filter(Boolean); // ✅ Mitarbeiter werden hier gesetzt
 
-      localStorage.setItem("termine", JSON.stringify(verarbeitet));
+      debug("🛠️ Termine verarbeitet: " + verarbeitet.length);
+      localStorage.setItem("termine", JSON.stringify(verarbeitet));   // ✅ Jetzt vollständig gespeichert
       debug("💾 Termine gespeichert");
 
       setTermine(verarbeitet);
