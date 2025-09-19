@@ -1,7 +1,7 @@
 let termine = [];
 let kwOffset = 0;
 let filterAktiv = true;
-const kuerzelNamen = {
+/*const kuerzelNamen = {
   SW: "Weber",
   CM: "Magarin",
   DK: "Kollat",
@@ -10,7 +10,9 @@ const kuerzelNamen = {
   XX: "Platz1",
   QQ: "Platz2",
   YY: "Platz3"
-};
+};*/
+
+import { kuerzelNamen } from "./code/variable.js";
 
 function debug(msg) {
   const log = document.getElementById("debug-log");

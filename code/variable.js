@@ -1,7 +1,3 @@
-let termine = [];
-let kwOffset = 0;
-let filterAktiv = true;
-
 
 export const kuerzelNamen = {
   SW: "Weber",
