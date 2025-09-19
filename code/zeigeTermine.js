@@ -108,8 +108,8 @@ export function zeigeTermine() {
     const feldInputs = {};
 
     ["arbeit", "fahr", "über"].forEach((feld) => {
-      const input = document.createElement("textarea");
-      input.rows = 1;
+      const input = document.createElement("input");
+      input.type = "text";
       input.value = event[feld] || "";
       input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
       input.style.flex = "1";
@@ -236,3 +236,23 @@ function zeigeSteuerung() {
   const nextBtn = document.createElement("button");
   nextBtn.textContent = "▶️ Nächste Woche";
   nextBtn.style.marginLeft = "10px";
+  nextBtn.onclick = () => {
+    setKwOffset(getKwOffset() + 1);
+    zeigeTermine();
+  };
+
+  const toggleBtn = document.createElement("button");
+  toggleBtn.textContent = getFilterAktiv() ? "🔄 Filter aus" : "🔄 Filter an";
+  toggleBtn.style.marginLeft = "10px";
+  toggleBtn.onclick = () => {
+    setFilterAktiv(!getFilterAktiv());
+    zeigeTermine();
+  };
+
+  steuerung.appendChild(neuerBtn);
+  steuerung.appendChild(reloadBtn);
+  steuerung.appendChild(prevBtn);
+  steuerung.appendChild(nextBtn);
+  steuerung.appendChild(toggleBtn);
+  container.appendChild(steuerung);
+}
