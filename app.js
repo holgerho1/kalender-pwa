@@ -305,4 +305,23 @@ function neuLaden() {
     });
 }
 
-window.addEventListener("load", neuLaden);
+window.addEventListener("load", neuLaden);window.addEventListener("load", () => {
+  const gespeicherte = localStorage.getItem("termine");
+  let daten = [];
+
+  try {
+    daten = gespeicherte ? JSON.parse(gespeicherte) : [];
+  } catch (err) {
+    debug("❌ Fehler beim Lesen von localStorage");
+    console.error(err);
+  }
+
+  if (Array.isArray(daten) && daten.length > 0) {
+    debug("📦 Lade aus localStorage: " + daten.length + " Termine");
+    termine = daten;
+    zeigeTermine();
+  } else {
+    debug("🌐 Kein gültiger Speicher – hole vom Server");
+    neuLaden();
+  }
+});
