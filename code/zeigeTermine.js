@@ -115,7 +115,7 @@ export function zeigeTermine() {
       input.style.flex = "1";
       input.style.width = "100%";
       input.style.marginTop = "0.5rem";
-      input.style.fontSize = "1.8em";
+      input.style.fontSize = "1.2em";
       input.style.padding = "4px 6px";
       input.style.border = "1px solid #ccc";
       input.style.borderRadius = "4px";
@@ -128,6 +128,21 @@ export function zeigeTermine() {
     beschreibung.rows = 3;
     beschreibung.style.width = "100%";
     beschreibung.style.marginTop = "0.5rem";
+    beschreibung.style.fontSize = "1em";
+    beschreibung.style.padding = "4px 6px";
+    beschreibung.style.border = "1px solid #ccc";
+    beschreibung.style.borderRadius = "4px";
+
+    const materialInput = document.createElement("textarea");
+    materialInput.value = event.material || "";
+    materialInput.rows = 3;
+    materialInput.style.width = "100%";
+    materialInput.style.marginTop = "0.5rem";
+    materialInput.style.fontSize = "1em";
+    materialInput.style.padding = "4px 6px";
+    materialInput.style.border = "1px solid #ccc";
+    materialInput.style.borderRadius = "4px";
+    materialInput.placeholder = "Material";
 
     const mitarbeiterInput = document.createElement("textarea");
     mitarbeiterInput.value = event.mitarbeiter || "";
@@ -140,6 +155,7 @@ export function zeigeTermine() {
     speichern.onclick = () => {
       event.titel = titel.value;
       event.beschreibung = beschreibung.value;
+      event.material = materialInput.value;
       event.mitarbeiter = mitarbeiterInput.value;
       event.arbeit = feldInputs.arbeit.value;
       event.fahr = feldInputs.fahr.value;
@@ -173,6 +189,7 @@ export function zeigeTermine() {
     block.appendChild(titel);
     block.appendChild(stundenZeile);
     block.appendChild(beschreibung);
+    block.appendChild(materialInput);
     block.appendChild(mitarbeiterInput);
     block.appendChild(speichern);
     block.appendChild(loeschen);
@@ -208,6 +225,11 @@ function zeigeSteuerung() {
       ende: start,
       titel: "Neuer Termin",
       beschreibung: "",
+      material: "",
+      mitarbeiter: "",
+      arbeit: "",
+      fahr: "",
+      über: "",
       timestamp
     };
 

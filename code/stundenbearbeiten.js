@@ -1,10 +1,11 @@
 import { debug } from "./debug.js";
 import { setTermine } from "./state.js";
 import { zeigeTermine } from "./zeigeTermine.js";
+import { materialbearbeiten } from "./materialbearbeiten.js";
 
 /**
  * Bearbeitet die übergebenen Termine und zeigt sie an.
- * Erkennt A/F/Ü-Kürzel im Titel und setzt entsprechende Felder.
+ * Erkennt A/F/Ü-Kürzel im Titel und extrahiert Material aus Beschreibung.
  * @param {Array} daten - Rohdaten vom Server oder anderen Quellen
  */
 export function stundenbearbeiten(daten) {
@@ -37,10 +38,11 @@ export function stundenbearbeiten(daten) {
       e.titel = e.titel.replace(uMatch[0], "");
     }
 
-    // Leerzeichen bereinigen
+    // Titel bereinigen
     e.titel = e.titel.replace(/\s+/g, " ").trim();
 
-    return e;
+    // Material extrahieren
+    return materialbearbeiten(e);
   }).filter(Boolean);
 
   debug("🧮 Stundenbearbeitung abgeschlossen: " + bearbeitet.length + " Termine");
