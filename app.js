@@ -74,6 +74,8 @@ function zeigeTermine() {
   }
 
   gefiltert.forEach((event) => {
+    debug("👥 Mitarbeiterwert: " + (event.mitarbeiter ?? "[leer]"));
+
     const block = document.createElement("div");
     block.style.marginBottom = "1rem";
     block.style.padding = "1rem";
@@ -95,8 +97,7 @@ function zeigeTermine() {
     beschreibung.rows = 3;
     beschreibung.style.width = "100%";
     beschreibung.style.marginTop = "0.5rem";
-    
-debug("👥 Mitarbeiterwert: " + (event.mitarbeiter ?? "[leer]"));
+
     const mitarbeiterInput = document.createElement("textarea");
     mitarbeiterInput.value = event.mitarbeiter || "";
     mitarbeiterInput.rows = 2;
@@ -109,6 +110,16 @@ debug("👥 Mitarbeiterwert: " + (event.mitarbeiter ?? "[leer]"));
       event.titel = titel.value;
       event.beschreibung = beschreibung.value;
       event.mitarbeiter = mitarbeiterInput.value;
+
+      const neuVerarbeitet = verarbeiteTermin(event);
+      if (neuVerarbeitet) {
+        Object.assign(event, neuVerarbeitet);
+        debug("🔄 Kürzel neu verarbeitet");
+        debug("👥 Mitarbeiter: " + (event.mitarbeiter || "[leer]"));
+      } else {
+        debug("🚫 Kürzel ungültig – Termin bleibt unverändert");
+      }
+
       localStorage.setItem("termine", JSON.stringify(termine));
       debug("✅ Termin gespeichert");
     };
@@ -137,7 +148,6 @@ debug("👥 Mitarbeiterwert: " + (event.mitarbeiter ?? "[leer]"));
 
   zeigeSteuerung();
 }
-
 function zeigeSteuerung() {
   const container = document.getElementById("termine");
 
