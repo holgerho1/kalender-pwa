@@ -249,24 +249,34 @@ function ladeTermine() {
 
 function verarbeiteTermin(e) {
   const originalTitel = e.titel || "";
+  debug("🔍 Titel beim Verarbeiten: " + originalTitel);
 
-  // Kürzel erkennen
+  // Kürzel erkennen (egal wo im Titel)
   const kuerzelListe = originalTitel.match(/HH|SW|CM|DK|HB|CK|XX|YY|QQ/g) || [];
+  debug("📋 Erkannte Kürzel: " + kuerzelListe.join(", "));
 
-  if (!kuerzelListe.includes("HH")) {
-    return null; // Termin ignorieren
+  // Wenn Kürzel vorhanden, aber HH fehlt → Termin ignorieren
+  if (kuerzelListe.length > 0 && !kuerzelListe.includes("HH")) {
+    debug("🚫 Kürzel vorhanden, aber HH fehlt – Termin ignoriert");
+    return null;
   }
 
-  // Mitarbeiter berechnen
+  // Mitarbeiter berechnen (nur aus Kürzeln, ohne HH)
   const mitarbeiter = [...new Set(kuerzelListe)]
     .filter(k => k !== "HH")
     .map(k => kuerzelNamen[k])
     .filter(Boolean);
 
-  // Kürzel entfernen
-  const kuerzelBlock = kuerzelListe.join("");
-  e.titel = originalTitel.replace(kuerzelBlock, "").trimStart();
+  // Kürzelblock entfernen (wenn vorhanden)
+  if (kuerzelListe.length > 0) {
+    const kuerzelBlock = kuerzelListe.join("");
+    e.titel = originalTitel.replace(kuerzelBlock, "").trimStart();
+    debug("✂️ Kürzel entfernt – neuer Titel: " + e.titel);
+  }
+
+  // Mitarbeiter eintragen (auch leer erlaubt)
   e.mitarbeiter = mitarbeiter.join(", ");
+  debug("👥 Mitarbeiter gesetzt: " + (e.mitarbeiter || "[leer]"));
 
   // Datum/Uhrzeit verarbeiten
   const [tag, monat, jahr] = e.datum.split(".");
