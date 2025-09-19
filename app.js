@@ -305,7 +305,7 @@ function neuLaden() {
     });
 }
 
-window.addEventListener("load", neuLaden);window.addEventListener("load", () => {
+window.addEventListener("load", () => {
   const gespeicherte = localStorage.getItem("termine");
   let daten = [];
 
