@@ -305,13 +305,4 @@ function neuLaden() {
     });
 }
 
-window.addEventListener("load", () => {
-  const gespeicherte = localStorage.getItem("termine");
-  if (gespeicherte) {
-    debug("📦 Lade aus localStorage");
-    ladeTermine();
-  } else {
-    debug("🌐 Kein Speicher gefunden – hole vom Server");
-    neuLaden();
-  }
-});
+window.addEventListener("load", neuLaden);
