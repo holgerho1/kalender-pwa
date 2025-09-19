@@ -1,10 +1,9 @@
 import { verarbeiteTermin } from "./verarbeiteTermin.js";
 import { debug } from "./debug.js";
-import { setTermine } from "./state.js";
-import { zeigeTermine } from "./zeigeTermine.js";
+import { stundenbearbeiten } from "./stundenbearbeiten.js";
 
 /**
- * Holt die Termine vom Server, verarbeitet sie und speichert sie vollständig.
+ * Holt die Termine vom Server, verarbeitet sie und übergibt sie zur weiteren Bearbeitung.
  */
 export function neuLaden() {
   debug("🔄 Starte Neu-Laden…");
@@ -20,16 +19,11 @@ export function neuLaden() {
 
       debug("🛠️ Termine verarbeitet: " + verarbeitet.length);
 
-      // Optional: Ausgabe zur Kontrolle
       verarbeitet.forEach(e => {
         debug("🧾 " + e.titel + " → " + e.mitarbeiter);
       });
 
-     /* localStorage.setItem("termine", JSON.stringify(verarbeitet));
-      debug("💾 Termine gespeichert");*/
-
-      setTermine(verarbeitet);
-      zeigeTermine();
+      stundenbearbeiten(verarbeitet); // ✅ Übergabe an zentrale Bearbeitung
     })
     .catch(err => {
       debug("❌ Fehler beim Laden der Termine vom Server");
