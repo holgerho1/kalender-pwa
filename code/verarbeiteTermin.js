@@ -6,20 +6,14 @@ export function verarbeiteTermin(e) {
   const originalTitel = e.titel || "";
   debug("🔍 Titel beim Verarbeiten: " + originalTitel);
 
-  const bearbeitet = mitarbeiterbearbeiten(e);
-  if (!bearbeitet) {
-    debug("🚫 Mitarbeiterbearbeitung fehlgeschlagen – Termin ignoriert");
-    return null;
-  }
+  mitarbeiterbearbeiten(e); // ✅ verändert e direkt
 
-  // Prüfe auf HH-Kürzel
   const kuerzelListe = originalTitel.match(/HH|SW|CM|DK|HB|CK|XX|YY|QQ/g) || [];
   if (kuerzelListe.length > 0 && !kuerzelListe.includes("HH")) {
     debug("🚫 Kürzel vorhanden, aber HH fehlt – Termin ignoriert");
     return null;
   }
 
-  // Zeitstempel setzen
   const [tag, monat, jahr] = e.datum.split(".");
   const zeit = e.start === "Ganztägig" ? "00:00" : e.start;
   e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
