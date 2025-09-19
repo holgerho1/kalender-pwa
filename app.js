@@ -242,20 +242,31 @@ function verarbeiteTermin(e) {
   e.timestamp = new Date(`${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}T${zeit}`).getTime();
 
   const originalTitel = e.titel || "";
-  const match = originalTitel.match(/^(HH|SW|CM|DK|HB|CK|XX|YY|QQ)+/);
+
+  // Kürzelblock am Anfang extrahieren (alle gültigen Kürzel ohne Leerzeichen)
+  const kuerzelRegex = /^(HH|SW|CM|DK|HB|CK|XX|YY|QQ)+/;
+  const match = originalTitel.match(kuerzelRegex);
+
   if (!match) {
     e.mitarbeiter = "";
     return e;
   }
 
   const kuerzelBlock = match[0];
+
+  // Alle Kürzel extrahieren aus dem Block
   const kuerzelListe = kuerzelBlock.match(/HH|SW|CM|DK|HB|CK|XX|YY|QQ/g) || [];
 
+  // Wenn HH fehlt → Termin ignorieren
   if (!kuerzelListe.includes("HH")) {
-    return null; // löschen
+    return null;
   }
 
-  const mitarbeiter = kuerzelListe
+  // Duplikate entfernen
+  const eindeutigeKuerzel = [...new Set(kuerzelListe)];
+
+  // Mitarbeiter-Namen zuordnen (außer HH)
+  const mitarbeiter = eindeutigeKuerzel
     .filter(k => k !== "HH")
     .map(k => kuerzelNamen[k])
     .filter(Boolean);
