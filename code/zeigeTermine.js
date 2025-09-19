@@ -84,20 +84,21 @@ export function zeigeTermine() {
 
     const feldInputs = {};
 
-    ["arbeit", "fahr", "über"].forEach(feld => {
-      const input = document.createElement("input");
-      input.type = "text";
-      input.value = event[feld] || "";
-      input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
-      input.style.flex = "1";
-      input.style.padding = "4px 6px";
-      input.style.fontSize = "1em";
-      input.style.border = "1px solid #ccc";
-      input.style.borderRadius = "4px";
-      input.dataset.feld = feld;
-      feldInputs[feld] = input;
-      stundenZeile.appendChild(input);
-    });
+["arbeit", "fahr", "über"].forEach(feld => {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = event[feld] || "";
+  input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
+  input.style.flex = "1";
+  input.style.padding = "4px 6px";
+  input.style.fontSize = "1em"; // ✅ gleiche Schriftgröße wie Titel
+  input.style.border = "1px solid #ccc";
+  input.style.borderRadius = "4px";
+  input.style.width = "100%"; // optional für volle Breite
+  input.dataset.feld = feld;
+  feldInputs[feld] = input;
+  stundenZeile.appendChild(input);
+});
 
     const beschreibung = document.createElement("textarea");
     beschreibung.value = event.beschreibung;
