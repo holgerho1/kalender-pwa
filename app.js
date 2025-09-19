@@ -274,10 +274,12 @@ function verarbeiteTermin(e) {
 
   e.mitarbeiter = mitarbeiter.join(", ");
   e.titel = originalTitel.replace(kuerzelBlock, "").trimStart();
-  return e;
+  
   debug("🔍 Titel: " + originalTitel);
 debug("📋 KürzelListe: " + kuerzelListe.join(", "));
 debug("👥 Mitarbeiter gesetzt: " + e.mitarbeiter);
+  return e;
+
 }
 
 function neuLaden() {
