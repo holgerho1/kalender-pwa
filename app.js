@@ -1,6 +1,5 @@
 import { ladeTermine } from "./code/ladeTermine.js";
 import { neuLaden } from "./code/neuLaden.js";
-import { getTermine } from "./code/state.js";
 
 window.addEventListener("load", () => {
   const gespeicherte = localStorage.getItem("termine");
@@ -13,7 +12,7 @@ window.addEventListener("load", () => {
   }
 
   if (Array.isArray(daten) && daten.length > 0) {
-    ladeTermine();
+    ladeTermine(daten);
   } else {
     neuLaden();
   }
