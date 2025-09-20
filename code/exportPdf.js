@@ -72,7 +72,7 @@ export function exportierePdf(termine) {
         "Kunde",
         "Durchgeführte Arbeiten",
         "Materialeinsatz",
-        "Mitarbeit"
+        "Mit- arbeiter"
       ]
     ],
     body: rows,
@@ -93,11 +93,11 @@ export function exportierePdf(termine) {
       fillColor: [245, 245, 245]
     },
     columnStyles: {
-      0: { cellWidth: 20 },
-      1: { cellWidth: 20 },
-      2: { cellWidth: 20 },
-      3: { cellWidth: 20 },
-      4: { cellWidth: 20 },
+      0: { cellWidth: 19 },
+      1: { cellWidth: 19 },
+      2: { cellWidth: 19 },
+      3: { cellWidth: 19 },
+      4: { cellWidth: 19 },
       5: { cellWidth: 50 },
       6: { cellWidth: 58 },
       7: { cellWidth: 50 },
