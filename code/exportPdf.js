@@ -13,7 +13,6 @@ export function exportierePdf(termine) {
     const tag = String(datumObj.getDate()).padStart(2, "0");
     const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
     const datumKurz = `${tag}.${monat}`;
-
     const datumZelle = datumKurz !== lastDatum ? datumKurz : "";
     lastDatum = datumKurz;
 
@@ -48,7 +47,7 @@ export function exportierePdf(termine) {
     startY: 20,
     styles: {
       fontSize: 11,
-      cellPadding: 2, // kompakter Abstand zur Rahmenlinie
+      cellPadding: 2,
       lineColor: [200, 200, 200],
       lineWidth: 0.2
     },
@@ -71,5 +70,25 @@ export function exportierePdf(termine) {
     margin: { left: 14, right: 14 }
   });
 
+  // PDF erzeugen als Blob
+  const pdfBlob = doc.output("blob");
+  const url = URL.createObjectURL(pdfBlob);
+
+  // Datei speichern
   doc.save("termine.pdf");
+
+  // Erfolgsmeldung anzeigen
+  const infoBox = document.createElement("div");
+  infoBox.innerHTML = `
+    ✅ PDF erfolgreich erstellt.<br>
+    <a href="${url}" target="_blank">📄 PDF anzeigen</a>
+  `;
+  infoBox.style.padding = "1rem";
+  infoBox.style.marginTop = "1rem";
+  infoBox.style.background = "#e0ffe0";
+  infoBox.style.border = "1px solid #88cc88";
+  infoBox.style.borderRadius = "6px";
+  infoBox.style.fontSize = "1rem";
+
+  document.getElementById("termine").appendChild(infoBox);
 }
