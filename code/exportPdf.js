@@ -76,7 +76,7 @@ export function exportierePdf(termine) {
       ]
     ],
     body: rows,
-    startY: 36,
+    startY: 30,
     styles: {
       fontSize: 11,
       cellPadding: 2,
