@@ -2,17 +2,23 @@ export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
 
-  doc.setFontSize(12); // Titel etwas größer
+  doc.setFontSize(12);
   doc.text("📄 Holgers Termin-Export", 14, 14);
 
-  const rows = termine.map(e => {
+  const rows = [];
+  let lastDatum = "";
+
+  termine.forEach(e => {
     const datumObj = new Date(e.timestamp);
     const tag = String(datumObj.getDate()).padStart(2, "0");
     const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
     const datumKurz = `${tag}.${monat}`;
 
-    return [
-      datumKurz,
+    const datumZelle = datumKurz !== lastDatum ? datumKurz : "";
+    lastDatum = datumKurz;
+
+    rows.push([
+      datumZelle,
       e.arbeit || "",
       e.fahr || "",
       e.über || "",
@@ -21,7 +27,7 @@ export function exportierePdf(termine) {
       e.beschreibung || "",
       e.material || "",
       e.mitarbeiter || ""
-    ];
+    ]);
   });
 
   doc.autoTable({
@@ -41,13 +47,13 @@ export function exportierePdf(termine) {
     body: rows,
     startY: 20,
     styles: {
-      fontSize: 11, // Zeilen etwas größer
-      cellPadding: 4,
+      fontSize: 11,
+      cellPadding: 2, // kompakter Abstand zur Rahmenlinie
       lineColor: [200, 200, 200],
       lineWidth: 0.2
     },
     headStyles: {
-      fontSize: 12, // Kopfzeile größer
+      fontSize: 12,
       fillColor: [220, 220, 220],
       textColor: 0,
       fontStyle: "bold"
