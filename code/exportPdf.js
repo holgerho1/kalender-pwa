@@ -5,7 +5,7 @@ export function exportierePdf(termine) {
   doc.setFontSize(10);
   doc.text("📄 Holgers Termin-Export", 14, 14);
 
-  const body = [];
+  const rows = [];
   let lastDatum = "";
 
   termine.forEach(e => {
@@ -14,29 +14,20 @@ export function exportierePdf(termine) {
     const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
     const datumKurz = `${tag}.${monat}`;
 
-    const row = [
-      datumKurz,
-      e.arbeit || "",
-      e.fahr || "",
-      e.über || "",
-      "", // Kom. Nr.
-      e.titel || "",
-      e.beschreibung || "",
-      e.material || "",
-      e.mitarbeiter || ""
-    ];
-
-    const rowObj = {
-      data: row,
-      styles: {}
-    };
-
-    if (datumKurz !== lastDatum) {
-      rowObj.styles.fillColor = [245, 245, 245]; // nur bei Datumswechsel
-      lastDatum = datumKurz;
-    }
-
-    body.push(rowObj);
+    rows.push({
+      datum: datumKurz,
+      data: [
+        datumKurz,
+        e.arbeit || "",
+        e.fahr || "",
+        e.über || "",
+        "", // Kom. Nr.
+        e.titel || "",
+        e.beschreibung || "",
+        e.material || "",
+        e.mitarbeiter || ""
+      ]
+    });
   });
 
   doc.autoTable({
@@ -53,8 +44,7 @@ export function exportierePdf(termine) {
         "Mitarbeiter"
       ]
     ],
-    body: body.map(r => r.data),
-    bodyStyles: body.map(r => r.styles),
+    body: rows.map(r => r.data),
     startY: 20,
     styles: {
       fontSize: 9,
@@ -73,6 +63,24 @@ export function exportierePdf(termine) {
       3: { cellWidth: 20 },
       4: { cellWidth: 20 },
       5: { cellWidth: 50 }
+    },
+    didDrawCell: function (data) {
+      if (data.section === "body" && data.column.index === 0) {
+        const rowIndex = data.row.index;
+        const currentDatum = rows[rowIndex].datum;
+        const previousDatum = rowIndex > 0 ? rows[rowIndex - 1].datum : null;
+
+        if (currentDatum !== previousDatum) {
+          const { doc, table } = data;
+          const rowHeight = table.rowHeight;
+          const rowY = data.cell.y;
+          const rowX = table.margin.left;
+          const rowWidth = table.width;
+
+          doc.setFillColor(245, 245, 245);
+          doc.rect(rowX, rowY, rowWidth, rowHeight, "F");
+        }
+      }
     },
     margin: { left: 14, right: 14 }
   });
