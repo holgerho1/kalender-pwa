@@ -66,14 +66,14 @@ export function exportierePdf(termine) {
     head: [
       [
         "Datum",
-        "Arbeitszeit",
-        "Fahrzeit",
-        "Überstunden",
+        "Arbeit- zeit",
+        "Fahr- zeit",
+        "Überzeit",
         "Kom. Nr.",
         "Kunde",
         "Durchgeführte Arbeiten",
         "Materialeinsatz",
-        "Mitarbeiter"
+        "Mitarbeit"
       ]
     ],
     body: rows,
