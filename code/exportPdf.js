@@ -33,7 +33,7 @@ export function exportierePdf(termine) {
   // Infozeile zentriert als Block mit Leerzeichen
   doc.setFontSize(14);
   doc.setFont(undefined, "bold");
-  const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}               KW: ${kw}                         Name: Heckel`;
+  const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}               KW: ${kw}                                             Name: Heckel`;
   doc.text(infoText, centerX, 30, { align: "center" });
 
   // Tabelle vorbereiten
