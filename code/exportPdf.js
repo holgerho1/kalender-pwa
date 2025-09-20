@@ -68,7 +68,7 @@ export function exportierePdf(termine) {
         "Datum",
         "Arbeit- zeit",
         "Fahr- zeit",
-        "Überzeit",
+        "Über- zeit",
         "Kom. Nr.",
         "Kunde",
         "Durchgeführte Arbeiten",
@@ -101,7 +101,7 @@ export function exportierePdf(termine) {
       4: { cellWidth: 20 },
       5: { cellWidth: 50 },
       6: { cellWidth: 58 },
-      7: { cellWidth: 53 },
+      7: { cellWidth: 50 },
       8: { cellWidth: 25 }
     },
     margin: { left: 10, right: 10 }
