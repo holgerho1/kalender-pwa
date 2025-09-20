@@ -2,9 +2,18 @@ export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
 
-  doc.setFontSize(12);
-  doc.text("📄 Holgers Termin-Export", 14, 14);
+  // Große Überschrift zentriert, fett, unterstrichen
+  doc.setFontSize(18);
+  doc.setFont(undefined, "bold");
+  const title = "Arbeitsnachweis";
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const textWidth = doc.getTextWidth(title);
+  const centerX = pageWidth / 2;
+  doc.text(title, centerX, 20, { align: "center" });
+  doc.setLineWidth(0.5);
+  doc.line(centerX - textWidth / 2, 22, centerX + textWidth / 2, 22);
 
+  // Tabelle vorbereiten
   const rows = [];
   let lastDatum = "";
 
@@ -44,7 +53,7 @@ export function exportierePdf(termine) {
       ]
     ],
     body: rows,
-    startY: 20,
+    startY: 30,
     styles: {
       fontSize: 11,
       cellPadding: 2,
