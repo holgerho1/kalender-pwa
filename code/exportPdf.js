@@ -31,7 +31,7 @@ export function exportierePdf(termine) {
   const kw = Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
 
   const infoText = `Jahr ${jahr}   Von: ${von}   Bis: ${bis}   KW: ${kw}   Name: Heckel`;
-  doc.setFontSize(14); // größerer Text
+  doc.setFontSize(14);
   doc.setFont(undefined, "bold");
   doc.text(infoText, pageWidth / 2, 30, { align: "center" });
 
@@ -75,7 +75,7 @@ export function exportierePdf(termine) {
       ]
     ],
     body: rows,
-    startY: 36, // mehr Abstand zur Infozeile
+    startY: 36,
     styles: {
       fontSize: 11,
       cellPadding: 2,
@@ -92,15 +92,15 @@ export function exportierePdf(termine) {
       fillColor: [245, 245, 245]
     },
     columnStyles: {
-      0: { cellWidth: 25 },
-      1: { cellWidth: 25 },
-      2: { cellWidth: 25 },
-      3: { cellWidth: 25 },
-      4: { cellWidth: 25 },
-      5: { cellWidth: 45 },
-      6: { cellWidth: 45 },
-      7: { cellWidth: 20 },
-      8: { cellWidth: 15 }
+      0: { cellWidth: 20 }, // Datum
+      1: { cellWidth: 20 }, // Arbeitszeit
+      2: { cellWidth: 20 }, // Fahrzeit
+      3: { cellWidth: 20 }, // Überstunden
+      4: { cellWidth: 20 }, // Kom. Nr.
+      5: { cellWidth: 40 }, // Kunde
+      6: { cellWidth: 40 }, // Beschreibung
+      7: { cellWidth: 40 }, // Material
+      8: { cellWidth: 20 }  // Mitarbeiter (1/3 breiter als vorher)
     },
     margin: { left: 14, right: 14 }
   });
