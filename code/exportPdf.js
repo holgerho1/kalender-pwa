@@ -2,7 +2,7 @@ export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
 
-  // Große Überschrift zentriert, fett, unterstrichen
+  // Hauptüberschrift
   doc.setFontSize(18);
   doc.setFont(undefined, "bold");
   const title = "Arbeitsnachweis";
@@ -12,6 +12,28 @@ export function exportierePdf(termine) {
   doc.text(title, centerX, 20, { align: "center" });
   doc.setLineWidth(0.5);
   doc.line(centerX - textWidth / 2, 22, centerX + textWidth / 2, 22);
+
+  // 📅 Infozeile vorbereiten
+  const firstDate = new Date(termine[0].timestamp);
+  const monday = new Date(firstDate);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const formatter = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" });
+  const von = formatter.format(monday);
+  const bis = formatter.format(sunday);
+  const jahr = monday.getFullYear();
+
+  const ersterJanuar = new Date(jahr, 0, 1);
+  const tageSeitJahresbeginn = Math.floor((monday - ersterJanuar) / (24 * 60 * 60 * 1000));
+  const tagOffset = ersterJanuar.getDay() <= 4 ? ersterJanuar.getDay() - 1 : ersterJanuar.getDay() - 8;
+  const kw = Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
+
+  const infoText = `Jahr ${jahr}   Von: ${von}   Bis: ${bis}   KW: ${kw}   Name: Heckel`;
+  doc.setFontSize(12);
+  doc.setFont(undefined, "bold");
+  doc.text(infoText, centerX, 30, { align: "center" });
 
   // Tabelle vorbereiten
   const rows = [];
@@ -53,7 +75,7 @@ export function exportierePdf(termine) {
       ]
     ],
     body: rows,
-    startY: 30,
+    startY: 36,
     styles: {
       fontSize: 11,
       cellPadding: 2,
