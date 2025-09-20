@@ -94,7 +94,7 @@ export function exportierePdf(termine) {
       fillColor: [245, 245, 245]
     },
     columnStyles: {
-      0: { cellWidth: 15 },
+      0: { cellWidth: 20 },
       1: { cellWidth: 14 },
       2: { cellWidth: 14 },
       3: { cellWidth: 14 },
