@@ -101,7 +101,7 @@ export function exportierePdf(termine) {
       4: { cellWidth: 20 },
       5: { cellWidth: 50 },
       6: { cellWidth: 58 },
-      7: { cellWidth: 58 },
+      7: { cellWidth: 53 },
       8: { cellWidth: 25 }
     },
     margin: { left: 10, right: 10 }
