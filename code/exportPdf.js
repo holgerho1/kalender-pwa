@@ -34,7 +34,6 @@ export function exportierePdf(termine) {
   doc.setFontSize(14);
   doc.setFont(undefined, "bold");
   const infoText = `Jahr ${jahr}          Von: ${von}          Bis: ${bis}          KW: ${kw}          Name: Heckel`;
-  const infoWidth = doc.getTextWidth(infoText);
   doc.text(infoText, centerX, 30, { align: "center" });
 
   // Tabelle vorbereiten
@@ -107,17 +106,29 @@ export function exportierePdf(termine) {
     margin: { left: 10, right: 10 }
   });
 
+  // 📁 Dateiname mit Versionsverwaltung
+  const kwText = `KW${kw}`;
+  const basisName = `Stundenschein_${jahr}_${kwText}`;
+  const versionKey = `pdfVersion_${basisName}`;
+  let version = parseInt(localStorage.getItem(versionKey) || "0", 10);
+  version++;
+  localStorage.setItem(versionKey, version);
+
+  const dateiname = version === 1
+    ? `${basisName}.pdf`
+    : `${basisName}v${version}.pdf`;
+
   // PDF erzeugen als Blob
   const pdfBlob = doc.output("blob");
   const url = URL.createObjectURL(pdfBlob);
 
   // Datei speichern
-  doc.save("termine.pdf");
+  doc.save(dateiname);
 
   // Erfolgsmeldung anzeigen
   const infoBox = document.createElement("div");
   infoBox.innerHTML = `
-    ✅ PDF erfolgreich erstellt.<br>
+    ✅ PDF erfolgreich erstellt: <strong>${dateiname}</strong><br>
     <a href="${url}" target="_blank">📄 PDF anzeigen</a>
   `;
   infoBox.style.padding = "1rem";
