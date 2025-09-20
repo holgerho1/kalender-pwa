@@ -1,8 +1,3 @@
-/**
- * Exportiert die übergebenen Termine als PDF-Tabelle im Querformat.
- * Spaltenstruktur und Inhalte gemäß Holgers Vorgaben.
- * @param {Array} termine - Gefilterte und sortierte Terminliste
- */
 export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
@@ -63,8 +58,8 @@ export function exportierePdf(termine) {
       lineWidth: 0.2
     },
     headStyles: {
-      fillColor: [0, 119, 204],
-      textColor: 255,
+      fillColor: [220, 220, 220], // hellgrau
+      textColor: 0,               // schwarz
       fontStyle: "bold"
     },
     columnStyles: {
@@ -72,7 +67,7 @@ export function exportierePdf(termine) {
       2: { cellWidth: 20 }, // Fahrzeit
       3: { cellWidth: 20 }, // Überstunden
       4: { cellWidth: 20 }, // Kom. Nr.
-      5: { cellWidth: 50 }  // Kunde (mehr Platz)
+      5: { cellWidth: 50 }  // Kunde
     },
     didParseCell: function (data) {
       const rowIndex = data.row.index;
