@@ -13,7 +13,7 @@ export function exportierePdf(termine) {
   doc.setLineWidth(0.5);
   doc.line(centerX - textWidth / 2, 22, centerX + textWidth / 2, 22);
 
-  // 📅 Infozeile vorbereiten
+  // Infozeile
   const firstDate = new Date(termine[0].timestamp);
   const monday = new Date(firstDate);
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
@@ -92,17 +92,17 @@ export function exportierePdf(termine) {
       fillColor: [245, 245, 245]
     },
     columnStyles: {
-      0: { cellWidth: 20 }, // Datum
-      1: { cellWidth: 20 }, // Arbeitszeit
-      2: { cellWidth: 20 }, // Fahrzeit
-      3: { cellWidth: 20 }, // Überstunden
-      4: { cellWidth: 20 }, // Kom. Nr.
-      5: { cellWidth: 40 }, // Kunde
-      6: { cellWidth: 40 }, // Beschreibung
-      7: { cellWidth: 40 }, // Material
-      8: { cellWidth: 20 }  // Mitarbeiter (1/3 breiter als vorher)
+      0: { cellWidth: 16 }, // Datum
+      1: { cellWidth: 14 }, // Arbeitszeit
+      2: { cellWidth: 14 }, // Fahrzeit
+      3: { cellWidth: 14 }, // Überstunden
+      4: { cellWidth: 14 }, // Kom. Nr.
+      5: { cellWidth: 45 }, // Kunde (40 + 5)
+      6: { cellWidth: 55 }, // Durchgeführte Arbeiten (40 + 10 + 5)
+      7: { cellWidth: 50 }, // Materialeinsatz (40 + 10)
+      8: { cellWidth: 20 }  // Mitarbeiter
     },
-    margin: { left: 14, right: 14 }
+    margin: { left: 10, right: 10 }
   });
 
   // PDF erzeugen als Blob
