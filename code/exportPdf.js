@@ -5,7 +5,7 @@ export function exportierePdf(termine) {
   doc.setFontSize(10);
   doc.text("📄 Holgers Termin-Export", 14, 14);
 
-  const rows = [];
+  const body = [];
   let lastDatum = "";
 
   termine.forEach(e => {
@@ -26,13 +26,17 @@ export function exportierePdf(termine) {
       e.mitarbeiter || ""
     ];
 
-    const rowStyle = {};
+    const rowObj = {
+      data: row,
+      styles: {}
+    };
+
     if (datumKurz !== lastDatum) {
-      rowStyle.fillColor = [245, 245, 245]; // nur bei Datumswechsel
+      rowObj.styles.fillColor = [245, 245, 245]; // nur bei Datumswechsel
       lastDatum = datumKurz;
     }
 
-    rows.push({ row, rowStyle });
+    body.push(rowObj);
   });
 
   doc.autoTable({
@@ -49,7 +53,8 @@ export function exportierePdf(termine) {
         "Mitarbeiter"
       ]
     ],
-    body: rows.map(r => r.row),
+    body: body.map(r => r.data),
+    bodyStyles: body.map(r => r.styles),
     startY: 20,
     styles: {
       fontSize: 9,
@@ -63,18 +68,11 @@ export function exportierePdf(termine) {
       fontStyle: "bold"
     },
     columnStyles: {
-      1: { cellWidth: 20 }, // Arbeitszeit
-      2: { cellWidth: 20 }, // Fahrzeit
-      3: { cellWidth: 20 }, // Überstunden
-      4: { cellWidth: 20 }, // Kom. Nr.
-      5: { cellWidth: 50 }  // Kunde
-    },
-    didParseCell: function (data) {
-      const rowIndex = data.row.index;
-      const rowStyle = rows[rowIndex]?.rowStyle;
-      if (rowStyle?.fillColor) {
-        data.cell.styles.fillColor = rowStyle.fillColor;
-      }
+      1: { cellWidth: 20 },
+      2: { cellWidth: 20 },
+      3: { cellWidth: 20 },
+      4: { cellWidth: 20 },
+      5: { cellWidth: 50 }
     },
     margin: { left: 14, right: 14 }
   });
