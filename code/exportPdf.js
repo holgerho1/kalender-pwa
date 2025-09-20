@@ -1,6 +1,6 @@
 /**
  * Exportiert die übergebenen Termine als PDF-Tabelle im Querformat.
- * Jeder Termin erscheint als eine Zeile mit Rahmen.
+ * Spaltenstruktur und Inhalte gemäß Holgers Vorgaben.
  * @param {Array} termine - Gefilterte und sortierte Terminliste
  */
 export function exportierePdf(termine) {
@@ -10,19 +10,39 @@ export function exportierePdf(termine) {
   doc.setFontSize(10);
   doc.text("📄 Holgers Termin-Export", 14, 14);
 
-  const rows = termine.map(e => [
-    e.datum,
-    `${e.start}–${e.ende}`,
-    e.titel,
-    e.arbeit || "",
-    e.fahr || "",
-    e.über || "",
-    e.material || "",
-    e.mitarbeiter || ""
-  ]);
+  const rows = termine.map(e => {
+    const datumObj = new Date(e.timestamp);
+    const tag = String(datumObj.getDate()).padStart(2, "0");
+    const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
+    const datumKurz = `${tag}.${monat}`;
+
+    return [
+      datumKurz,               // Datum im Format tt.MM
+      e.arbeit || "",          // Arbeitszeit
+      e.fahr || "",            // Fahrzeit
+      e.über || "",            // Überstunden
+      "",                      // Kom. Nr. leer
+      e.titel || "",           // Kunde
+      e.beschreibung || "",    // Durchgeführte Arbeiten
+      e.material || "",        // Materialeinsatz
+      e.mitarbeiter || ""      // Mitarbeiter
+    ];
+  });
 
   doc.autoTable({
-    head: [["Datum", "Zeit", "Titel", "Arbeit", "Fahr", "Über", "Material", "Mitarbeiter"]],
+    head: [
+      [
+        "Datum",
+        "Arbeitszeit",
+        "Fahrzeit",
+        "Überstunden",
+        "Kom. Nr.",
+        "Kunde",
+        "Durchgeführte Arbeiten",
+        "Materialeinsatz",
+        "Mitarbeiter"
+      ]
+    ],
     body: rows,
     startY: 20,
     styles: {
@@ -35,6 +55,12 @@ export function exportierePdf(termine) {
       fillColor: [0, 119, 204],
       textColor: 255,
       fontStyle: "bold"
+    },
+    columnStyles: {
+      1: { cellWidth: 25 }, // Arbeitszeit
+      2: { cellWidth: 25 }, // Fahrzeit
+      3: { cellWidth: 25 }, // Überstunden
+      4: { cellWidth: 25 }  // Kom. Nr.
     },
     alternateRowStyles: {
       fillColor: [245, 245, 245]
