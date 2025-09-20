@@ -10,23 +10,34 @@ export function exportierePdf(termine) {
   doc.setFontSize(10);
   doc.text("📄 Holgers Termin-Export", 14, 14);
 
-  const rows = termine.map(e => {
+  const rows = [];
+  let lastDatum = "";
+
+  termine.forEach(e => {
     const datumObj = new Date(e.timestamp);
     const tag = String(datumObj.getDate()).padStart(2, "0");
     const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
     const datumKurz = `${tag}.${monat}`;
 
-    return [
-      datumKurz,               // Datum im Format tt.MM
-      e.arbeit || "",          // Arbeitszeit
-      e.fahr || "",            // Fahrzeit
-      e.über || "",            // Überstunden
-      "",                      // Kom. Nr. leer
-      e.titel || "",           // Kunde
-      e.beschreibung || "",    // Durchgeführte Arbeiten
-      e.material || "",        // Materialeinsatz
-      e.mitarbeiter || ""      // Mitarbeiter
+    const row = [
+      datumKurz,
+      e.arbeit || "",
+      e.fahr || "",
+      e.über || "",
+      "", // Kom. Nr.
+      e.titel || "",
+      e.beschreibung || "",
+      e.material || "",
+      e.mitarbeiter || ""
     ];
+
+    const rowStyle = {};
+    if (datumKurz !== lastDatum) {
+      rowStyle.fillColor = [245, 245, 245]; // nur bei Datumswechsel
+      lastDatum = datumKurz;
+    }
+
+    rows.push({ row, rowStyle });
   });
 
   doc.autoTable({
@@ -43,7 +54,7 @@ export function exportierePdf(termine) {
         "Mitarbeiter"
       ]
     ],
-    body: rows,
+    body: rows.map(r => r.row),
     startY: 20,
     styles: {
       fontSize: 9,
@@ -57,13 +68,18 @@ export function exportierePdf(termine) {
       fontStyle: "bold"
     },
     columnStyles: {
-      1: { cellWidth: 25 }, // Arbeitszeit
-      2: { cellWidth: 25 }, // Fahrzeit
-      3: { cellWidth: 25 }, // Überstunden
-      4: { cellWidth: 25 }  // Kom. Nr.
+      1: { cellWidth: 20 }, // Arbeitszeit
+      2: { cellWidth: 20 }, // Fahrzeit
+      3: { cellWidth: 20 }, // Überstunden
+      4: { cellWidth: 20 }, // Kom. Nr.
+      5: { cellWidth: 50 }  // Kunde (mehr Platz)
     },
-    alternateRowStyles: {
-      fillColor: [245, 245, 245]
+    didParseCell: function (data) {
+      const rowIndex = data.row.index;
+      const rowStyle = rows[rowIndex]?.rowStyle;
+      if (rowStyle?.fillColor) {
+        data.cell.styles.fillColor = rowStyle.fillColor;
+      }
     },
     margin: { left: 14, right: 14 }
   });
