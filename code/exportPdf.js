@@ -92,11 +92,11 @@ export function exportierePdf(termine) {
       fillColor: [245, 245, 245]
     },
     columnStyles: {
-      0: { cellWidth: 15 }, // Datum
-      1: { cellWidth: 14 }, // Arbeitszeit
-      2: { cellWidth: 14 }, // Fahrzeit
-      3: { cellWidth: 14 }, // Überstunden
-      4: { cellWidth: 14 }, // Kom. Nr.
+      0: { cellWidth: 17 }, // Datum
+      1: { cellWidth: 16 }, // Arbeitszeit
+      2: { cellWidth: 16 }, // Fahrzeit
+      3: { cellWidth: 16 }, // Überstunden
+      4: { cellWidth: 16 }, // Kom. Nr.
       5: { cellWidth: 50 }, // Kunde (40 + 5)
       6: { cellWidth: 58 }, // Durchgeführte Arbeiten (40 + 10 + 5)
       7: { cellWidth: 58 }, // Materialeinsatz (40 + 10)
