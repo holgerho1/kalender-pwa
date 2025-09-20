@@ -64,14 +64,14 @@ export function exportierePdf(termine) {
     head: [
       [
         "Datum",
-        "Arbeitszeit",
+        "Arbeitzeit",
         "Fahrzeit",
-        "Überstunden",
+        "Überzeit",
         "Kom. Nr.",
         "Kunde",
         "Durchgeführte Arbeiten",
         "Materialeinsatz",
-        "Mitarbeiter"
+        "Mitarbeit"
       ]
     ],
     body: rows,
@@ -99,8 +99,8 @@ export function exportierePdf(termine) {
       4: { cellWidth: 16 }, // Kom. Nr.
       5: { cellWidth: 50 }, // Kunde (40 + 5)
       6: { cellWidth: 58 }, // Durchgeführte Arbeiten (40 + 10 + 5)
-      7: { cellWidth: 55 }, // Materialeinsatz (40 + 10)
-      8: { cellWidth: 23 }  // Mitarbeiter
+      7: { cellWidth: 53 }, // Materialeinsatz (40 + 10)
+      8: { cellWidth: 25 }  // Mitarbeiter
     },
     margin: { left: 10, right: 10 }
   });
