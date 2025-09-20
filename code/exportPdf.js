@@ -99,8 +99,8 @@ export function exportierePdf(termine) {
       4: { cellWidth: 16 }, // Kom. Nr.
       5: { cellWidth: 50 }, // Kunde (40 + 5)
       6: { cellWidth: 58 }, // Durchgeführte Arbeiten (40 + 10 + 5)
-      7: { cellWidth: 58 }, // Materialeinsatz (40 + 10)
-      8: { cellWidth: 20 }  // Mitarbeiter
+      7: { cellWidth: 55 }, // Materialeinsatz (40 + 10)
+      8: { cellWidth: 23 }  // Mitarbeiter
     },
     margin: { left: 10, right: 10 }
   });
