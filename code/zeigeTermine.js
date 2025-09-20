@@ -9,6 +9,7 @@ import {
 import { debug } from "./debug.js";
 import { verarbeiteTermin } from "./verarbeiteTermin.js";
 import { neuLaden } from "./neuLaden.js";
+import { exportierePdf } from "./exportPdf.js";
 
 function getKWZeitraum(offset = 0) {
   const heute = new Date();
@@ -196,10 +197,10 @@ export function zeigeTermine() {
     container.appendChild(block);
   });
 
-  zeigeSteuerung();
+  zeigeSteuerung(gefiltert); // Übergabe der gefilterten Liste
 }
 
-function zeigeSteuerung() {
+function zeigeSteuerung(gefiltert) {
   const container = document.getElementById("termine");
 
   const steuerung = document.createElement("div");
@@ -271,10 +272,18 @@ function zeigeSteuerung() {
     zeigeTermine();
   };
 
+  const exportBtn = document.createElement("button");
+  exportBtn.textContent = "📄 PDF Export";
+  exportBtn.style.marginLeft = "10px";
+  exportBtn.onclick = () => {
+    exportierePdf(gefiltert);
+  };
+
   steuerung.appendChild(neuerBtn);
   steuerung.appendChild(reloadBtn);
   steuerung.appendChild(prevBtn);
   steuerung.appendChild(nextBtn);
   steuerung.appendChild(toggleBtn);
+  steuerung.appendChild(exportBtn);
   container.appendChild(steuerung);
 }
