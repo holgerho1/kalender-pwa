@@ -13,7 +13,7 @@ export function exportierePdf(termine) {
   doc.setLineWidth(0.5);
   doc.line(centerX - textWidth / 2, 22, centerX + textWidth / 2, 22);
 
-  // Infozeile
+  // Infozeile vorbereiten
   const firstDate = new Date(termine[0].timestamp);
   const monday = new Date(firstDate);
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
@@ -30,10 +30,25 @@ export function exportierePdf(termine) {
   const tagOffset = ersterJanuar.getDay() <= 4 ? ersterJanuar.getDay() - 1 : ersterJanuar.getDay() - 8;
   const kw = Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
 
-  const infoText = `Jahr ${jahr}   Von: ${von}   Bis: ${bis}   KW: ${kw}   Name: Heckel`;
+  // Infozeile zentriert, aber in Einzelteilen
   doc.setFontSize(14);
   doc.setFont(undefined, "bold");
-  doc.text(infoText, pageWidth / 2, 30, { align: "center" });
+
+  const infoParts = [
+    `Jahr ${jahr}`,
+    `Von: ${von}`,
+    `Bis: ${bis}`,
+    `KW: ${kw}`,
+    `Name: Heckel`
+  ];
+
+  const spacing = 40; // Abstand zwischen den Teilen
+  const totalWidth = (infoParts.length - 1) * spacing;
+  const startX = centerX - totalWidth / 2;
+
+  infoParts.forEach((text, i) => {
+    doc.text(text, startX + i * spacing, 30);
+  });
 
   // Tabelle vorbereiten
   const rows = [];
@@ -64,14 +79,14 @@ export function exportierePdf(termine) {
     head: [
       [
         "Datum",
-        "Arbeitzeit",
+        "Arbeitszeit",
         "Fahrzeit",
-        "Überzeit",
+        "Überstunden",
         "Kom. Nr.",
         "Kunde",
         "Durchgeführte Arbeiten",
         "Materialeinsatz",
-        "Mitarbeit"
+        "Mitarbeiter"
       ]
     ],
     body: rows,
@@ -92,15 +107,15 @@ export function exportierePdf(termine) {
       fillColor: [245, 245, 245]
     },
     columnStyles: {
-      0: { cellWidth: 17 }, // Datum
-      1: { cellWidth: 16 }, // Arbeitszeit
-      2: { cellWidth: 16 }, // Fahrzeit
-      3: { cellWidth: 16 }, // Überstunden
-      4: { cellWidth: 16 }, // Kom. Nr.
-      5: { cellWidth: 50 }, // Kunde (40 + 5)
-      6: { cellWidth: 58 }, // Durchgeführte Arbeiten (40 + 10 + 5)
-      7: { cellWidth: 53 }, // Materialeinsatz (40 + 10)
-      8: { cellWidth: 25 }  // Mitarbeiter
+      0: { cellWidth: 15 },
+      1: { cellWidth: 14 },
+      2: { cellWidth: 14 },
+      3: { cellWidth: 14 },
+      4: { cellWidth: 14 },
+      5: { cellWidth: 50 },
+      6: { cellWidth: 58 },
+      7: { cellWidth: 58 },
+      8: { cellWidth: 20 }
     },
     margin: { left: 10, right: 10 }
   });
