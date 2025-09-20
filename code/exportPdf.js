@@ -1,14 +1,14 @@
 /**
- * Exportiert die übergebenen Termine als PDF-Tabelle.
+ * Exportiert die übergebenen Termine als PDF-Tabelle im Querformat.
  * Jeder Termin erscheint als eine Zeile mit Rahmen.
  * @param {Array} termine - Gefilterte und sortierte Terminliste
  */
 export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  const doc = new jsPDF({ orientation: "landscape", format: "a4" });
 
   doc.setFontSize(10);
-  doc.text("📄 Holgers Termin-Export", 10, 10);
+  doc.text("📄 Holgers Termin-Export", 14, 14);
 
   const rows = termine.map(e => [
     e.datum,
@@ -35,7 +35,11 @@ export function exportierePdf(termine) {
       fillColor: [0, 119, 204],
       textColor: 255,
       fontStyle: "bold"
-    }
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
+    },
+    margin: { left: 14, right: 14 }
   });
 
   doc.save("termine.pdf");
