@@ -95,14 +95,14 @@ export function exportierePdf(termine) {
     },
     columnStyles: {
       0: { cellWidth: 20 },
-      1: { cellWidth: 14 },
-      2: { cellWidth: 14 },
-      3: { cellWidth: 14 },
-      4: { cellWidth: 14 },
+      1: { cellWidth: 16 },
+      2: { cellWidth: 16 },
+      3: { cellWidth: 16 },
+      4: { cellWidth: 16 },
       5: { cellWidth: 50 },
       6: { cellWidth: 58 },
       7: { cellWidth: 58 },
-      8: { cellWidth: 20 }
+      8: { cellWidth: 25 }
     },
     margin: { left: 10, right: 10 }
   });
