@@ -5,14 +5,20 @@ export function exportierePdf(termine) {
   doc.setFontSize(10);
   doc.text("📄 Holgers Termin-Export", 14, 14);
 
-  const rows = termine.map(e => {
+  const rows = [];
+  let lastDatum = "";
+
+  termine.forEach(e => {
     const datumObj = new Date(e.timestamp);
     const tag = String(datumObj.getDate()).padStart(2, "0");
     const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
     const datumKurz = `${tag}.${monat}`;
 
-    return [
-      datumKurz,
+    const datumZelle = datumKurz !== lastDatum ? datumKurz : "";
+    lastDatum = datumKurz;
+
+    rows.push([
+      datumZelle,
       e.arbeit || "",
       e.fahr || "",
       e.über || "",
@@ -21,7 +27,7 @@ export function exportierePdf(termine) {
       e.beschreibung || "",
       e.material || "",
       e.mitarbeiter || ""
-    ];
+    ]);
   });
 
   doc.autoTable({
@@ -47,12 +53,12 @@ export function exportierePdf(termine) {
       lineWidth: 0.2
     },
     headStyles: {
-      fillColor: [220, 220, 220], // hellgrau
-      textColor: 0,               // schwarz
+      fillColor: [220, 220, 220],
+      textColor: 0,
       fontStyle: "bold"
     },
     alternateRowStyles: {
-      fillColor: [245, 245, 245] // einfacher Wechsel bei jeder Zeile
+      fillColor: [245, 245, 245]
     },
     columnStyles: {
       1: { cellWidth: 20 },
