@@ -1,53 +1,124 @@
-<script>
-  function speichereBenutzer() {
-    const k = document.getElementById("kuerzel").value.trim().toUpperCase();
-    const n = document.getElementById("name").value.trim();
-    if (!k || !n) return;
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Holgers Terminplaner</title>
 
-    const liste = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
-    liste[k] = n;
-    localStorage.setItem("kuerzelNamen", JSON.stringify(liste));
+  <!-- jsPDF für PDF-Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- jsPDF AutoTable für Tabellen mit Rahmen -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      margin-bottom: 1rem;
+    }
+    #wocheninfo {
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      background-color: #f0f8ff;
+      border-left: 4px solid #0077cc;
+      border-radius: 6px;
+    }
+    #termine {
+      margin-bottom: 2rem;
+    }
+    #debug-log {
+      font-size: 0.9rem;
+      color: #555;
+      background: #eee;
+      padding: 1rem;
+      border-radius: 6px;
+    }
+    button {
+      margin-top: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    #benutzerverwaltung {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+    }
+    #benutzerverwaltung input {
+      margin: 0.5rem;
+      padding: 0.4rem;
+      font-size: 1rem;
+    }
+    #benutzerListe button {
+      margin: 0.3rem;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>📅 Holgers Terminplaner</h1>
+
+  <!-- Wochenüberschrift -->
+  <div id="wocheninfo">📆 KW wird geladen…</div>
+
+  <!-- Terminliste + Steuerung -->
+  <div id="termine"></div>
+
+  <!-- Debug-Ausgabe -->
+  <div id="debug-log"></div>
+
+  <!-- Benutzerverwaltung -->
+  <div id="benutzerverwaltung">
+    <h2>🔧 Benutzerverwaltung</h2>
+    <label>Kürzel: <input id="kuerzel" placeholder="z. B. HH"></label>
+    <label>Name: <input id="name" placeholder="z. B. Heckel"></label>
+    <button onclick="speichereBenutzer()">Speichern</button>
+    <div id="benutzerListe"></div>
+  </div>
+
+  <!-- Haupt-App -->
+  <script type="module" src="app.js"></script>
+
+  <!-- Benutzerlogik -->
+  <script>
+    function speichereBenutzer() {
+      const k = document.getElementById("kuerzel").value.trim().toUpperCase();
+      const n = document.getElementById("name").value.trim();
+      if (!k || !n) return;
+
+      const liste = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
+      liste[k] = n;
+      localStorage.setItem("kuerzelNamen", JSON.stringify(liste));
+      zeigeBenutzerListe();
+    }
+
+    function zeigeBenutzerListe() {
+      const liste = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
+      const container = document.getElementById("benutzerListe");
+      container.innerHTML = "<h3>👥 Gespeicherte Benutzer</h3>";
+
+      Object.entries(liste).forEach(([k, n]) => {
+        const btn = document.createElement("button");
+        btn.textContent = ${n} (${k});
+        btn.onclick = () => {
+          localStorage.setItem("hauptKuerzel", k);
+          window.location.href = ./${k};
+        };
+        container.appendChild(btn);
+      });
+    }
+
     zeigeBenutzerListe();
-  }
-
-  function zeigeBenutzerListe() {
-    const liste = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
-    const hauptKuerzel = localStorage.getItem("hauptKuerzel") || "";
-    const container = document.getElementById("benutzerListe");
-    container.innerHTML = "<h3>👥 Gespeicherte Benutzer</h3>";
-
-    Object.entries(liste).forEach(([k, n]) => {
-      const wrapper = document.createElement("div");
-      wrapper.style.marginBottom = "0.5rem";
-
-      const input = document.createElement("input");
-      input.value = n;
-      input.onchange = () => {
-        liste[k] = input.value;
-        localStorage.setItem("kuerzelNamen", JSON.stringify(liste));
-        zeigeBenutzerListe();
-      };
-
-      const hauptBtn = document.createElement("button");
-      hauptBtn.textContent = k === hauptKuerzel ? "✅ Hauptnutzer" : "⭐ Setzen";
-      hauptBtn.onclick = () => {
-        localStorage.setItem("hauptKuerzel", k);
-        zeigeBenutzerListe();
-      };
-
-      const loeschBtn = document.createElement("button");
-      loeschBtn.textContent = "🗑 Löschen";
-      loeschBtn.onclick = () => {
-        delete liste[k];
-        localStorage.setItem("kuerzelNamen", JSON.stringify(liste));
-        if (k === hauptKuerzel) localStorage.removeItem("hauptKuerzel");
-        zeigeBenutzerListe();
-      };
-
-      wrapper.append(`${k}: `, input, hauptBtn, loeschBtn);
-      container.appendChild(wrapper);
-    });
-  }
-
-  //window.addEventListener("DOMContentLoaded", zeigeBenutzerListe);
-</script>
+  </script>
+</body>
+</html>
