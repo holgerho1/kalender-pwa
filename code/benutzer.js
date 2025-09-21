@@ -7,25 +7,47 @@ const HEADERS = {
   "Content-Type": "application/json"
 };
 
+function debug(msg) {
+  const log = document.getElementById("debug-log");
+  if (log) {
+    const zeile = document.createElement("div");
+    zeile.textContent = msg;
+    log.appendChild(zeile);
+  }
+  console.log(msg);
+}
+
 export async function speichereBenutzer() {
   const kuerzel = document.getElementById("kuerzel").value.trim().toUpperCase();
   const name = document.getElementById("name").value.trim();
-  if (!kuerzel || !name) return;
+  if (!kuerzel || !name) {
+    debug("❌ Kürzel oder Name fehlt");
+    return;
+  }
 
-  await fetch(`${SUPABASE_URL}/rest/v1/benutzer`, {
+  debug(`📤 Speichern gestartet: ${kuerzel}, ${name}`);
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/benutzer`, {
     method: "POST",
     headers: HEADERS,
     body: JSON.stringify({ kuerzel, name })
   });
 
+  const result = await res.json();
+  debug(`📬 Antwort auf Speichern: ${JSON.stringify(result)}`);
+
   zeigeBenutzerListe();
 }
 
 export async function zeigeBenutzerListe() {
+  debug("📥 Benutzerliste wird geladen…");
+
   const res = await fetch(`${SUPABASE_URL}/rest/v1/benutzer`, {
     headers: HEADERS
   });
+
   const liste = await res.json();
+  debug(`📋 Geladene Benutzer: ${JSON.stringify(liste)}`);
 
   const container = document.getElementById("benutzerListe");
   container.innerHTML = "<h3>👥 Gespeicherte Benutzer</h3>";
@@ -48,13 +70,21 @@ export async function zeigeBenutzerListe() {
     aendernBtn.textContent = "✏️ Ändern";
     aendernBtn.onclick = async () => {
       const neuerName = input.value.trim();
-      if (!neuerName) return;
+      if (!neuerName) {
+        debug("❌ Neuer Name fehlt");
+        return;
+      }
 
-      await fetch(`${SUPABASE_URL}/rest/v1/benutzer?id=eq.${id}`, {
+      debug(`✏️ Ändere Benutzer ${id} → ${neuerName}`);
+
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/benutzer?id=eq.${id}`, {
         method: "PATCH",
         headers: HEADERS,
         body: JSON.stringify({ name: neuerName })
       });
+
+      const result = await res.json();
+      debug(`📬 Antwort auf Änderung: ${JSON.stringify(result)}`);
 
       zeigeBenutzerListe();
     };
@@ -62,11 +92,14 @@ export async function zeigeBenutzerListe() {
     const loeschBtn = document.createElement("button");
     loeschBtn.textContent = "🗑️ Löschen";
     loeschBtn.onclick = async () => {
+      debug(`🗑️ Lösche Benutzer ${id}`);
+
       await fetch(`${SUPABASE_URL}/rest/v1/benutzer?id=eq.${id}`, {
         method: "DELETE",
         headers: HEADERS
       });
 
+      debug(`✅ Benutzer ${id} gelöscht`);
       zeigeBenutzerListe();
     };
 
