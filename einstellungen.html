@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Einstellungen</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; max-width: 600px; margin: auto; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    input[type="text"] { width: 100%; }
+    button { margin-left: 0.5rem; }
+    h2 { margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>⚙️ Einstellungen</h1>
+
+  <h2>👥 Kürzel und Namen</h2>
+  <table id="kuerzelTabelle">
+    <tr><th>Kürzel</th><th>Name</th><th>Aktion</th></tr>
+  </table>
+
+  <input id="neuesKuerzel" placeholder="Kürzel (z. B. CM)">
+  <input id="neuerName" placeholder="Name (z. B. Clara Müller)">
+  <button id="hinzufuegenBtn">➕ Hinzufügen</button>
+
+  <h2>⭐ Hauptnutzer</h2>
+  <select id="hauptnutzerDropdown"></select>
+
+  <script src="einstellungen.js"></script>
+</body>
+</html>
