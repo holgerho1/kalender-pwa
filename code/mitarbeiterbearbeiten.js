@@ -11,7 +11,7 @@ export function mitarbeiterbearbeiten(e) {
 
   // 🔄 Kürzel-Namen dynamisch aus localStorage
   const kuerzelNamen = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
-  const hauptKuerzel = localStorage.getItem("hauptKuerzel") || "HH";
+  const hauptKuerzel = localStorage.getItem("hauptKuerzel") || "";
 
   const alleKuerzel = Object.keys(kuerzelNamen);
   const regex = new RegExp(alleKuerzel.join("|"), "g");
