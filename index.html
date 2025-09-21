@@ -46,6 +46,23 @@
       font-size: 1rem;
       cursor: pointer;
     }
+    #benutzerverwaltung {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+    }
+    #benutzerverwaltung input {
+      margin: 0.5rem;
+      padding: 0.4rem;
+      font-size: 1rem;
+    }
+    #benutzerListe button {
+      margin: 0.3rem;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.95rem;
+    }
   </style>
 </head>
 <body>
@@ -60,7 +77,48 @@
   <!-- Debug-Ausgabe -->
   <div id="debug-log"></div>
 
+  <!-- Benutzerverwaltung -->
+  <div id="benutzerverwaltung">
+    <h2>🔧 Benutzerverwaltung</h2>
+    <label>Kürzel: <input id="kuerzel" placeholder="z. B. HH"></label>
+    <label>Name: <input id="name" placeholder="z. B. Heckel"></label>
+    <button onclick="speichereBenutzer()">Speichern</button>
+    <div id="benutzerListe"></div>
+  </div>
+
   <!-- Haupt-App -->
   <script type="module" src="app.js"></script>
+
+  <!-- Benutzerlogik -->
+  <script>
+    function speichereBenutzer() {
+      const k = document.getElementById("kuerzel").value.trim().toUpperCase();
+      const n = document.getElementById("name").value.trim();
+      if (!k || !n) return;
+
+      const liste = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
+      liste[k] = n;
+      localStorage.setItem("kuerzelNamen", JSON.stringify(liste));
+      zeigeBenutzerListe();
+    }
+
+    function zeigeBenutzerListe() {
+      const liste = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
+      const container = document.getElementById("benutzerListe");
+      container.innerHTML = "<h3>👥 Gespeicherte Benutzer</h3>";
+
+      Object.entries(liste).forEach(([k, n]) => {
+        const btn = document.createElement("button");
+        btn.textContent = `${n} (${k})`;
+        btn.onclick = () => {
+          localStorage.setItem("hauptKuerzel", k);
+          window.location.href = `./${k}`;
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    zeigeBenutzerListe();
+  </script>
 </body>
 </html>
