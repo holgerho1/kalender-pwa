@@ -1,20 +1,27 @@
-export function speichereBenutzer() {
+const API_URL = "/api/benutzerapi";
+
+export async function speichereBenutzer() {
   const k = document.getElementById("kuerzel").value.trim().toUpperCase();
   const n = document.getElementById("name").value.trim();
   if (!k || !n) return;
 
-  const liste = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
-  liste[k] = n;
-  localStorage.setItem("kuerzelNamen", JSON.stringify(liste));
+  await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kuerzel: k, name: n })
+  });
+
   zeigeBenutzerListe();
 }
 
-export function zeigeBenutzerListe() {
-  const liste = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
+export async function zeigeBenutzerListe() {
+  const res = await fetch(API_URL);
+  const liste = await res.json();
+
   const container = document.getElementById("benutzerListe");
   container.innerHTML = "<h3>👥 Gespeicherte Benutzer</h3>";
 
-  Object.entries(liste).forEach(([k, n]) => {
+  liste.forEach(({ kuerzel: k, name: n }) => {
     const wrapper = document.createElement("div");
 
     const input = document.createElement("input");
@@ -30,19 +37,23 @@ export function zeigeBenutzerListe() {
 
     const aendernBtn = document.createElement("button");
     aendernBtn.textContent = "✏️ Ändern";
-    aendernBtn.onclick = () => {
+    aendernBtn.onclick = async () => {
       const neuerName = input.value.trim();
       if (!neuerName) return;
-      liste[k] = neuerName;
-      localStorage.setItem("kuerzelNamen", JSON.stringify(liste));
+
+      await fetch(`${API_URL}/${k}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: neuerName })
+      });
+
       zeigeBenutzerListe();
     };
 
     const loeschBtn = document.createElement("button");
     loeschBtn.textContent = "🗑️ Löschen";
-    loeschBtn.onclick = () => {
-      delete liste[k];
-      localStorage.setItem("kuerzelNamen", JSON.stringify(liste));
+    loeschBtn.onclick = async () => {
+      await fetch(`${API_URL}/${k}`, { method: "DELETE" });
       zeigeBenutzerListe();
     };
 
