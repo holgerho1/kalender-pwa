@@ -1,46 +1,54 @@
-let benutzerListe = [
-  { kuerzel: "HH", name: "Heckel" },
-  { kuerzel: "CM", name: "Clara Müller" }
-];
+export default async function handler(req, res) {
+  const SUPABASE_URL = "https://tmqapgpdnhsrbjbsetsu.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtcWFwZ3BkbmhzcmJqYnNldHN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg0NzU5ODQsImV4cCI6MjA3NDA1MTk4NH0.W5ISa4iIh7ZVQ0E_WYdasYR2WLL-tJSdIEVof03waaU";
 
-export default function handler(req, res) {
+  const headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json"
+  };
+
   const { method, query, body } = req;
 
   if (method === "GET") {
-    res.status(200).json(benutzerListe);
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/benutzer`, {
+      headers
+    });
+    const data = await response.json();
+    return res.status(200).json(data);
   }
 
   if (method === "POST") {
     const { kuerzel, name } = body;
-    if (!kuerzel || !name) {
-      return res.status(400).json({ error: "Kürzel und Name erforderlich" });
-    }
-
-    const vorhanden = benutzerListe.find(b => b.kuerzel === kuerzel);
-    if (vorhanden) {
-      return res.status(409).json({ error: "Benutzer existiert bereits" });
-    }
-
-    benutzerListe.push({ kuerzel, name });
-    res.status(201).json({ success: true });
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/benutzer`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ kuerzel, name })
+    });
+    const data = await response.json();
+    return res.status(201).json(data);
   }
 
   if (method === "PUT") {
-    const kuerzel = query.kuerzel;
+    const id = query.id;
     const { name } = body;
-    const benutzer = benutzerListe.find(b => b.kuerzel === kuerzel);
-    if (!benutzer) {
-      return res.status(404).json({ error: "Benutzer nicht gefunden" });
-    }
-    benutzer.name = name;
-    res.status(200).json({ success: true });
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/benutzer?id=eq.${id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ name })
+    });
+    const data = await response.json();
+    return res.status(200).json(data);
   }
 
   if (method === "DELETE") {
-    const kuerzel = query.kuerzel;
-    const vorher = benutzerListe.length;
-    benutzerListe = benutzerListe.filter(b => b.kuerzel !== kuerzel);
-    const geloescht = benutzerListe.length < vorher;
-    res.status(200).json({ success: geloescht });
+    const id = query.id;
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/benutzer?id=eq.${id}`, {
+      method: "DELETE",
+      headers
+    });
+    return res.status(200).json({ success: true });
   }
+
+  res.status(405).json({ error: "Methode nicht erlaubt" });
 }

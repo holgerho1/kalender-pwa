@@ -1,38 +1,47 @@
-const API_URL = "/api/benutzerapi";
+const SUPABASE_URL = "https://tmqapgpdnhsrbjbsetsu.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtcWFwZ3BkbmhzcmJqYnNldHN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg0NzU5ODQsImV4cCI6MjA3NDA1MTk4NH0.W5ISa4iIh7ZVQ0E_WYdasYR2WLL-tJSdIEVof03waaU";
+
+const HEADERS = {
+  "apikey": SUPABASE_KEY,
+  "Authorization": `Bearer ${SUPABASE_KEY}`,
+  "Content-Type": "application/json"
+};
 
 export async function speichereBenutzer() {
-  const k = document.getElementById("kuerzel").value.trim().toUpperCase();
-  const n = document.getElementById("name").value.trim();
-  if (!k || !n) return;
+  const kuerzel = document.getElementById("kuerzel").value.trim().toUpperCase();
+  const name = document.getElementById("name").value.trim();
+  if (!kuerzel || !name) return;
 
-  await fetch(API_URL, {
+  await fetch(`${SUPABASE_URL}/rest/v1/benutzer`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ kuerzel: k, name: n })
+    headers: HEADERS,
+    body: JSON.stringify({ kuerzel, name })
   });
 
   zeigeBenutzerListe();
 }
 
 export async function zeigeBenutzerListe() {
-  const res = await fetch(API_URL);
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/benutzer`, {
+    headers: HEADERS
+  });
   const liste = await res.json();
 
   const container = document.getElementById("benutzerListe");
   container.innerHTML = "<h3>👥 Gespeicherte Benutzer</h3>";
 
-  liste.forEach(({ kuerzel: k, name: n }) => {
+  liste.forEach(({ id, kuerzel, name }) => {
     const wrapper = document.createElement("div");
 
     const input = document.createElement("input");
-    input.value = n;
+    input.value = name;
     input.style.marginRight = "0.5rem";
 
     const hauptBtn = document.createElement("button");
     hauptBtn.textContent = "✅ Haupt";
     hauptBtn.onclick = () => {
-      localStorage.setItem("hauptKuerzel", k);
-      window.location.href = `./${k}`;
+      localStorage.setItem("hauptKuerzel", kuerzel);
+      window.location.href = `./${kuerzel}`;
     };
 
     const aendernBtn = document.createElement("button");
@@ -41,9 +50,9 @@ export async function zeigeBenutzerListe() {
       const neuerName = input.value.trim();
       if (!neuerName) return;
 
-      await fetch(`${API_URL}?kuerzel=${k}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+      await fetch(`${SUPABASE_URL}/rest/v1/benutzer?id=eq.${id}`, {
+        method: "PATCH",
+        headers: HEADERS,
         body: JSON.stringify({ name: neuerName })
       });
 
@@ -53,14 +62,15 @@ export async function zeigeBenutzerListe() {
     const loeschBtn = document.createElement("button");
     loeschBtn.textContent = "🗑️ Löschen";
     loeschBtn.onclick = async () => {
-      await fetch(`${API_URL}?kuerzel=${k}`, {
-        method: "DELETE"
+      await fetch(`${SUPABASE_URL}/rest/v1/benutzer?id=eq.${id}`, {
+        method: "DELETE",
+        headers: HEADERS
       });
 
       zeigeBenutzerListe();
     };
 
-    wrapper.appendChild(document.createTextNode(`${k}: `));
+    wrapper.appendChild(document.createTextNode(`${kuerzel}: `));
     wrapper.appendChild(input);
     wrapper.appendChild(hauptBtn);
     wrapper.appendChild(aendernBtn);
