@@ -1,4 +1,3 @@
-import { kuerzelNamen } from "./kuerzelNamen.js";
 import { debug } from "./debug.js";
 import { mitarbeiterbearbeiten } from "./mitarbeiterbearbeiten.js";
 
@@ -8,9 +7,14 @@ export function verarbeiteTermin(e) {
 
   mitarbeiterbearbeiten(e); // ✅ verändert e direkt
 
-  const kuerzelListe = originalTitel.match(/HH|SW|CM|DK|HB|CK|XX|YY|QQ/g) || [];
-  if (kuerzelListe.length > 0 && !kuerzelListe.includes("HH")) {
-    debug("🚫 Kürzel vorhanden, aber HH fehlt – Termin ignoriert");
+  const kuerzelNamen = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
+  const hauptKuerzel = localStorage.getItem("hauptKuerzel") || "";
+  const alleKuerzel = Object.keys(kuerzelNamen);
+  const regex = new RegExp(alleKuerzel.join("|"), "g");
+  const kuerzelListe = originalTitel.match(regex) || [];
+
+  if (kuerzelListe.length > 0 && !kuerzelListe.includes(hauptKuerzel)) {
+    debug("🚫 Kürzel vorhanden, aber Hauptnutzer fehlt – Termin ignoriert");
     return null;
   }
 
