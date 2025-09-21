@@ -15,12 +15,43 @@ export function zeigeBenutzerListe() {
   container.innerHTML = "<h3>👥 Gespeicherte Benutzer</h3>";
 
   Object.entries(liste).forEach(([k, n]) => {
-    const btn = document.createElement("button");
-    btn.textContent = `${n} (${k})`;
-    btn.onclick = () => {
+    const wrapper = document.createElement("div");
+
+    const input = document.createElement("input");
+    input.value = n;
+    input.style.marginRight = "0.5rem";
+
+    const hauptBtn = document.createElement("button");
+    hauptBtn.textContent = "✅ Haupt";
+    hauptBtn.onclick = () => {
       localStorage.setItem("hauptKuerzel", k);
       window.location.href = `./${k}`;
     };
-    container.appendChild(btn);
+
+    const aendernBtn = document.createElement("button");
+    aendernBtn.textContent = "✏️ Ändern";
+    aendernBtn.onclick = () => {
+      const neuerName = input.value.trim();
+      if (!neuerName) return;
+      liste[k] = neuerName;
+      localStorage.setItem("kuerzelNamen", JSON.stringify(liste));
+      zeigeBenutzerListe();
+    };
+
+    const loeschBtn = document.createElement("button");
+    loeschBtn.textContent = "🗑️ Löschen";
+    loeschBtn.onclick = () => {
+      delete liste[k];
+      localStorage.setItem("kuerzelNamen", JSON.stringify(liste));
+      zeigeBenutzerListe();
+    };
+
+    wrapper.appendChild(document.createTextNode(`${k}: `));
+    wrapper.appendChild(input);
+    wrapper.appendChild(hauptBtn);
+    wrapper.appendChild(aendernBtn);
+    wrapper.appendChild(loeschBtn);
+
+    container.appendChild(wrapper);
   });
 }
