@@ -30,10 +30,15 @@ export function exportierePdf(termine) {
   const tagOffset = ersterJanuar.getDay() <= 4 ? ersterJanuar.getDay() - 1 : ersterJanuar.getDay() - 8;
   const kw = Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
 
+  // 🧑 Hauptbenutzer aus localStorage
+  const kuerzel = localStorage.getItem("hauptKuerzel") || "HH";
+  const kuerzelNamen = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
+  const name = kuerzelNamen[kuerzel] || kuerzel;
+
   // Infozeile zentriert als Block mit Leerzeichen
   doc.setFontSize(14);
   doc.setFont(undefined, "bold");
-  const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}               KW: ${kw}                                             Name: Heckel`;
+  const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}               KW: ${kw}                                             Name: ${name}`;
   doc.text(infoText, centerX, 30, { align: "center" });
 
   // Tabelle vorbereiten
