@@ -1,10 +1,14 @@
 export const kuerzelNamen = {
-  SW: "Weber",
-  CM: "Magarin",
-  DK: "Kollat",
-  HB: "Behrend",
-  CK: "Kannenberg",
-  XX: "Platz1",
-  QQ: "Platz2",
-  YY: "Platz3"
+  HH: "Heckel",
+  AB: "Biolek",
+  SW: "Schwarz",
+  CM: "Camilla",
+  DK: "Dörte",
+  HB: "Huber",
+  CK: "Clara",
+  XX: "Xaver",
+  YY: "Yvonne",
+  QQ: "Quirin"
 };
+
+export const hauptKuerzel = "HH";

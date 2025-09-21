@@ -1,5 +1,5 @@
 import { debug } from "./debug.js";
-import { kuerzelNamen } from "./kuerzelNamen.js";
+import { kuerzelNamen, hauptKuerzel } from "./kuerzelNamen.js";
 
 /**
  * Extrahiert Kürzel aus dem Titel und setzt das mitarbeiter-Feld.
@@ -10,11 +10,13 @@ import { kuerzelNamen } from "./kuerzelNamen.js";
 export function mitarbeiterbearbeiten(e) {
   if (!e || typeof e.titel !== "string") return null;
 
-  const kuerzelListe = e.titel.match(/HH|SW|CM|DK|HB|CK|XX|YY|QQ/g) || [];
+  const alleKuerzel = Object.keys(kuerzelNamen);
+  const regex = new RegExp(alleKuerzel.join("|"), "g");
+  const kuerzelListe = e.titel.match(regex) || [];
   debug("📋 Erkannte Kürzel: " + kuerzelListe.join(", "));
 
   const mitarbeiter = [...new Set(kuerzelListe)]
-    .filter(k => k !== "HH")
+    .filter(k => k !== hauptKuerzel)
     .map(k => kuerzelNamen[k])
     .filter(Boolean);
 
@@ -27,5 +29,5 @@ export function mitarbeiterbearbeiten(e) {
   e.mitarbeiter = mitarbeiter.join(", ");
   debug("👥 Mitarbeiter gesetzt: " + (e.mitarbeiter || "[leer]"));
 
-  return e; // ✅ Rückgabe ergänzt
+  return e;
 }
