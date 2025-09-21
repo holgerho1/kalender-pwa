@@ -1,5 +1,4 @@
 import { debug } from "./debug.js";
-import { kuerzelNamen, hauptKuerzel } from "./kuerzelNamen.js";
 
 /**
  * Extrahiert Kürzel aus dem Titel und setzt das mitarbeiter-Feld.
@@ -9,6 +8,10 @@ import { kuerzelNamen, hauptKuerzel } from "./kuerzelNamen.js";
  */
 export function mitarbeiterbearbeiten(e) {
   if (!e || typeof e.titel !== "string") return null;
+
+  // 🔄 Kürzel-Namen dynamisch aus localStorage
+  const kuerzelNamen = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
+  const hauptKuerzel = localStorage.getItem("hauptKuerzel") || "HH";
 
   const alleKuerzel = Object.keys(kuerzelNamen);
   const regex = new RegExp(alleKuerzel.join("|"), "g");
