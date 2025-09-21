@@ -1,10 +1,10 @@
 import { debug } from "./debug.js";
 
 /**
- * Extrahiert Kürzel aus dem Titel und setzt das mitarbeiter-Feld.
- * Gibt das bearbeitete Terminobjekt zurück oder null, wenn Hauptnutzer nicht beteiligt.
+ * Verarbeitet einen Termin nur, wenn der Hauptnutzer beteiligt ist.
+ * Löscht den Termin, wenn andere Kürzel vorkommen aber nicht der Hauptnutzer.
  * @param {Object} e - Ein einzelner Termin
- * @returns {Object|null} - Bearbeiteter Termin oder null bei Ausschluss
+ * @returns {Object|null} - Bearbeiteter Termin oder null bei Löschung
  */
 export function mitarbeiterbearbeiten(e) {
   if (!e || typeof e.titel !== "string") return null;
@@ -13,30 +13,34 @@ export function mitarbeiterbearbeiten(e) {
   const hauptKuerzel = localStorage.getItem("hauptKuerzel") || "";
 
   const alleKuerzel = Object.keys(kuerzelNamen);
-  const regex = new RegExp(alleKuerzel.join("|"), "g");
-  const kuerzelListe = e.titel.match(regex) || [];
-  debug("📋 Erkannte Kürzel: " + kuerzelListe.join(", "));
+  if (alleKuerzel.length === 0) {
+    debug("⚠️ Keine Kürzel vorhanden – Termin bleibt erhalten");
+    return e;
+  }
 
-  // ❌ Hauptnutzer nicht beteiligt → Termin ignorieren
-  if (!kuerzelListe.includes(hauptKuerzel)) {
-    debug("🚫 Hauptnutzer nicht beteiligt – Termin wird übersprungen");
+  const regex = new RegExp(alleKuerzel.join("|"), "g");
+  const erkannteKuerzel = e.titel.match(regex) || [];
+  debug("📋 Erkannte Kürzel: " + erkannteKuerzel.join(", "));
+
+  if (erkannteKuerzel.length === 0) {
+    debug("🟡 Keine bekannten Kürzel – Termin bleibt erhalten");
+    return e;
+  }
+
+  if (!erkannteKuerzel.includes(hauptKuerzel)) {
+    debug("🗑️ Hauptnutzer nicht beteiligt – Termin wird gelöscht");
     return null;
   }
 
-  // Mitarbeiter = alle außer Hauptnutzer
-  const mitarbeiter = [...new Set(kuerzelListe)]
-    .filter(k => k !== hauptKuerzel)
-    .map(k => kuerzelNamen[k])
-    .filter(Boolean);
+  const mitarbeiterKuerzel = [...new Set(erkannteKuerzel)]
+    .filter(k => k !== hauptKuerzel && kuerzelNamen[k]);
+  const mitarbeiterNamen = mitarbeiterKuerzel.map(k => kuerzelNamen[k]);
 
-  // Kürzel aus Titel entfernen
-  if (kuerzelListe.length > 0) {
-    const kuerzelBlock = kuerzelListe.join("");
-    e.titel = e.titel.replace(kuerzelBlock, "").trimStart();
-    debug("✂️ Kürzel entfernt – neuer Titel: " + e.titel);
-  }
+  const kuerzelBlock = erkannteKuerzel.join("");
+  e.titel = e.titel.replace(kuerzelBlock, "").trimStart();
+  debug("✂️ Kürzel entfernt – neuer Titel: " + e.titel);
 
-  e.mitarbeiter = mitarbeiter.join(", ");
+  e.mitarbeiter = mitarbeiterNamen.join(", ");
   debug("👥 Mitarbeiter gesetzt: " + (e.mitarbeiter || "[leer]"));
 
   return e;
