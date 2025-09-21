@@ -7,8 +7,6 @@
 
   <!-- jsPDF für PDF-Export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-  <!-- jsPDF AutoTable für Tabellen mit Rahmen -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
   <style>
@@ -68,16 +66,10 @@
 <body>
   <h1>📅 Holgers Terminplaner</h1>
 
-  <!-- Wochenüberschrift -->
   <div id="wocheninfo">📆 KW wird geladen…</div>
-
-  <!-- Terminliste + Steuerung -->
   <div id="termine"></div>
-
-  <!-- Debug-Ausgabe -->
   <div id="debug-log"></div>
 
-  <!-- Benutzerverwaltung -->
   <div id="benutzerverwaltung">
     <h2>🔧 Benutzerverwaltung</h2>
     <label>Kürzel: <input id="kuerzel" placeholder="z. B. HH"></label>
@@ -109,10 +101,10 @@
 
       Object.entries(liste).forEach(([k, n]) => {
         const btn = document.createElement("button");
-        btn.textContent = ${n} (${k});
+        btn.textContent = `${n} (${k})`;
         btn.onclick = () => {
           localStorage.setItem("hauptKuerzel", k);
-          window.location.href = ./${k};
+          window.location.href = `./${k}`;
         };
         container.appendChild(btn);
       });
