@@ -41,7 +41,7 @@ export async function zeigeBenutzerListe() {
       const neuerName = input.value.trim();
       if (!neuerName) return;
 
-      await fetch(`${API_URL}/${k}`, {
+      await fetch(`${API_URL}?kuerzel=${k}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: neuerName })
@@ -53,7 +53,10 @@ export async function zeigeBenutzerListe() {
     const loeschBtn = document.createElement("button");
     loeschBtn.textContent = "🗑️ Löschen";
     loeschBtn.onclick = async () => {
-      await fetch(`${API_URL}/${k}`, { method: "DELETE" });
+      await fetch(`${API_URL}?kuerzel=${k}`, {
+        method: "DELETE"
+      });
+
       zeigeBenutzerListe();
     };
 
