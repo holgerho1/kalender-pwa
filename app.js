@@ -1,8 +1,9 @@
 // Direktlink-Erkennung aus URL-Pfad
 const pfad = window.location.pathname.replace("/", "").toUpperCase();
-const bekannteKuerzel = ["HH", "SW", "CM", "DK", "HB", "CK", "XX", "QQ", "YY"];
+const kuerzelNamen = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
 
-if (bekannteKuerzel.includes(pfad)) {
+// Wenn Kürzel im Pfad vorhanden und bekannt → als Hauptbenutzer setzen
+if (pfad.length > 0 && kuerzelNamen[pfad]) {
   localStorage.setItem("hauptKuerzel", pfad);
   console.log("👤 Hauptbenutzer gesetzt durch Direktlink:", pfad);
 }
@@ -26,6 +27,37 @@ window.addEventListener("load", () => {
     infoBox.style.fontWeight = "bold";
     infoBox.style.color = "#0077cc";
     document.body.insertBefore(infoBox, document.getElementById("wocheninfo"));
+  }
+
+  // Wenn Direktlink aktiv ist → bestimmte Bereiche ausblenden
+  if (pfad.length > 0 && kuerzelNamen[pfad]) {
+    const debugLog = document.getElementById("debug-log");
+    if (debugLog) debugLog.style.display = "none";
+
+    const benutzerVerwaltung = document.getElementById("benutzerverwaltung");
+    if (benutzerVerwaltung) benutzerVerwaltung.style.display = "none";
+
+    const direktLinks = document.getElementById("direktlinks");
+    if (direktLinks) direktLinks.style.display = "none";
+  }
+
+  // Direktlink-Vorschau generieren (nur wenn kein Kürzel im Pfad)
+  const linkContainer = document.getElementById("linkListe");
+  if (linkContainer && (pfad.length === 0 || !kuerzelNamen[pfad])) {
+    Object.entries(kuerzelNamen).forEach(([kuerzel, name]) => {
+      const btn = document.createElement("a");
+      btn.href = `/${kuerzel}`;
+      btn.textContent = `${name} (${kuerzel})`;
+      btn.style.display = "inline-block";
+      btn.style.margin = "0.3rem";
+      btn.style.padding = "0.4rem 0.8rem";
+      btn.style.background = "#0077cc";
+      btn.style.color = "#fff";
+      btn.style.borderRadius = "4px";
+      btn.style.textDecoration = "none";
+      btn.style.fontSize = "0.95rem";
+      linkContainer.appendChild(btn);
+    });
   }
 
   // PDF-Export-Button verbinden (optional, falls vorhanden)
