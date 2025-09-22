@@ -61,6 +61,23 @@
       padding: 0.4rem 0.8rem;
       font-size: 0.95rem;
     }
+    #direktlinks {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+    }
+    #linkListe a {
+      display: inline-block;
+      margin: 0.3rem;
+      padding: 0.4rem 0.8rem;
+      background: #0077cc;
+      color: #fff;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
   </style>
 </head>
 <body>
@@ -77,6 +94,14 @@
     <button onclick="speichereBenutzer()">Speichern</button>
     <div id="benutzerListe"></div>
   </div>
+
+  <div id="direktlinks">
+    <h2>🔗 Direktlinks zu Hauptbenutzern</h2>
+    <div id="linkListe"></div>
+  </div>
+
+  <!-- Optionaler PDF-Export-Button -->
+  <button id="pdf-export">📄 PDF Export</button>
 
   <!-- Haupt-App -->
   <script type="module" src="app.js"></script>

@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/:kuerzel", "destination": "/index.html" }
+  ]
+}
