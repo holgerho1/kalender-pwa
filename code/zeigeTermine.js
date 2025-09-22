@@ -1,3 +1,4 @@
+
 import {
   getTermine,
   setTermine,
@@ -36,11 +37,21 @@ function zeigeWocheninfo() {
   const von = formatter.format(montag);
   const bis = formatter.format(sonntag);
 
-  const kw = berechneKalenderwoche(montag);
+  const ersterJanuar = new Date(montag.getFullYear(), 0, 1);
+  const tageSeitJahresbeginn = Math.floor(
+    (montag - ersterJanuar) / (24  60  60 * 1000)
+  );
+  const tagOffset =
+    ersterJanuar.getDay() <= 4
+      ? ersterJanuar.getDay() - 1
+      : ersterJanuar.getDay() - 8;
+  const kw = Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
 
   const info = document.getElementById("wocheninfo");
   if (info) {
-    info.textContent = `📆 KW ${kw}: ${von} – ${bis}${getFilterAktiv() ? "" : " (alle Termine)"}`;
+    info.textContent = `📆 KW ${kw}: ${von} – ${bis}${
+      getFilterAktiv() ? "" : " (alle Termine)"
+    }`;
   }
 }
 
@@ -79,7 +90,7 @@ export function zeigeTermine() {
     block.style.borderRadius = "6px";
 
     const datum = document.createElement("div");
-    datum.textContent = `📅 ${event.datum} (${event.start} – ${event.ende})`;
+    datum.textContent = 📅 ${event.datum} (${event.start} – ${event.ende});
 
     const titel = document.createElement("textarea");
     titel.value = event.titel;
@@ -206,7 +217,7 @@ function zeigeSteuerung(gefiltert) {
       minute: "2-digit"
     });
     const timestamp = new Date(
-      `${datum.split(".").reverse().join("-")}T${start}`
+      ${datum.split(".").reverse().join("-")}T${start}
     ).getTime();
 
     const neu = {
