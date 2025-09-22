@@ -11,6 +11,15 @@ import { verarbeiteTermin } from "./verarbeiteTermin.js";
 import { neuLaden } from "./neuLaden.js";
 import { exportierePdf } from "./exportPdf.js";
 
+// ✅ ISO-konforme KW-Berechnung
+function berechneKalenderwoche(datum = new Date()) {
+  const kopie = new Date(Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()));
+  const tag = kopie.getUTCDay() || 7;
+  kopie.setUTCDate(kopie.getUTCDate() + 4 - tag);
+  const jahrStart = new Date(Date.UTC(kopie.getUTCFullYear(), 0, 1));
+  return Math.ceil((((kopie - jahrStart) / 86400000) + 1) / 7);
+}
+
 function getKWZeitraum(offset = 0) {
   const heute = new Date();
   const wochentag = heute.getDay();
@@ -36,15 +45,7 @@ function zeigeWocheninfo() {
   const von = formatter.format(montag);
   const bis = formatter.format(sonntag);
 
-  const ersterJanuar = new Date(montag.getFullYear(), 0, 1);
-  const tageSeitJahresbeginn = Math.floor(
-    (montag - ersterJanuar) / (24 * 60 * 60 * 1000)
-  );
-  const tagOffset =
-    ersterJanuar.getDay() <= 4
-      ? ersterJanuar.getDay() - 1
-      : ersterJanuar.getDay() - 8;
-  const kw = Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
+  const kw = berechneKalenderwoche(montag);
 
   const info = document.getElementById("wocheninfo");
   if (info) {
@@ -103,7 +104,6 @@ export function zeigeTermine() {
     stundenZeile.style.marginTop = "0.5rem";
 
     const feldInputs = {};
-
     ["arbeit", "fahr", "über"].forEach((feld) => {
       const input = document.createElement("input");
       input.type = "text";
@@ -182,7 +182,6 @@ export function zeigeTermine() {
       }
     };
 
-    block.appendChild(datum);
     block.appendChild(titel);
     block.appendChild(stundenZeile);
     block.appendChild(beschreibung);
@@ -283,4 +282,3 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(exportBtn);
   container.appendChild(steuerung);
 }
-      
