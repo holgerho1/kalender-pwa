@@ -1,10 +1,17 @@
+// Direktlink-Erkennung
+const pfad = window.location.pathname.replace("/", "").toUpperCase();
+const bekannteKuerzel = ["HH", "SW", "CM", "DK", "HB", "CK", "XX", "QQ", "YY"];
+if (bekannteKuerzel.includes(pfad)) {
+  localStorage.setItem("hauptKuerzel", pfad);
+  console.log("👤 Hauptbenutzer gesetzt durch Direktlink:", pfad);
+}
+
 import { neuLaden } from "./code/neuLaden.js";
 import { exportierePdf } from "./code/exportPdf.js";
 
 window.addEventListener("load", () => {
-  neuLaden(); // Holt immer aktuelle Daten vom Server
+  neuLaden();
 
-  // Hauptbenutzer aus localStorage abrufen
   const kuerzel = localStorage.getItem("hauptKuerzel");
   const kuerzelNamen = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
   const name = kuerzelNamen[kuerzel] || kuerzel;
@@ -17,7 +24,6 @@ window.addEventListener("load", () => {
     document.body.insertBefore(infoBox, document.getElementById("wocheninfo"));
   }
 
-  // PDF-Export-Button verbinden
   const exportBtn = document.getElementById("pdf-export");
   if (exportBtn) {
     exportBtn.onclick = () => {
