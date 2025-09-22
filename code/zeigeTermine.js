@@ -36,21 +36,11 @@ function zeigeWocheninfo() {
   const von = formatter.format(montag);
   const bis = formatter.format(sonntag);
 
-  const ersterJanuar = new Date(montag.getFullYear(), 0, 1);
-  const tageSeitJahresbeginn = Math.floor(
-    (montag - ersterJanuar) / (24 * 60 * 60 * 1000)
-  );
-  const tagOffset =
-    ersterJanuar.getDay() <= 4
-      ? ersterJanuar.getDay() - 1
-      : ersterJanuar.getDay() - 8;
-  const kw = Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
+  const kw = berechneKalenderwoche(montag);
 
   const info = document.getElementById("wocheninfo");
   if (info) {
-    info.textContent = `📆 KW ${kw}: ${von} – ${bis}${
-      getFilterAktiv() ? "" : " (alle Termine)"
-    }`;
+    info.textContent = `📆 KW ${kw}: ${von} – ${bis}${getFilterAktiv() ? "" : " (alle Termine)"}`;
   }
 }
 
