@@ -6,15 +6,23 @@ export function mitarbeiterbearbeiten(e) {
 
   const hauptKuerzel = window.location.pathname.replace("/", "").toUpperCase();
   const kuerzelSet = new Set(benutzerListe.map(b => b.kuerzel));
-  const titel = e.titel.toUpperCase();
+  const titel = e.titel.trim();
 
-  // Alle erkannten Kürzel im Titel
-  const erkannteKuerzel = Array.from(kuerzelSet).filter(k => titel.includes(k));
+  // Kürzelblock = alles vor dem ersten Leerzeichen
+  const [kuerzelBlock, ...rest] = titel.split(" ");
+  const erkannteKuerzel = [];
+
+  // Kürzelblock in 2er-Schritten zerlegen
+  for (let i = 0; i < kuerzelBlock.length; i += 2) {
+    const k = kuerzelBlock.slice(i, i + 2);
+    if (kuerzelSet.has(k)) erkannteKuerzel.push(k);
+  }
+
   debug("📋 Erkannte Kürzel: " + erkannteKuerzel.join(", "));
 
-  // Fall 1: Kein Kürzel erkannt → Termin bleibt
+  // Fall 1: Kein gültiger Kürzel → Termin bleibt erhalten
   if (erkannteKuerzel.length === 0) {
-    debug("🟡 Kein Kürzel im Titel – Termin bleibt erhalten");
+    debug("🟡 Kein gültiger Kürzelblock – Termin bleibt erhalten");
     return e;
   }
 
@@ -28,6 +36,10 @@ export function mitarbeiterbearbeiten(e) {
   const mitarbeiter = erkannteKuerzel.filter(k => k !== hauptKuerzel);
   e.mitarbeiter = mitarbeiter.map(k => benutzerListe.find(b => b.kuerzel === k)?.name).join(", ");
   debug("👥 Mitarbeiter gesetzt: " + (e.mitarbeiter || "[leer]"));
+
+  // Titel bereinigen: Kürzelblock entfernen
+  e.titel = rest.join(" ").trim();
+  debug("✂️ Kürzelblock entfernt – neuer Titel: " + e.titel);
 
   return e;
 }
