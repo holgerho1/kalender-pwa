@@ -20,7 +20,7 @@ export function mitarbeiterbearbeiten(e) {
 
   // Fall 2: Hauptkürzel fehlt → Termin wird gelöscht
   if (!erkannteKuerzel.includes(hauptKuerzel)) {
-    debug("🗑️ Hauptnutzer nicht beteiligt – Termin wird gelöscht");
+    debug(`🗑️ Hauptnutzer ${hauptKuerzel} nicht beteiligt – Termin wird gelöscht`);
     return null;
   }
 
