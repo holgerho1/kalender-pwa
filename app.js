@@ -1,36 +1,31 @@
-// Direktlink-Erkennung aus URL-Pfad
-const pfad = window.location.pathname.replace("/", "").toUpperCase();
-const kuerzelNamen = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
-
-// Wenn Kürzel im Pfad vorhanden und bekannt → als Hauptbenutzer setzen
-if (pfad.length > 0 && kuerzelNamen[pfad]) {
-  localStorage.setItem("hauptKuerzel", pfad);
-  console.log("👤 Hauptbenutzer gesetzt durch Direktlink:", pfad);
-}
-
+import { benutzerListe } from "./code/benutzer.js";
 import { neuLaden } from "./code/neuLaden.js";
 import { exportierePdf } from "./code/exportPdf.js";
 
+// Direktlink-Erkennung aus URL-Pfad
+const pfad = window.location.pathname.replace("/", "").toUpperCase();
+
+// Kürzel-Namens-Zuordnung aus benutzerListe generieren
+const kuerzelNamen = Object.fromEntries(
+  benutzerListe.map(({ kuerzel, name }) => [kuerzel, name])
+);
+
+// Wenn Kürzel im Pfad vorhanden und bekannt → als Hauptbenutzer anzeigen
 window.addEventListener("load", () => {
-  // Holt aktuelle Daten vom Server
   neuLaden();
 
-  // Hauptbenutzer aus localStorage abrufen
-  const kuerzel = localStorage.getItem("hauptKuerzel");
-  const kuerzelNamen = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
+  const kuerzel = pfad;
   const name = kuerzelNamen[kuerzel] || kuerzel;
 
-  if (kuerzel) {
+  if (kuerzelNamen[kuerzel]) {
     const infoBox = document.createElement("div");
     infoBox.textContent = `👤 Aktiver Benutzer: ${name} (${kuerzel})`;
     infoBox.style.marginBottom = "1rem";
     infoBox.style.fontWeight = "bold";
     infoBox.style.color = "#0077cc";
     document.body.insertBefore(infoBox, document.getElementById("wocheninfo"));
-  }
 
-  // Wenn Direktlink aktiv ist → bestimmte Bereiche ausblenden
-  if (pfad.length > 0 && kuerzelNamen[pfad]) {
+    // Bestimmte Bereiche ausblenden bei Direktlink
     const debugLog = document.getElementById("debug-log");
     if (debugLog) debugLog.style.display = "none";
 
@@ -41,10 +36,10 @@ window.addEventListener("load", () => {
     if (direktLinks) direktLinks.style.display = "none";
   }
 
-  // Direktlink-Vorschau generieren (nur wenn kein Kürzel im Pfad)
+  // Direktlink-Vorschau generieren (nur wenn kein gültiger Kürzel im Pfad)
   const linkContainer = document.getElementById("linkListe");
-  if (linkContainer && (pfad.length === 0 || !kuerzelNamen[pfad])) {
-    Object.entries(kuerzelNamen).forEach(([kuerzel, name]) => {
+  if (linkContainer && !kuerzelNamen[pfad]) {
+    benutzerListe.forEach(({ kuerzel, name }) => {
       const btn = document.createElement("a");
       btn.href = `/${kuerzel}`;
       btn.textContent = `${name} (${kuerzel})`;
@@ -60,7 +55,7 @@ window.addEventListener("load", () => {
     });
   }
 
-  // PDF-Export-Button verbinden (optional, falls vorhanden)
+  // PDF-Export-Button verbinden (optional)
   const exportBtn = document.getElementById("pdf-export");
   if (exportBtn) {
     exportBtn.onclick = () => {

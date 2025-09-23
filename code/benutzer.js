@@ -15,7 +15,7 @@ function debug(msg) {
   if (log) log.insertAdjacentHTML("beforeend", `<div>${msg}</div>`);
 }
 
-// 📋 Benutzerliste anzeigen – rein lesend
+// 📋 Benutzerliste anzeigen – rein lesend mit Direktlink
 export function zeigeBenutzerListe() {
   debug("📋 Zeige feste Benutzerliste");
 
@@ -26,7 +26,19 @@ export function zeigeBenutzerListe() {
 
   for (const { kuerzel, name } of benutzerListe) {
     const wrapper = document.createElement("div");
-    wrapper.textContent = `${kuerzel}: ${name}`;
+    wrapper.style.marginBottom = "0.5rem";
+
+    const label = document.createElement("span");
+    label.textContent = `${kuerzel}: ${name}`;
+    label.style.marginRight = "0.5rem";
+
+    const linkBtn = document.createElement("a");
+    linkBtn.textContent = "➡️ Direktlink";
+    linkBtn.href = `./${kuerzel}`;
+    linkBtn.className = "direktlink-button";
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(linkBtn);
     container.appendChild(wrapper);
   }
 }
