@@ -1,52 +1,32 @@
-// benutzer.js
-
-// 🧩 Feste Nutzertabelle – nicht veränderbar
-export const benutzerListe = [
+// 🧩 Feste Nutzertabelle – unveränderbar
+export const benutzerListe = Object.freeze([
   { kuerzel: "HH", name: "Heckel" },
   { kuerzel: "SW", name: "Weber" },
   { kuerzel: "CM", name: "Magarin" },
   { kuerzel: "HB", name: "Behrend" },
   { kuerzel: "DK", name: "Kollat" },
   { kuerzel: "CK", name: "Kannenberg" }
-];
+]);
 
 // 🛠️ Debug-Ausgabe im Browser und Konsole
 function debug(msg) {
-  const log = document.getElementById("debug-log");
-  if (log) {
-    const zeile = document.createElement("div");
-    zeile.textContent = msg;
-    log.appendChild(zeile);
-  }
   console.log(msg);
+  const log = document.getElementById("debug-log");
+  if (log) log.insertAdjacentHTML("beforeend", `<div>${msg}</div>`);
 }
 
-// 📋 Benutzerliste anzeigen – ohne Bearbeitung
+// 📋 Benutzerliste anzeigen – rein lesend
 export function zeigeBenutzerListe() {
   debug("📋 Zeige feste Benutzerliste");
 
   const container = document.getElementById("benutzerListe");
+  if (!container) return;
+
   container.innerHTML = "<h3>👥 Benutzer</h3>";
 
-  benutzerListe.forEach(({ kuerzel, name }) => {
+  for (const { kuerzel, name } of benutzerListe) {
     const wrapper = document.createElement("div");
-
-    const input = document.createElement("input");
-    input.value = name;
-    input.disabled = true;
-    input.style.marginRight = "0.5rem";
-
-    const hauptBtn = document.createElement("button");
-    hauptBtn.textContent = "✅ Haupt";
-    hauptBtn.onclick = () => {
-      localStorage.setItem("hauptKuerzel", kuerzel);
-      window.location.href = `./${kuerzel}`;
-    };
-
-    wrapper.appendChild(document.createTextNode(`${kuerzel}: `));
-    wrapper.appendChild(input);
-    wrapper.appendChild(hauptBtn);
-
+    wrapper.textContent = `${kuerzel}: ${name}`;
     container.appendChild(wrapper);
-  });
+  }
 }
