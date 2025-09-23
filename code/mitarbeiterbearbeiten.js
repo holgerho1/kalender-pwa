@@ -1,4 +1,5 @@
 import { debug } from "./debug.js";
+import { benutzerListe } from "./benutzer.js";
 
 /**
  * Verarbeitet einen Termin nur, wenn der Hauptnutzer beteiligt ist.
@@ -9,8 +10,10 @@ import { debug } from "./debug.js";
 export function mitarbeiterbearbeiten(e) {
   if (!e || typeof e.titel !== "string") return null;
 
-  const kuerzelNamen = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
-  const hauptKuerzel = localStorage.getItem("hauptKuerzel") || "";
+  const hauptKuerzel = window.location.pathname.replace("/", "").toUpperCase();
+  const kuerzelNamen = Object.fromEntries(
+    benutzerListe.map(({ kuerzel, name }) => [kuerzel, name])
+  );
 
   const alleKuerzel = Object.keys(kuerzelNamen);
   if (alleKuerzel.length === 0) {
