@@ -27,7 +27,7 @@ window.addEventListener("load", () => {
 
     // Bestimmte Bereiche ausblenden bei Direktlink
     const debugLog = document.getElementById("debug-log");
-    if (debugLog) debugLog.style.display = "none";
+   // if (debugLog) debugLog.style.display = "none";
 
     const benutzerVerwaltung = document.getElementById("benutzerverwaltung");
     if (benutzerVerwaltung) benutzerVerwaltung.style.display = "none";

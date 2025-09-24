@@ -18,7 +18,10 @@ export function mitarbeiterbearbeiten(e) {
     if (kuerzelSet.has(k)) erkannteKuerzel.push(k);
   }
 
+  debug("🔍 Titel: " + e.titel);
+  debug("🔍 Kürzelblock: " + kuerzelBlock);
   debug("📋 Erkannte Kürzel: " + erkannteKuerzel.join(", "));
+  debug("🔍 Hauptkürzel: " + hauptKuerzel);
 
   // Fall 1: Kein gültiger Kürzel → Termin bleibt erhalten
   if (erkannteKuerzel.length === 0) {
