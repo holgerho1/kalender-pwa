@@ -204,8 +204,6 @@ export function zeigeTermine() {
 
   zeigeSteuerung(gefiltert);
 }
-  zeigeSteuerung(gefiltert);
-}
 
 function zeigeSteuerung(gefiltert) {
   const container = document.getElementById("termine");
