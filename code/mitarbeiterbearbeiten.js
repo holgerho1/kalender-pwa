@@ -29,8 +29,8 @@ export function mitarbeiterbearbeiten(e) {
     return e;
   }
 
-  // Fall 2: Hauptkürzel fehlt → Termin wird gelöscht
-  if (!erkannteKuerzel.includes(hauptKuerzel)) {
+  // ✅ Fall 2: Hauptkürzel fehlt → nur löschen, wenn Hauptnutzer gesetzt
+  if (hauptKuerzel && !erkannteKuerzel.includes(hauptKuerzel)) {
     debug(`🗑️ Hauptnutzer ${hauptKuerzel} nicht beteiligt – Termin wird gelöscht`);
     return null;
   }
