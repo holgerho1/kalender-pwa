@@ -204,6 +204,8 @@ export function zeigeTermine() {
 
   zeigeSteuerung(gefiltert);
 }
+  zeigeSteuerung(gefiltert);
+}
 
 function zeigeSteuerung(gefiltert) {
   const container = document.getElementById("termine");
@@ -281,6 +283,37 @@ function zeigeSteuerung(gefiltert) {
   exportBtn.textContent = "📄 PDF Export";
   exportBtn.style.marginLeft = "10px";
   exportBtn.onclick = () => {
+    const blocks = document.querySelectorAll("#termine > div");
+    const termine = getTermine();
+
+    blocks.forEach((block) => {
+      const id = [...block.querySelectorAll("button")]
+        .find(btn => btn.textContent.includes("💾"))?.onclick?.toString()
+        .match(/event\.id === "(.*?)"/)?.[1];
+
+      const event = termine.find(t => t.id === id);
+      if (!event) return;
+
+      const inputs = block.querySelectorAll("textarea, input");
+      inputs.forEach((input) => {
+        const name = input.placeholder?.toLowerCase() || "";
+        if (name === "material") event.material = input.value;
+        else if (name === "arbeit") event.arbeit = input.value;
+        else if (name === "fahr") event.fahr = input.value;
+        else if (name === "über") event.über = input.value;
+      });
+
+      const [titel, beschreibung, mitarbeiter] = block.querySelectorAll("textarea");
+      event.titel = titel.value;
+      event.beschreibung = beschreibung.value;
+      event.mitarbeiter = mitarbeiter.value;
+
+      const neuVerarbeitet = verarbeiteTermin(event);
+      if (neuVerarbeitet) Object.assign(event, neuVerarbeitet);
+    });
+
+    setTermine(termine);
+    debug("💾 Alle Änderungen übernommen – PDF wird erstellt");
     exportierePdf(gefiltert);
   };
 
@@ -292,4 +325,3 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(exportBtn);
   container.appendChild(steuerung);
 }
-  
