@@ -293,7 +293,7 @@ function zeigeSteuerung(gefiltert) {
     exportierePdf(gefiltert);
   };
 
-  steuerung.appendChild(neuerBtn);
+  //steuerung.appendChild(neuerBtn);
   steuerung.appendChild(reloadBtn);
   steuerung.appendChild(prevBtn);
   steuerung.appendChild(nextBtn);
