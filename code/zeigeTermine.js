@@ -110,14 +110,20 @@ export function zeigeTermine() {
 
     const feldInputs = {};
     ["arbeit", "fahr", "über"].forEach((feld) => {
-      const input = document.createElement("input");
-      input.type = "text";
-      input.value = event[feld] || "";
-      input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
-      input.style.flex = "1";
-      feldInputs[feld] = input;
-      stundenZeile.appendChild(input);
-    });
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = event[feld] || "";
+  input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
+  input.style.flex = "1";
+  input.style.width = "100%";
+  input.style.marginTop = "0.5rem";
+  input.style.fontSize = "2em"; // ← hier anpassen
+  input.style.padding = "4px 6px";
+  input.style.border = "1px solid #ccc";
+  input.style.borderRadius = "4px";
+  feldInputs[feld] = input;
+  stundenZeile.appendChild(input);
+});
 
     const beschreibung = document.createElement("textarea");
     beschreibung.value = event.beschreibung;
