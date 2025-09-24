@@ -1,3 +1,5 @@
+import { benutzerListe } from "./benutzer.js";
+
 export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
@@ -14,6 +16,11 @@ export function exportierePdf(termine) {
   doc.line(centerX - textWidth / 2, 22, centerX + textWidth / 2, 22);
 
   // Infozeile vorbereiten
+  if (!termine || termine.length === 0) {
+    alert("⚠️ Keine Termine vorhanden für den PDF-Export.");
+    return;
+  }
+
   const firstDate = new Date(termine[0].timestamp);
   const monday = new Date(firstDate);
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
@@ -30,10 +37,9 @@ export function exportierePdf(termine) {
   const tagOffset = ersterJanuar.getDay() <= 4 ? ersterJanuar.getDay() - 1 : ersterJanuar.getDay() - 8;
   const kw = Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
 
-  // 🧑 Hauptbenutzer aus localStorage
-  const kuerzel = localStorage.getItem("hauptKuerzel") || "HH";
-  const kuerzelNamen = JSON.parse(localStorage.getItem("kuerzelNamen") || "{}");
-  const name = kuerzelNamen[kuerzel] || kuerzel;
+  // 🧑 Hauptbenutzer aus URL
+  const kuerzel = window.location.pathname.replace("/", "").toUpperCase();
+  const name = benutzerListe.find(b => b.kuerzel === kuerzel)?.name || kuerzel;
 
   // Infozeile zentriert als Block mit Leerzeichen
   doc.setFontSize(14);
@@ -111,7 +117,7 @@ export function exportierePdf(termine) {
     margin: { left: 10, right: 10 }
   });
 
-  // 📁 Dateiname mit Versionsverwaltung
+  // 📁 Dateiname mit Versionsverwaltung (einzige localStorage-Nutzung)
   const kwText = `KW${kw}`;
   const basisName = `Stundenschein_${jahr}_${kwText}`;
   const versionKey = `pdfVersion_${basisName}`;
@@ -123,18 +129,14 @@ export function exportierePdf(termine) {
     ? `${basisName}.pdf`
     : `${basisName}v${version}.pdf`;
 
-  // PDF erzeugen als Blob
-  const pdfBlob = doc.output("blob");
-  const url = URL.createObjectURL(pdfBlob);
-
-  // Datei speichern
+  // PDF erzeugen und speichern
   doc.save(dateiname);
 
   // Erfolgsmeldung anzeigen
   const infoBox = document.createElement("div");
   infoBox.innerHTML = `
     ✅ PDF erfolgreich erstellt: <strong>${dateiname}</strong><br>
-    <a href="${url}" target="_blank">📄 PDF anzeigen</a>
+    <a href="#" onclick="window.open('${doc.output('dataurlstring')}', '_blank')">📄 PDF anzeigen</a>
   `;
   infoBox.style.padding = "1rem";
   infoBox.style.marginTop = "1rem";
