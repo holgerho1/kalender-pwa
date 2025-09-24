@@ -51,7 +51,7 @@ export function exportierePdf(termine) {
   // Infozeile
   doc.setFontSize(14);
   doc.setFont(undefined, "bold");
-  const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}               KW: ${kw}                                             Name: ${name}`;
+  const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}                         KW: ${kw}                          Name: ${name}`;
   doc.text(infoText, centerX, 30, { align: "center" });
 
   // Tabelle vorbereiten
