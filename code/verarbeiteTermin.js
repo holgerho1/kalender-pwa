@@ -7,7 +7,7 @@ export function verarbeiteTermin(e) {
 
   const bearbeitet = mitarbeiterbearbeiten(e);
   if (!bearbeitet) {
-    debug("🚫 Termin wurde von mitarbeiterbearbeiten() ignoriert");
+    debug("🚫 Termin wurde von mitarbeiterbearbeiten() entfernt");
     return null;
   }
 
