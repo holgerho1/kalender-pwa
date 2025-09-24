@@ -1,8 +1,41 @@
 import { benutzerListe } from "./benutzer.js";
 
+function berechneIsoKW(datum) {
+  const temp = new Date(datum);
+  temp.setHours(0, 0, 0, 0);
+  temp.setDate(temp.getDate() + 3 - ((temp.getDay() + 6) % 7));
+  const ersteJanuar = new Date(temp.getFullYear(), 0, 4);
+  return 1 + Math.round(((temp - ersteJanuar) / 86400000 - 3 + ((ersteJanuar.getDay() + 6) % 7)) / 7);
+}
+
 export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
+
+  if (!termine || termine.length === 0) {
+    alert("⚠️ Keine Termine vorhanden für den PDF-Export.");
+    return;
+  }
+
+  // Frühester Termin als Basis
+  const firstTimestamp = Math.min(...termine.map(t => t.timestamp));
+  const firstDate = new Date(firstTimestamp);
+  const kw = berechneIsoKW(firstDate);
+  const jahr = firstDate.getFullYear();
+
+  // Wochenbereich berechnen
+  const monday = new Date(firstDate);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const formatter = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" });
+  const von = formatter.format(monday);
+  const bis = formatter.format(sunday);
+
+  // Hauptnutzer aus URL
+  const kuerzel = window.location.pathname.replace("/", "").toUpperCase();
+  const name = benutzerListe.find(b => b.kuerzel === kuerzel)?.name || kuerzel;
 
   // Hauptüberschrift
   doc.setFontSize(18);
@@ -15,33 +48,7 @@ export function exportierePdf(termine) {
   doc.setLineWidth(0.5);
   doc.line(centerX - textWidth / 2, 22, centerX + textWidth / 2, 22);
 
-  // Infozeile vorbereiten
-  if (!termine || termine.length === 0) {
-    alert("⚠️ Keine Termine vorhanden für den PDF-Export.");
-    return;
-  }
-
-  const firstDate = new Date(termine[0].timestamp);
-  const monday = new Date(firstDate);
-  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-
-  const formatter = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" });
-  const von = formatter.format(monday);
-  const bis = formatter.format(sunday);
-  const jahr = monday.getFullYear();
-
-  const ersterJanuar = new Date(jahr, 0, 1);
-  const tageSeitJahresbeginn = Math.floor((monday - ersterJanuar) / (24 * 60 * 60 * 1000));
-  const tagOffset = ersterJanuar.getDay() <= 4 ? ersterJanuar.getDay() - 1 : ersterJanuar.getDay() - 8;
-  const kw = Math.ceil((tageSeitJahresbeginn + tagOffset) / 7);
-
-  // 🧑 Hauptbenutzer aus URL
-  const kuerzel = window.location.pathname.replace("/", "").toUpperCase();
-  const name = benutzerListe.find(b => b.kuerzel === kuerzel)?.name || kuerzel;
-
-  // Infozeile zentriert als Block mit Leerzeichen
+  // Infozeile
   doc.setFontSize(14);
   doc.setFont(undefined, "bold");
   const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}               KW: ${kw}                                             Name: ${name}`;
@@ -117,7 +124,7 @@ export function exportierePdf(termine) {
     margin: { left: 10, right: 10 }
   });
 
-  // 📁 Dateiname mit Versionsverwaltung (einzige localStorage-Nutzung)
+  // 📁 Dateiname mit Versionsverwaltung
   const kwText = `KW${kw}`;
   const basisName = `Stundenschein_${jahr}_${kwText}`;
   const versionKey = `pdfVersion_${basisName}`;
@@ -129,7 +136,7 @@ export function exportierePdf(termine) {
     ? `${basisName}.pdf`
     : `${basisName}v${version}.pdf`;
 
-  // PDF erzeugen und speichern
+  // PDF speichern
   doc.save(dateiname);
 
   // Erfolgsmeldung anzeigen
