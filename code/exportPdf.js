@@ -124,9 +124,9 @@ export function exportierePdf(termine) {
     margin: { left: 10, right: 10 }
   });
 
-  // 📁 Dateiname mit Versionsverwaltung
+  // 📁 Dateiname mit Hauptnutzername und Versionsverwaltung
   const kwText = `KW${kw}`;
-  const basisName = `Stundenschein_${jahr}_${kwText}`;
+  const basisName = `Stundenschein_${name}_${jahr}_${kwText}`;
   const versionKey = `pdfVersion_${basisName}`;
   let version = parseInt(localStorage.getItem(versionKey) || "0", 10);
   version++;
