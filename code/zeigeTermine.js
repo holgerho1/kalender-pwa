@@ -80,6 +80,7 @@ export function zeigeTermine() {
     debug("👥 Mitarbeiterwert: " + (event.mitarbeiter ?? "[leer]"));
 
     const block = document.createElement("div");
+    block.dataset.id = event.id;
     block.style.marginBottom = "1rem";
     block.style.padding = "1rem";
     block.style.background = "#fff";
@@ -204,7 +205,6 @@ export function zeigeTermine() {
 
   zeigeSteuerung(gefiltert);
 }
-
 function zeigeSteuerung(gefiltert) {
   const container = document.getElementById("termine");
 
@@ -285,10 +285,7 @@ function zeigeSteuerung(gefiltert) {
     const termine = getTermine();
 
     blocks.forEach((block) => {
-      const id = [...block.querySelectorAll("button")]
-        .find(btn => btn.textContent.includes("💾"))?.onclick?.toString()
-        .match(/event\.id === "(.*?)"/)?.[1];
-
+      const id = block.dataset.id;
       const event = termine.find(t => t.id === id);
       if (!event) return;
 
@@ -312,7 +309,10 @@ function zeigeSteuerung(gefiltert) {
 
     setTermine(termine);
     debug("💾 Alle Änderungen übernommen – PDF wird erstellt");
-    exportierePdf(gefiltert);
+    exportierePdf(getFilterAktiv()
+      ? termine.filter(e => e.timestamp >= getKWZeitraum(getKwOffset()).montag.getTime() &&
+                            e.timestamp <= getKWZeitraum(getKwOffset()).sonntag.getTime())
+      : termine);
   };
 
   steuerung.appendChild(neuerBtn);
