@@ -23,10 +23,10 @@ function berechneKalenderwoche(datum = new Date()) {
 
 function getKWZeitraum(offset = 0) {
   const heute = new Date();
+  heute.setHours(0, 0, 0, 0);
   const wochentag = heute.getDay();
   const montag = new Date(heute);
   montag.setDate(heute.getDate() - ((wochentag + 6) % 7) + offset * 7);
-  montag.setHours(0, 0, 0, 0);
 
   const sonntag = new Date(montag);
   sonntag.setDate(montag.getDate() + 6);
@@ -61,12 +61,13 @@ export function zeigeTermine() {
   container.innerHTML = "";
 
   const { montag, sonntag } = getKWZeitraum(getKwOffset());
-  const startMillis = montag.getTime();
-  const endMillis = sonntag.getTime();
-
   const termine = getTermine();
+
   const gefiltert = getFilterAktiv()
-    ? termine.filter(e => e.timestamp >= startMillis && e.timestamp <= endMillis)
+    ? termine.filter(e => {
+        const d = new Date(e.timestamp);
+        return d >= montag && d <= sonntag;
+      })
     : termine;
 
   if (gefiltert.length === 0) {
@@ -77,8 +78,6 @@ export function zeigeTermine() {
   }
 
   gefiltert.forEach((event) => {
-    debug("👥 Mitarbeiterwert: " + (event.mitarbeiter ?? "[leer]"));
-
     const block = document.createElement("div");
     block.dataset.id = event.id;
     block.style.marginBottom = "1rem";
@@ -103,10 +102,6 @@ export function zeigeTermine() {
     titel.rows = 2;
     titel.style.width = "100%";
     titel.style.marginTop = "0.5rem";
-    titel.style.fontSize = "1em";
-    titel.style.padding = "4px 6px";
-    titel.style.border = "1px solid #ccc";
-    titel.style.borderRadius = "4px";
 
     const stundenZeile = document.createElement("div");
     stundenZeile.style.display = "flex";
@@ -120,12 +115,6 @@ export function zeigeTermine() {
       input.value = event[feld] || "";
       input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
       input.style.flex = "1";
-      input.style.width = "100%";
-      input.style.marginTop = "0.5rem";
-      input.style.fontSize = "1.8em";
-      input.style.padding = "4px 6px";
-      input.style.border = "1px solid #ccc";
-      input.style.borderRadius = "4px";
       feldInputs[feld] = input;
       stundenZeile.appendChild(input);
     });
@@ -135,20 +124,12 @@ export function zeigeTermine() {
     beschreibung.rows = 3;
     beschreibung.style.width = "100%";
     beschreibung.style.marginTop = "0.5rem";
-    beschreibung.style.fontSize = "1em";
-    beschreibung.style.padding = "4px 6px";
-    beschreibung.style.border = "1px solid #ccc";
-    beschreibung.style.borderRadius = "4px";
 
     const materialInput = document.createElement("textarea");
     materialInput.value = event.material || "";
     materialInput.rows = 3;
     materialInput.style.width = "100%";
     materialInput.style.marginTop = "0.5rem";
-    materialInput.style.fontSize = "1em";
-    materialInput.style.padding = "4px 6px";
-    materialInput.style.border = "1px solid #ccc";
-    materialInput.style.borderRadius = "4px";
     materialInput.placeholder = "Material";
 
     const mitarbeiterInput = document.createElement("textarea");
@@ -169,13 +150,7 @@ export function zeigeTermine() {
       event.über = feldInputs.über.value;
 
       const neuVerarbeitet = verarbeiteTermin(event);
-      if (neuVerarbeitet) {
-        Object.assign(event, neuVerarbeitet);
-        debug("🔄 Kürzel neu verarbeitet");
-        debug("👥 Mitarbeiter: " + (event.mitarbeiter || "[leer]"));
-      } else {
-        debug("🚫 Kürzel ungültig – Termin bleibt unverändert");
-      }
+      if (neuVerarbeitet) Object.assign(event, neuVerarbeitet);
     };
 
     const loeschen = document.createElement("button");
@@ -188,7 +163,6 @@ export function zeigeTermine() {
         termine.splice(indexImOriginal, 1);
         setTermine(termine);
         zeigeTermine();
-        debug("🗑️ Termin gelöscht");
       }
     };
 
@@ -205,6 +179,7 @@ export function zeigeTermine() {
 
   zeigeSteuerung(gefiltert);
 }
+
 function zeigeSteuerung(gefiltert) {
   const container = document.getElementById("termine");
 
@@ -243,7 +218,6 @@ function zeigeSteuerung(gefiltert) {
     termine.push(neu);
     setTermine(termine);
     zeigeTermine();
-    debug("➕ Neuer Termin hinzugefügt");
   };
 
   const reloadBtn = document.createElement("button");
@@ -316,11 +290,15 @@ function zeigeSteuerung(gefiltert) {
     });
 
     setTermine(termine);
-    debug("💾 Alle Änderungen übernommen – PDF wird erstellt");
 
-    exportierePdf(getFilterAktiv()
-      ? termine.filter(e => e.timestamp >= startMillis && e.timestamp <= endMillis)
-      : termine);
+    const gefiltert = getFilterAktiv()
+      ? termine.filter(e => {
+          const d = new Date(e.timestamp);
+          return d >= montag && d <= sonntag;
+        })
+      : termine;
+
+    exportierePdf(gefiltert);
   };
 
   steuerung.appendChild(neuerBtn);
