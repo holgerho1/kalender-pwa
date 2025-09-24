@@ -11,7 +11,8 @@ import { verarbeiteTermin } from "./verarbeiteTermin.js";
 import { neuLaden } from "./neuLaden.js";
 import { exportierePdf } from "./exportPdf.js";
 
-// ✅ ISO-konforme KW-Berechnung
+const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+
 function berechneKalenderwoche(datum = new Date()) {
   const kopie = new Date(Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()));
   const tag = kopie.getUTCDay() || 7;
@@ -85,8 +86,16 @@ export function zeigeTermine() {
     block.style.borderLeft = "4px solid #0077cc";
     block.style.borderRadius = "6px";
 
+    const datumObj = new Date(event.timestamp);
+    const tag = String(datumObj.getDate()).padStart(2, "0");
+    const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
+    const wochentag = wochentage[datumObj.getDay()];
+    const datumMitTag = `${tag}.${monat} (${wochentag})`;
+
     const datum = document.createElement("div");
-    datum.textContent = `📅 ${event.datum} (${event.start} – ${event.ende})`;
+    datum.textContent = `📅 ${datumMitTag}`;
+    datum.style.fontWeight = "bold";
+    datum.style.marginBottom = "0.3rem";
 
     const titel = document.createElement("textarea");
     titel.value = event.titel;
@@ -182,6 +191,7 @@ export function zeigeTermine() {
       }
     };
 
+    block.appendChild(datum);
     block.appendChild(titel);
     block.appendChild(stundenZeile);
     block.appendChild(beschreibung);
@@ -282,3 +292,4 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(exportBtn);
   container.appendChild(steuerung);
 }
+  
