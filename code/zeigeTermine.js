@@ -144,20 +144,7 @@ export function zeigeTermine() {
     mitarbeiterInput.style.width = "100%";
     mitarbeiterInput.style.marginTop = "0.5rem";
 
-    const speichern = document.createElement("button");
-    speichern.textContent = "💾 Speichern";
-    speichern.onclick = () => {
-      event.titel = titel.value;
-      event.beschreibung = beschreibung.value;
-      event.material = materialInput.value;
-      event.mitarbeiter = mitarbeiterInput.value;
-      event.arbeit = feldInputs.arbeit.value;
-      event.fahr = feldInputs.fahr.value;
-      event.über = feldInputs.über.value;
-
-      const neuVerarbeitet = verarbeiteTermin(event);
-      if (neuVerarbeitet) Object.assign(event, neuVerarbeitet);
-    };
+    
 
     const loeschen = document.createElement("button");
     loeschen.textContent = "❌ Löschen";
@@ -178,7 +165,6 @@ export function zeigeTermine() {
     block.appendChild(beschreibung);
     block.appendChild(materialInput);
     block.appendChild(mitarbeiterInput);
-    block.appendChild(speichern);
     block.appendChild(loeschen);
     container.appendChild(block);
   });
