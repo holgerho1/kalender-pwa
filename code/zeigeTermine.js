@@ -284,24 +284,32 @@ function zeigeSteuerung(gefiltert) {
     const blocks = document.querySelectorAll("#termine > div");
     const termine = getTermine();
 
+    const { montag, sonntag } = getKWZeitraum(getKwOffset());
+    const startMillis = montag.getTime();
+    const endMillis = sonntag.getTime();
+
     blocks.forEach((block) => {
       const id = block.dataset.id;
       const event = termine.find(t => t.id === id);
       if (!event) return;
 
-      const inputs = block.querySelectorAll("textarea, input");
-      inputs.forEach((input) => {
-        const name = input.placeholder?.toLowerCase() || "";
-        if (name === "material") event.material = input.value;
-        else if (name === "arbeit") event.arbeit = input.value;
+      const titel = block.querySelector("textarea:nth-of-type(1)");
+      const beschreibung = block.querySelector("textarea:nth-of-type(2)");
+      const material = block.querySelector("textarea[placeholder='Material']");
+      const mitarbeiter = block.querySelector("textarea:nth-of-type(4)");
+
+      event.titel = titel?.value || "";
+      event.beschreibung = beschreibung?.value || "";
+      event.material = material?.value || "";
+      event.mitarbeiter = mitarbeiter?.value || "";
+
+      const feldInputs = block.querySelectorAll("input");
+      feldInputs.forEach((input) => {
+        const name = input.placeholder?.toLowerCase();
+        if (name === "arbeit") event.arbeit = input.value;
         else if (name === "fahr") event.fahr = input.value;
         else if (name === "über") event.über = input.value;
       });
-
-      const [titel, beschreibung, mitarbeiter] = block.querySelectorAll("textarea");
-      event.titel = titel.value;
-      event.beschreibung = beschreibung.value;
-      event.mitarbeiter = mitarbeiter.value;
 
       const neuVerarbeitet = verarbeiteTermin(event);
       if (neuVerarbeitet) Object.assign(event, neuVerarbeitet);
@@ -309,9 +317,9 @@ function zeigeSteuerung(gefiltert) {
 
     setTermine(termine);
     debug("💾 Alle Änderungen übernommen – PDF wird erstellt");
+
     exportierePdf(getFilterAktiv()
-      ? termine.filter(e => e.timestamp >= getKWZeitraum(getKwOffset()).montag.getTime() &&
-                            e.timestamp <= getKWZeitraum(getKwOffset()).sonntag.getTime())
+      ? termine.filter(e => e.timestamp >= startMillis && e.timestamp <= endMillis)
       : termine);
   };
 
