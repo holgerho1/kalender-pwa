@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Materiallisten</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    select, input, button { margin: 0.5rem; font-size: 1rem; }
+    ul { margin-top: 1rem; padding-left: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>📦 Materialliste</h1>
+
+  <label>Kategorie:
+    <select id="kategorie"></select>
+  </label>
+
+  <label>Material:
+    <select id="material"></select>
+  </label>
+
+  <label>Menge:
+    <input type="number" id="menge" min="1" />
+  </label>
+
+  <button onclick="hinzufuegen()">➕ Hinzufügen</button>
+
+  <ul id="liste"></ul>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
