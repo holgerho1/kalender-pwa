@@ -78,6 +78,11 @@
       text-decoration: none;
       font-size: 0.95rem;
     }
+
+    /* Dynamische Schriftgröße für Zeitfelder */
+    .zeitfeld {
+      font-size: clamp(0.9rem, 1vw, 1.2rem);
+    }
   </style>
 </head>
 <body>
@@ -99,7 +104,6 @@
     <h2>🔗 Direktlinks zu Hauptbenutzern</h2>
     <div id="linkListe"></div>
   </div>
-
 
   <!-- Haupt-App -->
   <script type="module" src="app.js"></script>
