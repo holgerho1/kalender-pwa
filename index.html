@@ -37,6 +37,7 @@
       background: #eee;
       padding: 1rem;
       border-radius: 6px;
+      white-space: pre-line;
     }
     button {
       margin-top: 0.5rem;
@@ -108,12 +109,22 @@
   <!-- Haupt-App -->
   <script type="module" src="app.js"></script>
 
-  <!-- Benutzerlogik ausgelagert -->
+  <!-- Benutzerlogik ausgelagert + Viewport-Anzeige -->
   <script type="module">
     import { speichereBenutzer, zeigeBenutzerListe } from './code/benutzer.js';
 
     window.speichereBenutzer = speichereBenutzer;
-    window.addEventListener("DOMContentLoaded", zeigeBenutzerListe);
+    window.addEventListener("DOMContentLoaded", () => {
+      zeigeBenutzerListe();
+
+      const debug = document.getElementById("debug-log");
+      const updateViewportInfo = () => {
+        debug.textContent = `📱 Viewport-Breite: ${window.innerWidth}px\n🖼️ Viewport-Höhe: ${window.innerHeight}px`;
+      };
+
+      updateViewportInfo();
+      window.addEventListener("resize", updateViewportInfo);
+    });
   </script>
 </body>
 </html>
