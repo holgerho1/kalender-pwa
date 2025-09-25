@@ -1,42 +1,46 @@
-const kategorien = {
-  Elektro: ["Kabel", "Steckdose", "Schalter"],
-  Sanitär: ["Rohr", "Dichtung", "Ventil"],
-  Holzbau: ["Balken", "Schraube", "Platte"]
-};
+let projekte = ["Haus A", "Garage", "Garten"]; // später aus DB laden
 
-const kategorieSelect = document.getElementById("kategorie");
-const materialSelect = document.getElementById("material");
-const mengeInput = document.getElementById("menge");
-const liste = document.getElementById("liste");
+const select = document.getElementById("projektSelect");
+const inputNeu = document.getElementById("projektNeu");
+const inputName = document.getElementById("neuerName");
 
-for (const k in kategorien) {
-  const opt = document.createElement("option");
-  opt.value = k;
-  opt.textContent = k;
-  kategorieSelect.appendChild(opt);
-}
-
-function aktualisiereMaterialliste() {
-  const auswahl = kategorien[kategorieSelect.value];
-  materialSelect.innerHTML = "";
-  auswahl.forEach(m => {
+function aktualisiereAuswahl() {
+  select.innerHTML = "";
+  projekte.forEach(name => {
     const opt = document.createElement("option");
-    opt.value = m;
-    opt.textContent = m;
-    materialSelect.appendChild(opt);
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
   });
 }
 
-kategorieSelect.addEventListener("change", aktualisiereMaterialliste);
-aktualisiereMaterialliste();
-
-window.hinzufuegen = function () {
-  const mat = materialSelect.value;
-  const menge = mengeInput.value;
-  if (mat && menge) {
-    const li = document.createElement("li");
-    li.textContent = `${mat} – ${menge} Stück`;
-    liste.appendChild(li);
-    mengeInput.value = "";
+window.projektHinzufuegen = function () {
+  const name = inputNeu.value.trim();
+  if (name && !projekte.includes(name)) {
+    projekte.push(name);
+    aktualisiereAuswahl();
+    select.value = name;
+    inputNeu.value = "";
   }
 };
+
+window.projektUmbenennen = function () {
+  const alt = select.value;
+  const neu = inputName.value.trim();
+  if (neu && alt && !projekte.includes(neu)) {
+    const i = projekte.indexOf(alt);
+    projekte[i] = neu;
+    aktualisiereAuswahl();
+    select.value = neu;
+    inputName.value = "";
+  }
+};
+
+window.projektLoeschen = function () {
+  const name = select.value;
+  projekte = projekte.filter(p => p !== name);
+  aktualisiereAuswahl();
+  if (projekte.length) select.value = projekte[0];
+}
+
+aktualisiereAuswahl();

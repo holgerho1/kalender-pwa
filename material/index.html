@@ -2,31 +2,30 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Materiallisten</title>
+  <title>Materiallisten – Projekte</title>
   <style>
     body { font-family: sans-serif; padding: 2rem; }
     select, input, button { margin: 0.5rem; font-size: 1rem; }
-    ul { margin-top: 1rem; padding-left: 1rem; }
+    #projektListe { margin-top: 1rem; }
   </style>
 </head>
 <body>
-  <h1>📦 Materialliste</h1>
+  <h1>📁 Projektverwaltung</h1>
 
-  <label>Kategorie:
-    <select id="kategorie"></select>
+  <label>Projekt auswählen:
+    <select id="projektSelect"></select>
   </label>
 
-  <label>Material:
-    <select id="material"></select>
-  </label>
+  <div id="projektListe">
+    <input id="neuerName" placeholder="Neuer Projektname" />
+    <button onclick="projektUmbenennen()">✏️ Umbenennen</button>
+    <button onclick="projektLoeschen()">🗑️ Löschen</button>
+  </div>
 
-  <label>Menge:
-    <input type="number" id="menge" min="1" />
-  </label>
-
-  <button onclick="hinzufuegen()">➕ Hinzufügen</button>
-
-  <ul id="liste"></ul>
+  <div>
+    <input id="projektNeu" placeholder="Neues Projekt hinzufügen" />
+    <button onclick="projektHinzufuegen()">➕ Hinzufügen</button>
+  </div>
 
   <script type="module" src="./app.js"></script>
 </body>
