@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Holgers Terminplaner</title>
 
-  <!-- jsPDF für PDF-Export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
@@ -79,8 +78,6 @@
       text-decoration: none;
       font-size: 0.95rem;
     }
-
-    /* Dynamische Schriftgröße für Zeitfelder */
     .zeitfeld {
       font-size: clamp(0.9rem, 1vw, 1.2rem);
     }
@@ -106,25 +103,19 @@
     <div id="linkListe"></div>
   </div>
 
-  <!-- Haupt-App -->
   <script type="module" src="app.js"></script>
 
-  <!-- Benutzerlogik ausgelagert + Viewport-Anzeige -->
   <script type="module">
     import { speichereBenutzer, zeigeBenutzerListe } from './code/benutzer.js';
-
     window.speichereBenutzer = speichereBenutzer;
-    window.addEventListener("DOMContentLoaded", () => {
-      zeigeBenutzerListe();
+    window.addEventListener("DOMContentLoaded", zeigeBenutzerListe);
+  </script>
 
-      const debug = document.getElementById("debug-log");
-      const updateViewportInfo = () => {
-        debug.textContent = `📱 Viewport-Breite: ${window.innerWidth}px\n🖼️ Viewport-Höhe: ${window.innerHeight}px`;
-      };
-
-      updateViewportInfo();
-      window.addEventListener("resize", updateViewportInfo);
-    });
+  <script>
+    const debug = document.getElementById("debug-log");
+    if (debug) {
+      debug.innerText = `📱 Breite: ${window.innerWidth}px\n🖼️ Höhe: ${window.innerHeight}px`;
+    }
   </script>
 </body>
 </html>
