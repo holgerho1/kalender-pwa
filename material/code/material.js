@@ -48,7 +48,7 @@ function aktualisiereListe() {
     const inputName = document.createElement("input");
     inputName.value = eintrag.name;
     inputName.placeholder = "Name";
-    inputName.style.width = "8rem";
+    inputName.style.width = "16rem";
     inputName.oninput = () => eintrag.name = inputName.value;
 
     const bereichFeld = bereichCheckboxen(eintrag.bereiche || [], (id, checked) => {
