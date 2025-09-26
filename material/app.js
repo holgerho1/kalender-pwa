@@ -26,10 +26,13 @@ function aktualisiereListe() {
     const btnLoeschen = document.createElement("button");
     btnLoeschen.textContent = "🗑️ Löschen";
     btnLoeschen.onclick = () => {
-      projekte = projekte.filter(p => p.id !== projekt.id);
-      speichere();
-      aktualisiereListe();
-    };
+  const sicher = confirm(`Projekt "${projekt.name}" wirklich löschen?`);
+  if (!sicher) return;
+
+  projekte = projekte.filter(p => p.id !== projekt.id);
+  speichere();
+  aktualisiereListe();
+};
 
     div.append(input, btnSpeichern, btnLoeschen);
     container.appendChild(div);
