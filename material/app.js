@@ -61,4 +61,8 @@ document.getElementById("bereichGlobalButton").onclick = () => {
   window.location.href = "bereiche.html";
 };
 
+document.getElementById("materialButton").onclick = () => {
+  window.location.href = "material.html";
+};
+
 aktualisiereListe();
