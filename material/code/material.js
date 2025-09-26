@@ -1,40 +1,71 @@
+import { ladeBereiche } from "./db.js";
+
 let material = JSON.parse(localStorage.getItem("material")) || [];
+const bereiche = ladeBereiche();
+
+function bereichCheckboxen(ids = [], onChange) {
+  const container = document.createElement("span");
+  container.style.display = "inline-flex";
+  container.style.flexWrap = "wrap";
+  container.style.gap = "0.3rem";
+
+  bereiche.forEach(b => {
+    const label = document.createElement("label");
+    label.style.fontSize = "0.9rem";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = ids.includes(b.id);
+    cb.onchange = () => onChange(b.id, cb.checked);
+
+    label.append(cb, document.createTextNode(" " + (b.kuerzel || b.name)));
+    container.appendChild(label);
+  });
+
+  return container;
+}
 
 function aktualisiereListe() {
   const container = document.getElementById("materialListe");
   container.innerHTML = "";
 
   [...material].sort((a, b) => b.id - a.id).forEach(eintrag => {
-    const div = document.createElement("div");
-    div.className = "projekt";
+    const row = document.createElement("div");
+    row.className = "projekt";
+    row.style.display = "flex";
+    row.style.flexWrap = "wrap";
+    row.style.alignItems = "center";
+    row.style.gap = "0.5rem";
+    row.style.marginBottom = "0.3rem";
 
     const inputName = document.createElement("input");
     inputName.value = eintrag.name;
-    inputName.className = "projektName";
-    inputName.placeholder = "Name";
+    inputName.style.width = "8rem";
     inputName.oninput = () => eintrag.name = inputName.value;
 
     const inputEinheit = document.createElement("input");
     inputEinheit.value = eintrag.einheit;
-    inputEinheit.className = "projektName";
-    inputEinheit.placeholder = "Einheit";
+    inputEinheit.style.width = "6rem";
     inputEinheit.oninput = () => eintrag.einheit = inputEinheit.value;
 
-    const inputMenge = document.createElement("input");
-    inputMenge.value = eintrag.menge;
-    inputMenge.className = "projektName";
-    inputMenge.placeholder = "Menge";
-    inputMenge.oninput = () => eintrag.menge = inputMenge.value;
+    const bereichFeld = bereichCheckboxen(eintrag.bereiche || [], (id, checked) => {
+      eintrag.bereiche = eintrag.bereiche || [];
+      if (checked) {
+        if (!eintrag.bereiche.includes(id)) eintrag.bereiche.push(id);
+      } else {
+        eintrag.bereiche = eintrag.bereiche.filter(bid => bid !== id);
+      }
+    });
 
     const btnSpeichern = document.createElement("button");
-    btnSpeichern.textContent = "💾 Speichern";
+    btnSpeichern.textContent = "💾";
     btnSpeichern.onclick = () => {
       localStorage.setItem("material", JSON.stringify(material));
       aktualisiereListe();
     };
 
     const btnLoeschen = document.createElement("button");
-    btnLoeschen.textContent = "🗑️ Löschen";
+    btnLoeschen.textContent = "🗑️";
     btnLoeschen.onclick = () => {
       const sicher = confirm(`Material "${eintrag.name}" wirklich löschen?`);
       if (!sicher) return;
@@ -43,23 +74,35 @@ function aktualisiereListe() {
       aktualisiereListe();
     };
 
-    div.append(inputName, inputEinheit, inputMenge, btnSpeichern, btnLoeschen);
-    container.appendChild(div);
+    row.append(inputName, inputEinheit, bereichFeld, btnSpeichern, btnLoeschen);
+    container.appendChild(row);
   });
 }
 
 window.materialHinzufuegen = function () {
   const name = document.getElementById("neuesMaterialName").value.trim();
   const einheit = document.getElementById("neuesMaterialEinheit").value.trim();
-  const menge = document.getElementById("neuesMaterialMenge").value.trim();
   if (!name) return;
 
-  material.push({ id: Date.now(), name, einheit, menge });
+  const checkboxen = document.querySelectorAll("#neueBereichCheckboxen input[type=checkbox]");
+  const zugeordnete = [];
+  checkboxen.forEach((cb, i) => {
+    if (cb.checked) zugeordnete.push(bereiche[i].id);
+  });
+
+  material.push({ id: Date.now(), name, einheit, bereiche: zugeordnete });
   document.getElementById("neuesMaterialName").value = "";
   document.getElementById("neuesMaterialEinheit").value = "";
-  document.getElementById("neuesMaterialMenge").value = "";
+  checkboxen.forEach(cb => cb.checked = false);
   localStorage.setItem("material", JSON.stringify(material));
   aktualisiereListe();
 };
 
+function initialisiereBereichAuswahl() {
+  const ziel = document.getElementById("neueBereichCheckboxen");
+  ziel.innerHTML = "";
+  ziel.appendChild(bereichCheckboxen([], () => {}));
+}
+
+initialisiereBereichAuswahl();
 aktualisiereListe();
