@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Projekt</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
@@ -42,6 +43,13 @@
       </div>
     </div>
   </div>
+
+  <!-- 🛡️ Safari-Gesten blockieren -->
+  <script>
+    document.addEventListener("gesturestart", e => e.preventDefault());
+    document.addEventListener("gesturechange", e => e.preventDefault());
+    document.addEventListener("gestureend", e => e.preventDefault());
+  </script>
 
   <script type="module" src="./code/projekt.js"></script>
 </body>
