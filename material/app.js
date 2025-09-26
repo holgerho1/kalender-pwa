@@ -1,49 +1,50 @@
-// Sichtbarer Ladeindikator für Online-Test
-document.body.insertAdjacentHTML("beforeend", "<div style='color:red'>✅ app.js geladen</div>");
+let projekte = JSON.parse(localStorage.getItem("projekte")) || [];
 
-let projekte = ["Haus A", "Garage", "Garten"]; // später aus DB laden
+function speichere() {
+  localStorage.setItem("projekte", JSON.stringify(projekte));
+}
 
-const select = document.getElementById("projektSelect");
-const inputNeu = document.getElementById("projektNeu");
-const inputName = document.getElementById("neuerName");
+function aktualisiereListe() {
+  const container = document.getElementById("projektListe");
+  container.innerHTML = "";
 
-function aktualisiereAuswahl() {
-  select.innerHTML = "";
-  projekte.forEach(name => {
-    const opt = document.createElement("option");
-    opt.value = name;
-    opt.textContent = name;
-    select.appendChild(opt);
+  [...projekte].sort((a, b) => b.id - a.id).forEach(projekt => {
+    const div = document.createElement("div");
+    div.className = "projekt";
+
+    const input = document.createElement("input");
+    input.value = projekt.name;
+    input.oninput = () => projekt.name = input.value;
+
+    const btnSpeichern = document.createElement("button");
+    btnSpeichern.textContent = "💾 Speichern";
+    btnSpeichern.onclick = () => {
+      speichere();
+      aktualisiereListe();
+    };
+
+    const btnLoeschen = document.createElement("button");
+    btnLoeschen.textContent = "🗑️ Löschen";
+    btnLoeschen.onclick = () => {
+      projekte = projekte.filter(p => p.id !== projekt.id);
+      speichere();
+      aktualisiereListe();
+    };
+
+    div.append(input, btnSpeichern, btnLoeschen);
+    container.appendChild(div);
   });
 }
 
 window.projektHinzufuegen = function () {
-  const name = inputNeu.value.trim();
-  if (name && !projekte.includes(name)) {
-    projekte.push(name);
-    aktualisiereAuswahl();
-    select.value = name;
-    inputNeu.value = "";
-  }
+  const input = document.getElementById("neuesProjektName");
+  const name = input.value.trim();
+  if (!name) return;
+
+  projekte.push({ id: Date.now(), name });
+  input.value = "";
+  speichere();
+  aktualisiereListe();
 };
 
-window.projektUmbenennen = function () {
-  const alt = select.value;
-  const neu = inputName.value.trim();
-  if (neu && alt && !projekte.includes(neu)) {
-    const i = projekte.indexOf(alt);
-    projekte[i] = neu;
-    aktualisiereAuswahl();
-    select.value = neu;
-    inputName.value = "";
-  }
-};
-
-window.projektLoeschen = function () {
-  const name = select.value;
-  projekte = projekte.filter(p => p !== name);
-  aktualisiereAuswahl();
-  if (projekte.length) select.value = projekte[0];
-}
-
-aktualisiereAuswahl();
+aktualisiereListe();

@@ -2,35 +2,24 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Materiallisten – Projekte</title>
+  <title>Projektverwaltung</title>
   <style>
     body { font-family: sans-serif; padding: 2rem; }
-    select, input, button { margin: 0.5rem; font-size: 1rem; }
-    #projektListe { margin-top: 1rem; }
+    input { margin: 0.3rem; font-size: 1rem; }
+    button { margin: 0.3rem; font-size: 1rem; }
+    .projekt { margin-bottom: 0.5rem; }
   </style>
 </head>
 <body>
-  <h1>📁 Projektverwaltung</h1>
+  <h1>📁 Projekte</h1>
 
-  <!-- Sichtbarer JS-Check -->
-  <div id="js-check" style="color:red; font-weight:bold;">❌ JS nicht geladen</div>
+  <div id="projektListe"></div>
 
-  <label>Projekt auswählen:
-    <select id="projektSelect"></select>
-  </label>
+  <hr />
 
-  <div id="projektListe">
-    <input id="neuerName" placeholder="Neuer Projektname" />
-    <button onclick="projektUmbenennen()">✏️ Umbenennen</button>
-    <button onclick="projektLoeschen()">🗑️ Löschen</button>
-  </div>
+  <input id="neuesProjektName" placeholder="Neues Projekt" />
+  <button onclick="projektHinzufuegen()">➕ Hinzufügen</button>
 
-  <div>
-    <input id="projektNeu" placeholder="Neues Projekt hinzufügen" />
-    <button onclick="projektHinzufuegen()">➕ Hinzufügen</button>
-  </div>
-
-  <!-- KORREKTER Skript-Tag -->
   <script type="module" src="./app.js"></script>
 </body>
 </html>
