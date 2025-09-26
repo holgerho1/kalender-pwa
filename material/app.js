@@ -1,4 +1,4 @@
-let projekte = ["Haus A", "Garage", "Garten"]; // später aus DB laden
+let projekte = ["Haus A", "Garage", "Garten"]; // später aus DB ladenn
 
 const select = document.getElementById("projektSelect");
 const inputNeu = document.getElementById("projektNeu");
