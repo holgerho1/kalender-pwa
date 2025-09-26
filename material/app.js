@@ -1,4 +1,6 @@
-let projekte = ["Haus A", "Garage", "Garten"]; // später aus DB ladenn
+document.body.insertAdjacentHTML("beforeend", "<div style='color:red'>✅ app.js geladen</div>");
+
+let projekte = ["Haus A", "Garage", "Garten"]; // später aus DB laden
 
 const select = document.getElementById("projektSelect");
 const inputNeu = document.getElementById("projektNeu");
