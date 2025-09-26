@@ -1,7 +1,9 @@
+/* 🔧 Grundlayout */
 body {
   font-family: sans-serif;
   padding: 2rem;
   background-color: #f9f9f9;
+  touch-action: manipulation; /* verhindert Pinch-Zoom */
 }
 
 input, button {
@@ -30,6 +32,7 @@ button:hover {
   background-color: #005fa3;
 }
 
+/* 🔧 Projektliste */
 .projekt {
   padding-bottom: 0.5rem;
   margin-bottom: 0.5rem;
@@ -52,7 +55,13 @@ button:hover {
   margin-bottom: 1rem;
 }
 
-/* ✅ Popup oben links */
+/* 🔍 Zoombereich */
+#zoomWrapper {
+  transform-origin: top left;
+  transition: transform 0.1s ease-out;
+}
+
+/* 🪟 Popup im Zoombereich */
 .modal {
   position: absolute;
   top: 1rem;
@@ -64,16 +73,11 @@ button:hover {
   padding: 1rem;
   display: none; /* wird per JS auf "block" gesetzt */
   z-index: 1000;
+  transform: scale(1); /* verhindert Vererbung vom Wrapper-Zoom */
 }
 
 .modalContent {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-}
-
-/* ✅ Zoombereich */
-#zoomWrapper {
-  transform-origin: top left;
-  transition: transform 0.1s ease-out;
 }

@@ -14,32 +14,33 @@
     <button onclick="zoomAnwenden()">✔️</button>
   </div>
 
-  <!-- 📂 Projekttitel -->
-  <h1 id="projektTitel" style="margin-top: 4rem;">📂 Projekt</h1>
-
-  <!-- ➕ Material hinzufügen -->
-  <button onclick="popupNeu()">➕ Material hinzufügen</button>
-
-  <hr />
-
-  <!-- 📦 Materialliste -->
+  <!-- 📦 Zoombereich -->
   <div id="zoomWrapper">
-    <div id="materialListe"></div>
-  </div>
+    <!-- 📂 Projekttitel -->
+    <h1 id="projektTitel" style="margin-top: 4rem;">📂 Projekt</h1>
 
-  <!-- 🪟 Popup -->
-  <div id="materialPopup" class="modal">
-    <div class="modalContent">
-      <h3 id="popupTitel">Material hinzufügen</h3>
-      <label>Bereich:</label>
-      <select id="bereichFilter"></select>
-      <label>Material:</label>
-      <select id="materialAuswahl"></select>
-      <label>Menge:</label>
-      <input id="materialMenge" type="number" placeholder="Menge" />
-      <div style="margin-top: 0.5rem;">
-        <button onclick="popupSpeichern()">💾 Speichern</button>
-        <button onclick="popupSchliessen()">✖️ Schließen</button>
+    <!-- ➕ Material hinzufügen -->
+    <button onclick="popupNeu()">➕ Material hinzufügen</button>
+
+    <hr />
+
+    <!-- 📦 Materialliste -->
+    <div id="materialListe"></div>
+
+    <!-- 🪟 Popup im Zoombereich -->
+    <div id="materialPopup" class="modal">
+      <div class="modalContent">
+        <h3 id="popupTitel">Material hinzufügen</h3>
+        <label>Bereich:</label>
+        <select id="bereichFilter"></select>
+        <label>Material:</label>
+        <select id="materialAuswahl"></select>
+        <label>Menge:</label>
+        <input id="materialMenge" type="number" placeholder="Menge" />
+        <div style="margin-top: 0.5rem;">
+          <button onclick="popupSpeichern()">💾 Speichern</button>
+          <button onclick="popupSchliessen()">✖️ Schließen</button>
+        </div>
       </div>
     </div>
   </div>
