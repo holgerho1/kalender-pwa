@@ -1,8 +1,6 @@
-let projekte = JSON.parse(localStorage.getItem("projekte")) || [];
+import { ladeProjekte, speichereProjekte } from "./db.js";
 
-function speichere() {
-  localStorage.setItem("projekte", JSON.stringify(projekte));
-}
+let projekte = ladeProjekte();
 
 function aktualisiereListe() {
   const container = document.getElementById("projektListe");
@@ -19,20 +17,19 @@ function aktualisiereListe() {
     const btnSpeichern = document.createElement("button");
     btnSpeichern.textContent = "💾 Speichern";
     btnSpeichern.onclick = () => {
-      speichere();
+      speichereProjekte(projekte);
       aktualisiereListe();
     };
 
     const btnLoeschen = document.createElement("button");
     btnLoeschen.textContent = "🗑️ Löschen";
     btnLoeschen.onclick = () => {
-  const sicher = confirm(`Projekt "${projekt.name}" wirklich löschen?`);
-  if (!sicher) return;
-
-  projekte = projekte.filter(p => p.id !== projekt.id);
-  speichere();
-  aktualisiereListe();
-};
+      const sicher = confirm(`Projekt "${projekt.name}" wirklich löschen?`);
+      if (!sicher) return;
+      projekte = projekte.filter(p => p.id !== projekt.id);
+      speichereProjekte(projekte);
+      aktualisiereListe();
+    };
 
     div.append(input, btnSpeichern, btnLoeschen);
     container.appendChild(div);
@@ -46,7 +43,7 @@ window.projektHinzufuegen = function () {
 
   projekte.push({ id: Date.now(), name });
   input.value = "";
-  speichere();
+  speichereProjekte(projekte);
   aktualisiereListe();
 };
 
