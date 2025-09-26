@@ -13,6 +13,7 @@ function aktualisiereListe() {
 
     const input = document.createElement("input");
     input.value = projekt.name;
+    input.className = "projektName";
     input.oninput = () => projekt.name = input.value;
 
     const btnSpeichern = document.createElement("button");
