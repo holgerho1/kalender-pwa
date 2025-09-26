@@ -18,8 +18,10 @@ window.popupNeu = function () {
   aktuellerEintrag = null;
   document.getElementById("popupTitel").textContent = "Material hinzufügen";
   document.getElementById("materialMenge").value = "";
-  document.getElementById("materialPopup").style.display = "flex";
-  fuelleBereichFilter();
+  document.getElementById("materialPopup").style.display = "block";
+
+  const gespeicherterBereich = parseInt(localStorage.getItem("letzterBereich"));
+  fuelleBereichFilter(gespeicherterBereich || bereiche[0]?.id);
   fuelleMaterialAuswahl();
 };
 
@@ -27,7 +29,7 @@ window.popupBearbeiten = function (eintrag) {
   aktuellerEintrag = eintrag;
   document.getElementById("popupTitel").textContent = "Material ändern";
   document.getElementById("materialMenge").value = eintrag.menge;
-  document.getElementById("materialPopup").style.display = "flex";
+  document.getElementById("materialPopup").style.display = "block";
   fuelleBereichFilter(eintrag.bereichId);
   fuelleMaterialAuswahl(eintrag.materialId);
 };
@@ -37,6 +39,8 @@ window.popupSpeichern = function () {
   const materialId = parseInt(document.getElementById("materialAuswahl").value);
   const bereichId = parseInt(document.getElementById("bereichFilter").value);
   if (!materialId || isNaN(menge) || !bereichId) return;
+
+  localStorage.setItem("letzterBereich", bereichId);
 
   if (aktuellerEintrag) {
     aktuellerEintrag.materialId = materialId;
