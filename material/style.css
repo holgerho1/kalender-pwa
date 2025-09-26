@@ -51,3 +51,27 @@ button:hover {
 #buttonLeiste {
   margin-bottom: 1rem;
 }
+
+/* ✅ Popup-Overlay */
+.modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: none; /* wird per JS auf "flex" gesetzt */
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  min-width: 300px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

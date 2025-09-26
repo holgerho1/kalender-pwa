@@ -2,14 +2,33 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Projektansicht</title>
+  <title>Projekt</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <h1 id="projektTitel">🔧 Projekt</h1>
+  <h1 id="projektTitel">📂 Projekt</h1>
+
+  <button onclick="popupNeu()">➕ Material hinzufügen</button>
+
   <hr />
-  <div id="projektInhalt">
-    <!-- Platz für Materiallisten, Aufgaben etc. -->
+
+  <div id="materialListe"></div>
+
+  <!-- ✅ Popup -->
+  <div id="materialPopup" class="modal">
+    <div class="modalContent">
+      <h3 id="popupTitel">Material hinzufügen</h3>
+      <label>Bereich:</label>
+      <select id="bereichFilter"></select>
+      <label>Material:</label>
+      <select id="materialAuswahl"></select>
+      <label>Menge:</label>
+      <input id="materialMenge" type="number" placeholder="Menge" />
+      <div style="margin-top: 0.5rem;">
+        <button onclick="popupSpeichern()">💾 Speichern</button>
+        <button onclick="popupSchliessen()">✖️ Schließen</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="./code/projekt.js"></script>
