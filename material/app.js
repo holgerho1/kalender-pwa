@@ -1,5 +1,5 @@
-import { ladeProjekte, speichereProjekte } from "./db.js";
-import { sortiereNeueste, neuesProjekt, loescheProjekt } from "./projekte.js";
+import { ladeProjekte, speichereProjekte } from "./code/db.js";
+import { sortiereNeueste, neuesProjekt, loescheProjekt } from "./code/projekte.js";
 
 let projekte = ladeProjekte();
 
@@ -55,6 +55,10 @@ window.projektHinzufuegen = function () {
   input.value = "";
   speichereProjekte(projekte);
   aktualisiereListe();
+};
+
+document.getElementById("bereichGlobalButton").onclick = () => {
+  window.location.href = "bereiche.html";
 };
 
 aktualisiereListe();
