@@ -1,4 +1,5 @@
 import { ladeProjekte, speichereProjekte } from "./db.js";
+import { sortiereNeueste, neuesProjekt, loescheProjekt } from "./projekte.js";
 
 let projekte = ladeProjekte();
 
@@ -6,7 +7,7 @@ function aktualisiereListe() {
   const container = document.getElementById("projektListe");
   container.innerHTML = "";
 
-  [...projekte].sort((a, b) => b.id - a.id).forEach(projekt => {
+  sortiereNeueste(projekte).forEach(projekt => {
     const div = document.createElement("div");
     div.className = "projekt";
 
@@ -26,7 +27,7 @@ function aktualisiereListe() {
     btnLoeschen.onclick = () => {
       const sicher = confirm(`Projekt "${projekt.name}" wirklich löschen?`);
       if (!sicher) return;
-      projekte = projekte.filter(p => p.id !== projekt.id);
+      projekte = loescheProjekt(projekte, projekt.id);
       speichereProjekte(projekte);
       aktualisiereListe();
     };
@@ -41,7 +42,7 @@ window.projektHinzufuegen = function () {
   const name = input.value.trim();
   if (!name) return;
 
-  projekte.push({ id: Date.now(), name });
+  projekte.push(neuesProjekt(name));
   input.value = "";
   speichereProjekte(projekte);
   aktualisiereListe();
