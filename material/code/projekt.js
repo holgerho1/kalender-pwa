@@ -158,3 +158,18 @@ function aktualisiereListe() {
 }
 
 aktualisiereListe();
+
+// ✅ Zoomsteuerung oben links
+window.zoomAnwenden = function () {
+  const faktor = parseFloat(document.getElementById("zoomFaktor").value);
+  if (!isNaN(faktor) && faktor > 0) {
+    document.getElementById("zoomWrapper").style.transform = `scale(${faktor})`;
+    localStorage.setItem("zoomFaktor", faktor);
+  }
+};
+
+const gespeicherterZoom = parseFloat(localStorage.getItem("zoomFaktor"));
+if (!isNaN(gespeicherterZoom)) {
+  document.getElementById("zoomFaktor").value = gespeicherterZoom;
+  document.getElementById("zoomWrapper").style.transform = `scale(${gespeicherterZoom})`;
+}

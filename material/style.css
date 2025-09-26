@@ -71,3 +71,9 @@ button:hover {
   flex-direction: column;
   gap: 0.5rem;
 }
+
+/* ✅ Zoombereich */
+#zoomWrapper {
+  transform-origin: top left;
+  transition: transform 0.1s ease-out;
+}

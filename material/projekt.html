@@ -6,15 +6,27 @@
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <h1 id="projektTitel">📂 Projekt</h1>
+  <!-- 🔍 Zoomsteuerung oben links -->
+  <div id="zoomSteuerung" style="position: absolute; top: 1rem; left: 1rem; z-index: 1001;">
+    <label for="zoomFaktor">🔍 Zoom:</label>
+    <input id="zoomFaktor" type="number" step="0.1" value="1.0" style="width: 4rem;" />
+    <button onclick="zoomAnwenden()">✔️</button>
+  </div>
 
+  <!-- 📂 Projekttitel -->
+  <h1 id="projektTitel" style="margin-top: 4rem;">📂 Projekt</h1>
+
+  <!-- ➕ Material hinzufügen -->
   <button onclick="popupNeu()">➕ Material hinzufügen</button>
 
   <hr />
 
-  <div id="materialListe"></div>
+  <!-- 📦 Materialliste -->
+  <div id="zoomWrapper">
+    <div id="materialListe"></div>
+  </div>
 
-  <!-- ✅ Popup -->
+  <!-- 🪟 Popup -->
   <div id="materialPopup" class="modal">
     <div class="modalContent">
       <h3 id="popupTitel">Material hinzufügen</h3>
