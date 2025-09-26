@@ -43,3 +43,7 @@ button:hover {
 .projektName {
   width: 100%;
 }
+
+.oeffnenButton {
+  margin-left: 4.5rem;
+}

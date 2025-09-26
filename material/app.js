@@ -35,6 +35,7 @@ function aktualisiereListe() {
 
     const btnOeffnen = document.createElement("button");
     btnOeffnen.textContent = "📂 Öffnen";
+    btnOeffnen.className = "oeffnenButton";
     btnOeffnen.onclick = () => {
       localStorage.setItem("aktuellesProjekt", JSON.stringify(projekt));
       window.location.href = "projekt.html";
