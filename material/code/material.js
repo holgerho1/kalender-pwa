@@ -38,15 +38,17 @@ function aktualisiereListe() {
     row.style.gap = "0.5rem";
     row.style.marginBottom = "0.3rem";
 
-    const inputName = document.createElement("input");
-    inputName.value = eintrag.name;
-    inputName.style.width = "8rem";
-    inputName.oninput = () => eintrag.name = inputName.value;
-
     const inputEinheit = document.createElement("input");
     inputEinheit.value = eintrag.einheit;
+    inputEinheit.placeholder = "Einheit";
     inputEinheit.style.width = "6rem";
     inputEinheit.oninput = () => eintrag.einheit = inputEinheit.value;
+
+    const inputName = document.createElement("input");
+    inputName.value = eintrag.name;
+    inputName.placeholder = "Name";
+    inputName.style.width = "8rem";
+    inputName.oninput = () => eintrag.name = inputName.value;
 
     const bereichFeld = bereichCheckboxen(eintrag.bereiche || [], (id, checked) => {
       eintrag.bereiche = eintrag.bereiche || [];
@@ -74,7 +76,8 @@ function aktualisiereListe() {
       aktualisiereListe();
     };
 
-    row.append(inputName, inputEinheit, bereichFeld, btnSpeichern, btnLoeschen);
+    // Einheit kommt vor Name
+    row.append(inputEinheit, inputName, bereichFeld, btnSpeichern, btnLoeschen);
     container.appendChild(row);
   });
 }
