@@ -38,6 +38,7 @@ function aktualisiereListe() {
     row.style.gap = "0.5rem";
     row.style.marginBottom = "0.3rem";
 
+    // Einheit zuerst
     const inputEinheit = document.createElement("input");
     inputEinheit.value = eintrag.einheit;
     inputEinheit.placeholder = "Einheit";
@@ -76,15 +77,15 @@ function aktualisiereListe() {
       aktualisiereListe();
     };
 
-    // Einheit kommt vor Name
+    // Einheit vor Name
     row.append(inputEinheit, inputName, bereichFeld, btnSpeichern, btnLoeschen);
     container.appendChild(row);
   });
 }
 
 window.materialHinzufuegen = function () {
-  const name = document.getElementById("neuesMaterialName").value.trim();
   const einheit = document.getElementById("neuesMaterialEinheit").value.trim();
+  const name = document.getElementById("neuesMaterialName").value.trim();
   if (!name) return;
 
   const checkboxen = document.querySelectorAll("#neueBereichCheckboxen input[type=checkbox]");
