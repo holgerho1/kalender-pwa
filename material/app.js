@@ -1,3 +1,4 @@
+// Sichtbarer Ladeindikator für Online-Test
 document.body.insertAdjacentHTML("beforeend", "<div style='color:red'>✅ app.js geladen</div>");
 
 let projekte = ["Haus A", "Garage", "Garten"]; // später aus DB laden
