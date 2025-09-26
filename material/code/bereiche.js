@@ -8,12 +8,19 @@ function aktualisiereListe() {
 
   [...bereiche].sort((a, b) => b.id - a.id).forEach(bereich => {
     const div = document.createElement("div");
-    div.className = "projekt"; // gleiche Klasse für Layout
+    div.className = "projekt";
 
-    const input = document.createElement("input");
-    input.value = bereich.name;
-    input.className = "projektName";
-    input.oninput = () => bereich.name = input.value;
+    const inputName = document.createElement("input");
+    inputName.value = bereich.name;
+    inputName.className = "projektName";
+    inputName.placeholder = "Name";
+    inputName.oninput = () => bereich.name = inputName.value;
+
+    const inputKuerzel = document.createElement("input");
+    inputKuerzel.value = bereich.kuerzel || "";
+    inputKuerzel.className = "projektName";
+    inputKuerzel.placeholder = "Kürzel";
+    inputKuerzel.oninput = () => bereich.kuerzel = inputKuerzel.value;
 
     const btnSpeichern = document.createElement("button");
     btnSpeichern.textContent = "💾 Speichern";
@@ -32,7 +39,7 @@ function aktualisiereListe() {
       aktualisiereListe();
     };
 
-    div.append(input, btnSpeichern, btnLoeschen);
+    div.append(inputName, inputKuerzel, btnSpeichern, btnLoeschen);
     container.appendChild(div);
   });
 }
@@ -42,7 +49,7 @@ window.bereichHinzufuegen = function () {
   const name = input.value.trim();
   if (!name) return;
 
-  bereiche.push({ id: Date.now(), name });
+  bereiche.push({ id: Date.now(), name, kuerzel: "" });
   input.value = "";
   speichereBereiche(bereiche);
   aktualisiereListe();
