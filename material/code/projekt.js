@@ -28,20 +28,22 @@ window.popupBearbeiten = function (eintrag) {
   document.getElementById("popupTitel").textContent = "Material ändern";
   document.getElementById("materialMenge").value = eintrag.menge;
   document.getElementById("materialPopup").style.display = "flex";
-  fuelleBereichFilter();
+  fuelleBereichFilter(eintrag.bereichId);
   fuelleMaterialAuswahl(eintrag.materialId);
 };
 
 window.popupSpeichern = function () {
   const menge = parseFloat(document.getElementById("materialMenge").value);
   const materialId = parseInt(document.getElementById("materialAuswahl").value);
-  if (!materialId || isNaN(menge)) return;
+  const bereichId = parseInt(document.getElementById("bereichFilter").value);
+  if (!materialId || isNaN(menge) || !bereichId) return;
 
   if (aktuellerEintrag) {
     aktuellerEintrag.materialId = materialId;
     aktuellerEintrag.menge = menge;
+    aktuellerEintrag.bereichId = bereichId;
   } else {
-    zuordnung.push({ id: Date.now(), materialId, menge });
+    zuordnung.push({ id: Date.now(), materialId, menge, bereichId });
   }
 
   projektMaterial[projekt.id] = zuordnung;
@@ -54,13 +56,14 @@ window.popupSchliessen = function () {
   document.getElementById("materialPopup").style.display = "none";
 };
 
-function fuelleBereichFilter() {
+function fuelleBereichFilter(vorwahlId = null) {
   const select = document.getElementById("bereichFilter");
   select.innerHTML = "";
   bereiche.forEach(b => {
     const opt = document.createElement("option");
     opt.value = b.id;
     opt.textContent = b.kuerzel || b.name;
+    if (b.id === vorwahlId) opt.selected = true;
     select.appendChild(opt);
   });
   select.onchange = () => fuelleMaterialAuswahl();
@@ -89,11 +92,11 @@ function aktualisiereListe() {
   zuordnung.forEach(eintrag => {
     const material = alleMaterialien.find(m => m.id === eintrag.materialId);
     if (!material) return;
-    material.menge = eintrag.menge;
-    material.zid = eintrag.id;
-    (material.bereiche || []).forEach(bid => {
-      gruppiert[bid] = gruppiert[bid] || [];
-      gruppiert[bid].push(material);
+    const gruppe = gruppiert[eintrag.bereichId] ||= [];
+    gruppe.push({
+      ...material,
+      menge: eintrag.menge,
+      zid: eintrag.id
     });
   });
 
