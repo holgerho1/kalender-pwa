@@ -33,7 +33,14 @@ function aktualisiereListe() {
       aktualisiereListe();
     };
 
-    div.append(input, btnSpeichern, btnLoeschen);
+    const btnOeffnen = document.createElement("button");
+    btnOeffnen.textContent = "📂 Öffnen";
+    btnOeffnen.onclick = () => {
+      localStorage.setItem("aktuellesProjekt", JSON.stringify(projekt));
+      window.location.href = "projekt.html";
+    };
+
+    div.append(input, btnSpeichern, btnLoeschen, btnOeffnen);
     container.appendChild(div);
   });
 }
