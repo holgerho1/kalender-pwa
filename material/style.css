@@ -37,7 +37,7 @@ button:hover {
   padding-bottom: 0.5rem;
   margin-bottom: 0.5rem;
   border-bottom: 1px solid #ccc;
-  font-size: 1.5rem; /* Schriftgröße für Materialeinträge */
+  font-size: 2rem; /* Schriftgröße für Materialeinträge 1.05 */
 }
 
 .projekt:last-child {
