@@ -8,19 +8,18 @@ body {
 
 input, button, select {
   margin: 0.3rem;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  padding: 0.4rem 0.5rem;
 }
 
 input {
   border: 1px solid #666;
   border-radius: 4px;
-  padding: 0.3rem;
   background-color: #fff;
   box-sizing: border-box;
 }
 
 button {
-  padding: 0.3rem 0.6rem;
   border: none;
   background-color: #007acc;
   color: white;
@@ -30,6 +29,20 @@ button {
 
 button:hover {
   background-color: #005fa3;
+}
+
+/* 🔧 Eingabezeile oben */
+#materialEingabe {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+#materialEingabe label {
+  font-weight: bold;
+  font-size: 1.1rem;
 }
 
 /* 🔧 Projektliste */
@@ -63,39 +76,4 @@ button:hover {
 
 #buttonLeiste {
   margin-bottom: 1rem;
-}
-
-/* 🪟 Popup */
-.modal {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 0 12px rgba(0,0,0,0.25);
-  padding: 2rem; /* ✅ mehr Innenabstand */
-  display: none;
-  z-index: 1000;
-  font-size: 1.2rem; /* ✅ gesamte Popup-Schrift größer */
-  max-width: 600px;
-  min-width: 320px;
-}
-
-/* Inhalt im Popup */
-.modalContent {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem; /* ✅ mehr Abstand zwischen Feldern */
-}
-
-.modalContent label {
-  font-weight: bold;
-  font-size: 1.2rem;
-}
-
-.modalContent input,
-.modalContent select {
-  font-size: 1.2rem;
-  padding: 0.5rem;
 }

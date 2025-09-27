@@ -12,54 +12,23 @@ const bereiche = ladeBereiche();
 let projektMaterial = JSON.parse(localStorage.getItem("projektMaterial")) || {};
 let zuordnung = projektMaterial[projekt.id] || [];
 
-let aktuellerEintrag = null;
-
-window.popupNeu = function () {
-  aktuellerEintrag = null;
-  document.getElementById("popupTitel").textContent = "Material hinzufügen";
-  document.getElementById("materialMenge").value = "";
-  document.getElementById("materialPopup").style.display = "block";
-
-  const gespeicherterBereich = parseInt(localStorage.getItem("letzterBereich"));
-  fuelleBereichFilter(gespeicherterBereich || bereiche[0]?.id);
-  fuelleMaterialAuswahl();
-};
-
-window.popupBearbeiten = function (eintrag) {
-  aktuellerEintrag = eintrag;
-  document.getElementById("popupTitel").textContent = "Material ändern";
-  document.getElementById("materialMenge").value = eintrag.menge;
-  document.getElementById("materialPopup").style.display = "block";
-  fuelleBereichFilter(eintrag.bereichId);
-  fuelleMaterialAuswahl(eintrag.materialId);
-};
-
-window.popupSpeichern = function () {
+// 🧾 Material speichern aus Eingabezeile
+window.materialSpeichern = function () {
   const menge = parseFloat(document.getElementById("materialMenge").value);
   const materialId = parseInt(document.getElementById("materialAuswahl").value);
   const bereichId = parseInt(document.getElementById("bereichFilter").value);
   if (!materialId || isNaN(menge) || !bereichId) return;
 
   localStorage.setItem("letzterBereich", bereichId);
-
-  if (aktuellerEintrag) {
-    aktuellerEintrag.materialId = materialId;
-    aktuellerEintrag.menge = menge;
-    aktuellerEintrag.bereichId = bereichId;
-  } else {
-    zuordnung.push({ id: Date.now(), materialId, menge, bereichId });
-  }
+  zuordnung.push({ id: Date.now(), materialId, menge, bereichId });
 
   projektMaterial[projekt.id] = zuordnung;
   localStorage.setItem("projektMaterial", JSON.stringify(projektMaterial));
-  popupSchliessen();
+  document.getElementById("materialMenge").value = "";
   aktualisiereListe();
 };
 
-window.popupSchliessen = function () {
-  document.getElementById("materialPopup").style.display = "none";
-};
-
+// 🧾 Bereichsauswahl füllen
 function fuelleBereichFilter(vorwahlId = null) {
   const select = document.getElementById("bereichFilter");
   select.innerHTML = "";
@@ -73,6 +42,7 @@ function fuelleBereichFilter(vorwahlId = null) {
   select.onchange = () => fuelleMaterialAuswahl();
 }
 
+// 🧾 Materialauswahl füllen
 function fuelleMaterialAuswahl(vorwahlId = null) {
   const bereichId = parseInt(document.getElementById("bereichFilter").value);
   const select = document.getElementById("materialAuswahl");
@@ -88,6 +58,7 @@ function fuelleMaterialAuswahl(vorwahlId = null) {
   });
 }
 
+// 📋 Materialliste anzeigen
 function aktualisiereListe() {
   const container = document.getElementById("materialListe");
   container.innerHTML = "";
@@ -133,13 +104,6 @@ function aktualisiereListe() {
       name.textContent = m.name;
       name.style.width = "16rem";
 
-      const btnAendern = document.createElement("button");
-      btnAendern.textContent = "✏️";
-      btnAendern.onclick = () => {
-        const eintrag = zuordnung.find(z => z.id === m.zid);
-        if (eintrag) window.popupBearbeiten(eintrag);
-      };
-
       const btnLoeschen = document.createElement("button");
       btnLoeschen.textContent = "🗑️";
       btnLoeschen.onclick = () => {
@@ -151,10 +115,14 @@ function aktualisiereListe() {
         aktualisiereListe();
       };
 
-      row.append(menge, einheit, name, btnAendern, btnLoeschen);
+      row.append(menge, einheit, name, btnLoeschen);
       container.appendChild(row);
     });
   });
 }
 
+// 🔁 Initialisierung
+const gespeicherterBereich = parseInt(localStorage.getItem("letzterBereich"));
+fuelleBereichFilter(gespeicherterBereich || bereiche[0]?.id);
+fuelleMaterialAuswahl();
 aktualisiereListe();
