@@ -1,14 +1,14 @@
 /* 🔧 Grundlayout */
 body {
   font-family: sans-serif;
-  font-size: 16px; /* globale Schriftgröße 16*/
+  font-size: 16px;
   padding: 2rem;
   background-color: #f9f9f9;
 }
 
-input, button {
+input, button, select {
   margin: 0.3rem;
-  font-size: 1rem;
+  font-size: 1.1rem; /* 🔍 Popup-Feldgröße */
 }
 
 input {
@@ -37,7 +37,7 @@ button:hover {
   padding-bottom: 0.5rem;
   margin-bottom: 0.5rem;
   border-bottom: 1px solid #ccc;
-  font-size: 1.05rem; /* Schriftgröße für Materialeinträge 1.05 */
+  font-size: 1.15rem; /* ✅ größere Schrift für Listeneinträge */
 }
 
 .projekt:last-child {
@@ -45,12 +45,16 @@ button:hover {
 }
 
 .projekt span {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   line-height: 1.4;
 }
 
 .projekt span:nth-child(3) {
   font-weight: 600; /* Name hervorheben */
+}
+
+h3 {
+  font-size: 1.1rem; /* Bereichsüberschrift bleibt moderat */
 }
 
 .projektName {
@@ -83,5 +87,5 @@ button:hover {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  font-size: 1rem; /* Schriftgröße im Popup */
+  font-size: 1.1rem; /* ✅ Popup-Inhalt größer */
 }
