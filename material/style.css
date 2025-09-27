@@ -1,9 +1,10 @@
 /* 🔧 Grundlayout */
-body {
+html, body {
   font-family: sans-serif;
   padding: 2rem;
   background-color: #f9f9f9;
-  touch-action: manipulation; /* verhindert Pinch-Zoom */
+  touch-action: none; /* blockiert Pinch-Zoom, Double-Tap, Scroll-Gesten */
+  overscroll-behavior: contain;
 }
 
 input, button {
