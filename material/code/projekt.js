@@ -144,3 +144,17 @@ function aktualisiereListe() {
       btnLoeschen.textContent = "🗑️";
       btnLoeschen.onclick = () => {
         const sicher = confirm(`Material "${m.name}" wirklich entfernen?`);
+        if (!sicher) return;
+        zuordnung = zuordnung.filter(z => z.id !== m.zid);
+        projektMaterial[projekt.id] = zuordnung;
+        localStorage.setItem("projektMaterial", JSON.stringify(projektMaterial));
+        aktualisiereListe();
+      };
+
+      row.append(menge, einheit, name, btnAendern, btnLoeschen);
+      container.appendChild(row);
+    });
+  });
+}
+
+aktualisiereListe();
