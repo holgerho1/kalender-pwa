@@ -62,11 +62,11 @@ button:hover {
   transition: transform 0.1s ease-out;
 }
 
-/* 🪟 Popup im Zoombereich */
+/* 🪟 Popup außerhalb des Zoombereichs */
 .modal {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
   background-color: #fff;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -74,9 +74,13 @@ button:hover {
   padding: 1rem;
   display: none; /* wird per JS auf "block" gesetzt */
   z-index: 1000;
-  transform: scale(1); /* verhindert Vererbung vom Wrapper-Zoom */
+  transform: scale(1); /* eigene Skalierung */
+  font-size: 1rem; /* separat anpassbar */
+  max-width: 90vw;
+  min-width: 300px;
 }
 
+/* Inhalt im Popup */
 .modalContent {
   display: flex;
   flex-direction: column;
