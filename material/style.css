@@ -8,7 +8,7 @@ body {
 
 input, button, select {
   margin: 0.3rem;
-  font-size: 1.1rem; /* 🔍 Popup-Feldgröße */
+  font-size: 1rem;
 }
 
 input {
@@ -37,7 +37,7 @@ button:hover {
   padding-bottom: 0.5rem;
   margin-bottom: 0.5rem;
   border-bottom: 1px solid #ccc;
-  font-size: 1.15rem; /* ✅ größere Schrift für Listeneinträge */
+  font-size: 1.15rem;
 }
 
 .projekt:last-child {
@@ -50,11 +50,7 @@ button:hover {
 }
 
 .projekt span:nth-child(3) {
-  font-weight: 600; /* Name hervorheben */
-}
-
-h3 {
-  font-size: 1.1rem; /* Bereichsüberschrift bleibt moderat */
+  font-weight: 600;
 }
 
 .projektName {
@@ -76,16 +72,30 @@ h3 {
   left: 1rem;
   background-color: #fff;
   border: 1px solid #ccc;
-  border-radius: 6px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.2);
-  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.25);
+  padding: 2rem; /* ✅ mehr Innenabstand */
   display: none;
   z-index: 1000;
+  font-size: 1.2rem; /* ✅ gesamte Popup-Schrift größer */
+  max-width: 600px;
+  min-width: 320px;
 }
 
+/* Inhalt im Popup */
 .modalContent {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  font-size: 1.1rem; /* ✅ Popup-Inhalt größer */
+  gap: 1rem; /* ✅ mehr Abstand zwischen Feldern */
+}
+
+.modalContent label {
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.modalContent input,
+.modalContent select {
+  font-size: 1.2rem;
+  padding: 0.5rem;
 }
