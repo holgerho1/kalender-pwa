@@ -1,7 +1,7 @@
 /* 🔧 Grundlayout */
 body {
   font-family: sans-serif;
-  font-size: 16px;
+  font-size: 18px;
   padding: 2rem;
   background-color: #f9f9f9;
   color: #333;
@@ -9,7 +9,7 @@ body {
 
 input, button, select {
   margin: 0.3rem;
-  font-size: 16px;
+  font-size: 18px;
   padding: 0.4rem 0.5rem;
 }
 
@@ -43,7 +43,7 @@ button:hover {
 
 #materialEingabe label {
   font-weight: bold;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 /* 🔧 Projektliste */
@@ -51,7 +51,7 @@ button:hover {
   padding-bottom: 0.5rem;
   margin-bottom: 0.5rem;
   border-bottom: 1px solid #ccc;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .projekt:last-child {
@@ -59,7 +59,7 @@ button:hover {
 }
 
 .projekt span {
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.4;
 }
 
