@@ -16,7 +16,7 @@
   </div>
 
   <!-- 🧾 Material-Eingabezeile -->
-  <div id="materialEingabe" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
+  <div id="materialEingabe">
     <label for="bereichFilter">Bereich:</label>
     <select id="bereichFilter"></select>
 
@@ -27,7 +27,7 @@
     <input id="materialMenge" type="number" placeholder="Menge" style="width: 6rem;" />
 
     <!-- 🔧 Mengenbuttons -->
-    <div style="display: flex; gap: 0.3rem;">
+    <div class="mengenButtons">
       <button onclick="adjustMenge(0.5)">+0,5</button>
       <button onclick="adjustMenge(1)">+1</button>
       <button onclick="adjustMenge(5)">+5</button>

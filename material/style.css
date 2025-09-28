@@ -53,14 +53,17 @@ button:hover {
 }
 
 .mengenButtons button {
-  min-width: 4rem;
-  padding: 0.3rem 0.6rem;
+  width: 6rem;
+  text-align: center;
   font-size: 28px;
+  padding: 0.3rem 0.6rem;
 }
 
 /* 🔧 Steuerbuttons oben */
 #auswahlModusButton,
 #duplikateButton {
+  width: 20rem;
+  text-align: center;
   background-color: #007acc;
   color: white;
   font-weight: bold;
@@ -156,6 +159,7 @@ button:hover {
 
   .mengenButtons button {
     font-size: 24px;
+    width: 5.5rem;
     padding: 0.3rem 0.6rem;
   }
 
@@ -173,5 +177,6 @@ button:hover {
   #duplikateButton {
     font-size: 24px;
     padding: 0.3rem 0.8rem;
+    width: 100%;
   }
 }
