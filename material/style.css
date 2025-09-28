@@ -48,8 +48,12 @@ button:hover {
 
 /* 🔧 Projektliste */
 .projekt {
-  padding-bottom: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
   margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid #ccc;
   font-size: 28px;
 }
@@ -61,15 +65,23 @@ button:hover {
 .projekt span {
   font-size: 28px;
   line-height: 1.4;
+  flex-shrink: 0;
 }
 
-/* ✅ Materialname breiter + kein Umbruch */
+/* ✅ Materialname: flexibel, kein Umbruch, nicht verdrängt */
 .projekt span:nth-child(3) {
   font-weight: 600;
-  width: 32rem;
+  flex-grow: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ✅ Buttons: feste Größe, kein Flex-Druck */
+.projekt button {
+  flex-shrink: 0;
+  font-size: 28px;
+  padding: 0.3rem 0.6rem;
 }
 
 .projektName {
@@ -84,7 +96,7 @@ button:hover {
   margin-bottom: 1rem;
 }
 
-/* 📱 Optional: Mobilanpassung */
+/* 📱 Mobilanpassung */
 @media screen and (max-width: 600px) {
   body {
     font-size: 24px;
@@ -104,7 +116,6 @@ button:hover {
   }
 
   .projekt span:nth-child(3) {
-    width: 100%;
     white-space: normal;
     overflow: visible;
     text-overflow: unset;

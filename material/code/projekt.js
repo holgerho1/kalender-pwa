@@ -87,7 +87,6 @@ function aktualisiereListe() {
       const row = document.createElement("div");
       row.className = "projekt";
       row.style.display = "flex";
-      row.style.flexWrap = "wrap";
       row.style.alignItems = "center";
       row.style.gap = "0.5rem";
       row.style.marginBottom = "0.3rem";
@@ -102,10 +101,14 @@ function aktualisiereListe() {
 
       const name = document.createElement("span");
       name.textContent = m.name;
-      name.style.width = "16rem";
+      name.style.flexGrow = "1";
+      name.style.whiteSpace = "nowrap";
+      name.style.overflow = "hidden";
+      name.style.textOverflow = "ellipsis";
 
       const btnLoeschen = document.createElement("button");
       btnLoeschen.textContent = "🗑️";
+      btnLoeschen.style.flexShrink = "0";
       btnLoeschen.onclick = () => {
         const sicher = confirm(`Material "${m.name}" wirklich entfernen?`);
         if (!sicher) return;
