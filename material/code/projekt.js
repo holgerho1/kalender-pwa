@@ -14,7 +14,6 @@ let zuordnung = projektMaterial[projekt.id] || [];
 
 let aktuellerEintrag = null;
 let aktiveZeile = null;
-let klickTimer = null;
 
 // 🧾 Material speichern aus Eingabezeile
 window.materialSpeichern = function () {
@@ -158,15 +157,10 @@ function aktualisiereListe() {
         aktualisiereListe();
       };
 
-      // 🕒 Langklick aktivieren
-      row.onmousedown = () => {
-        klickTimer = setTimeout(() => {
-          const eintrag = zuordnung.find(z => z.id === m.zid);
-          if (eintrag) bearbeiteEintrag(eintrag, row);
-        }, 600);
-      };
-      row.onmouseup = row.onmouseleave = () => {
-        clearTimeout(klickTimer);
+      // 🖱️ Doppelklick aktiviert Bearbeitung
+      row.ondblclick = () => {
+        const eintrag = zuordnung.find(z => z.id === m.zid);
+        if (eintrag) bearbeiteEintrag(eintrag, row);
       };
 
       row.append(menge, einheit, name, btnLoeschen);
