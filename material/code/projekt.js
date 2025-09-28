@@ -15,6 +15,7 @@ let zuordnung = projektMaterial[projekt.id] || [];
 let aktuellerEintrag = null;
 let aktiveZeile = null;
 let auswahlModusAktiv = false;
+let duplikateZusammengefasst = false;
 
 // 🧾 Auswahlmodus umschalten
 window.toggleAuswahlModus = function () {
@@ -36,7 +37,15 @@ window.toggleAuswahlModus = function () {
   }
 };
 
-// 🧾 Material speichern aus Eingabezeile
+// 🔽 Duplikate zusammenfassen
+document.getElementById("duplikateButton").onclick = () => {
+  duplikateZusammengefasst = !duplikateZusammengefasst;
+  aktualisiereListe();
+  const btn = document.getElementById("duplikateButton");
+  btn.textContent = duplikateZusammengefasst ? "🔼 Originale anzeigen" : "🔽 Doppelte zusammenfassen";
+};
+
+// 🧾 Material speichern
 window.materialSpeichern = function () {
   const menge = parseFloat(document.getElementById("materialMenge").value);
   const materialId = parseInt(document.getElementById("materialAuswahl").value);
@@ -61,7 +70,6 @@ window.materialSpeichern = function () {
   if (aktiveZeile) aktiveZeile.classList.remove("aktiv");
   aktiveZeile = null;
 
-  // 🧹 Bearbeitungsmodus beenden
   auswahlModusAktiv = false;
   const btn = document.getElementById("auswahlModusButton");
   btn.textContent = "✏️ Bearbeiten starten";
@@ -78,7 +86,7 @@ function fuelleBereichFilter(vorwahlId = null) {
   bereiche.forEach(b => {
     const opt = document.createElement("option");
     opt.value = b.id;
-    opt.textContent = b.kuerzel || b.name;
+    opt.textContent = b.name;
     if (b.id === vorwahlId) opt.selected = true;
     select.appendChild(opt);
   });
@@ -123,11 +131,26 @@ function aktualisiereListe() {
     const material = alleMaterialien.find(m => m.id === eintrag.materialId);
     if (!material) return;
     const gruppe = gruppiert[eintrag.bereichId] ||= [];
-    gruppe.push({
-      ...material,
-      menge: eintrag.menge,
-      zid: eintrag.id
-    });
+
+    if (duplikateZusammengefasst) {
+      const vorhanden = gruppe.find(g => g.name === material.name && g.einheit === material.einheit);
+      if (vorhanden) {
+        vorhanden.menge += eintrag.menge;
+        vorhanden.zids.push(eintrag.id);
+      } else {
+        gruppe.push({
+          ...material,
+          menge: eintrag.menge,
+          zids: [eintrag.id]
+        });
+      }
+    } else {
+      gruppe.push({
+        ...material,
+        menge: eintrag.menge,
+        zid: eintrag.id
+      });
+    }
   });
 
   bereiche.forEach(b => {
@@ -138,14 +161,25 @@ function aktualisiereListe() {
     header.textContent = b.name;
     container.appendChild(header);
 
+    const nameZaehler = {};
+    gruppe.forEach(m => {
+      const key = `${m.name}|${m.einheit}`;
+      nameZaehler[key] = (nameZaehler[key] || 0) + 1;
+    });
+
+    const gesehen = new Set();
     gruppe.sort((a, b) => a.name.localeCompare(b.name)).forEach(m => {
+      const key = `${m.name}|${m.einheit}`;
+      if (duplikateZusammengefasst && gesehen.has(key)) return;
+      gesehen.add(key);
+
       const row = document.createElement("div");
       row.className = "projekt";
       row.style.display = "flex";
       row.style.alignItems = "center";
       row.style.gap = "0.5rem";
       row.style.marginBottom = "0.3rem";
-      row.style.cursor = auswahlModusAktiv ? "pointer" : "default";
+      row.style.cursor = auswahlModusAktiv && !duplikateZusammengefasst ? "pointer" : "default";
 
       const menge = document.createElement("span");
       menge.textContent = `${m.menge}`;
@@ -169,16 +203,27 @@ function aktualisiereListe() {
         e.stopPropagation();
         const sicher = confirm(`Material "${m.name}" wirklich entfernen?`);
         if (!sicher) return;
-        zuordnung = zuordnung.filter(z => z.id !== m.zid);
+
+        if (duplikateZusammengefasst && m.zids) {
+          zuordnung = zuordnung.filter(z => !m.zids.includes(z.id));
+        } else {
+          zuordnung = zuordnung.filter(z => z.id !== m.zid);
+        }
+
         projektMaterial[projekt.id] = zuordnung;
         localStorage.setItem("projektMaterial", JSON.stringify(projektMaterial));
         aktualisiereListe();
       };
 
+      if (!duplikateZusammengefasst && nameZaehler[key] > 1) {
+        row.classList.add("duplikat");
+      }
+
       row.onclick = () => {
-        if (!auswahlModusAktiv) return;
+        if (!auswahlModusAktiv || duplikateZusammengefasst) return;
         const eintrag = zuordnung.find(z => z.id === m.zid);
-        if (eintrag) bearbeiteEintrag(eintrag, row);
+        if (eintrag) bearbeiteEintrag(eintrag
+        bearbeiteEintrag(eintrag, row);
       };
 
       row.append(menge, einheit, name, btnLoeschen);
@@ -189,6 +234,13 @@ function aktualisiereListe() {
 
 // 🔁 Initialisierung
 document.getElementById("auswahlModusButton").onclick = toggleAuswahlModus;
+document.getElementById("duplikateButton").onclick = () => {
+  duplikateZusammengefasst = !duplikateZusammengefasst;
+  aktualisiereListe();
+  const btn = document.getElementById("duplikateButton");
+  btn.textContent = duplikateZusammengefasst ? "🔼 Originale anzeigen" : "🔽 Doppelte zusammenfassen";
+};
+
 const gespeicherterBereich = parseInt(localStorage.getItem("letzterBereich"));
 fuelleBereichFilter(gespeicherterBereich || bereiche[0]?.id);
 fuelleMaterialAuswahl();
