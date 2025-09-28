@@ -46,6 +46,23 @@ button:hover {
   font-size: 28px;
 }
 
+/* 🔧 Abbrechen-Button */
+#abbrechenButton {
+  display: none;
+  background-color: #cc0000;
+  color: white;
+  font-weight: bold;
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  cursor: pointer;
+}
+
+#abbrechenButton:hover {
+  background-color: #aa0000;
+}
+
 /* 🔧 Projektliste */
 .projekt {
   display: flex;
@@ -56,6 +73,7 @@ button:hover {
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #ccc;
   font-size: 28px;
+  cursor: pointer;
 }
 
 .projekt:last-child {
@@ -82,6 +100,12 @@ button:hover {
   flex-shrink: 0;
   font-size: 28px;
   padding: 0.3rem 0.6rem;
+}
+
+/* ✅ Markierung bei Bearbeitung */
+.projekt.aktiv {
+  background-color: #ffe0e0;
+  border-left: 4px solid #cc0000;
 }
 
 .projektName {
@@ -119,5 +143,10 @@ button:hover {
     white-space: normal;
     overflow: visible;
     text-overflow: unset;
+  }
+
+  #abbrechenButton {
+    font-size: 24px;
+    padding: 0.3rem 0.8rem;
   }
 }

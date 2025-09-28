@@ -13,6 +13,8 @@ let projektMaterial = JSON.parse(localStorage.getItem("projektMaterial")) || {};
 let zuordnung = projektMaterial[projekt.id] || [];
 
 let aktuellerEintrag = null;
+let aktiveZeile = null;
+let klickTimer = null;
 
 // 🧾 Material speichern aus Eingabezeile
 window.materialSpeichern = function () {
@@ -35,7 +37,19 @@ window.materialSpeichern = function () {
   projektMaterial[projekt.id] = zuordnung;
   localStorage.setItem("projektMaterial", JSON.stringify(projektMaterial));
   document.getElementById("materialMenge").value = "";
+  document.getElementById("abbrechenButton").style.display = "none";
+  if (aktiveZeile) aktiveZeile.classList.remove("aktiv");
+  aktiveZeile = null;
   aktualisiereListe();
+};
+
+// 🧾 Bearbeitung abbrechen
+window.abbrechenBearbeitung = function () {
+  aktuellerEintrag = null;
+  document.getElementById("materialMenge").value = "";
+  document.getElementById("abbrechenButton").style.display = "none";
+  if (aktiveZeile) aktiveZeile.classList.remove("aktiv");
+  aktiveZeile = null;
 };
 
 // 🧾 Bereichsauswahl füllen
@@ -69,11 +83,17 @@ function fuelleMaterialAuswahl(vorwahlId = null) {
 }
 
 // 🖱️ Eintrag zur Bearbeitung übernehmen
-function bearbeiteEintrag(eintrag) {
+function bearbeiteEintrag(eintrag, zeile) {
   aktuellerEintrag = eintrag;
   document.getElementById("materialMenge").value = eintrag.menge;
   fuelleBereichFilter(eintrag.bereichId);
   fuelleMaterialAuswahl(eintrag.materialId);
+
+  if (aktiveZeile) aktiveZeile.classList.remove("aktiv");
+  aktiveZeile = zeile;
+  aktiveZeile.classList.add("aktiv");
+
+  document.getElementById("abbrechenButton").style.display = "inline-block";
 }
 
 // 📋 Materialliste anzeigen
@@ -129,7 +149,7 @@ function aktualisiereListe() {
       btnLoeschen.textContent = "🗑️";
       btnLoeschen.style.flexShrink = "0";
       btnLoeschen.onclick = (e) => {
-        e.stopPropagation(); // verhindert Konflikt mit Zeilenklick
+        e.stopPropagation();
         const sicher = confirm(`Material "${m.name}" wirklich entfernen?`);
         if (!sicher) return;
         zuordnung = zuordnung.filter(z => z.id !== m.zid);
@@ -138,9 +158,15 @@ function aktualisiereListe() {
         aktualisiereListe();
       };
 
-      row.onclick = () => {
-        const eintrag = zuordnung.find(z => z.id === m.zid);
-        if (eintrag) bearbeiteEintrag(eintrag);
+      // 🕒 Langklick aktivieren
+      row.onmousedown = () => {
+        klickTimer = setTimeout(() => {
+          const eintrag = zuordnung.find(z => z.id === m.zid);
+          if (eintrag) bearbeiteEintrag(eintrag, row);
+        }, 600);
+      };
+      row.onmouseup = row.onmouseleave = () => {
+        clearTimeout(klickTimer);
       };
 
       row.append(menge, einheit, name, btnLoeschen);
