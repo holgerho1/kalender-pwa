@@ -33,7 +33,6 @@ window.toggleAuswahlModus = function () {
     document.getElementById("materialMenge").value = "";
     if (aktiveZeile) aktiveZeile.classList.remove("aktiv");
     aktiveZeile = null;
-    document.getElementById("abbrechenButton").style.display = "none";
   }
 };
 
@@ -58,19 +57,18 @@ window.materialSpeichern = function () {
   projektMaterial[projekt.id] = zuordnung;
   localStorage.setItem("projektMaterial", JSON.stringify(projektMaterial));
   document.getElementById("materialMenge").value = "";
-  document.getElementById("abbrechenButton").style.display = "none";
-  if (aktiveZeile) aktiveZeile.classList.remove("aktiv");
-  aktiveZeile = null;
-  aktualisiereListe();
-};
 
-// 🧾 Bearbeitung abbrechen (separater Button)
-window.abbrechenBearbeitung = function () {
-  aktuellerEintrag = null;
-  document.getElementById("materialMenge").value = "";
-  document.getElementById("abbrechenButton").style.display = "none";
   if (aktiveZeile) aktiveZeile.classList.remove("aktiv");
   aktiveZeile = null;
+
+  // 🧹 Bearbeitungsmodus beenden
+  auswahlModusAktiv = false;
+  const btn = document.getElementById("auswahlModusButton");
+  btn.textContent = "✏️ Bearbeiten starten";
+  btn.style.backgroundColor = "";
+  btn.style.color = "";
+
+  aktualisiereListe();
 };
 
 // 🧾 Bereichsauswahl füllen
@@ -113,8 +111,6 @@ function bearbeiteEintrag(eintrag, zeile) {
   if (aktiveZeile) aktiveZeile.classList.remove("aktiv");
   aktiveZeile = zeile;
   aktiveZeile.classList.add("aktiv");
-
-  document.getElementById("abbrechenButton").style.display = "inline-block";
 }
 
 // 📋 Materialliste anzeigen
