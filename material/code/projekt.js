@@ -220,11 +220,10 @@ function aktualisiereListe() {
       }
 
       row.onclick = () => {
-        if (!auswahlModusAktiv || duplikateZusammengefasst) return;
-        const eintrag = zuordnung.find(z => z.id === m.zid);
-        if (eintrag) bearbeiteEintrag(eintrag
-        bearbeiteEintrag(eintrag, row);
-      };
+  if (!auswahlModusAktiv || duplikateZusammengefasst) return;
+  const eintrag = zuordnung.find(z => z.id === m.zid);
+  if (eintrag) bearbeiteEintrag(eintrag, row);
+};
 
       row.append(menge, einheit, name, btnLoeschen);
       container.appendChild(row);
