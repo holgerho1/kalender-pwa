@@ -12,6 +12,8 @@ const bereiche = ladeBereiche();
 let projektMaterial = JSON.parse(localStorage.getItem("projektMaterial")) || {};
 let zuordnung = projektMaterial[projekt.id] || [];
 
+let aktuellerEintrag = null;
+
 // 🧾 Material speichern aus Eingabezeile
 window.materialSpeichern = function () {
   const menge = parseFloat(document.getElementById("materialMenge").value);
@@ -20,7 +22,15 @@ window.materialSpeichern = function () {
   if (!materialId || isNaN(menge) || !bereichId) return;
 
   localStorage.setItem("letzterBereich", bereichId);
-  zuordnung.push({ id: Date.now(), materialId, menge, bereichId });
+
+  if (aktuellerEintrag) {
+    aktuellerEintrag.materialId = materialId;
+    aktuellerEintrag.menge = menge;
+    aktuellerEintrag.bereichId = bereichId;
+    aktuellerEintrag = null;
+  } else {
+    zuordnung.push({ id: Date.now(), materialId, menge, bereichId });
+  }
 
   projektMaterial[projekt.id] = zuordnung;
   localStorage.setItem("projektMaterial", JSON.stringify(projektMaterial));
@@ -58,6 +68,14 @@ function fuelleMaterialAuswahl(vorwahlId = null) {
   });
 }
 
+// 🖱️ Eintrag zur Bearbeitung übernehmen
+function bearbeiteEintrag(eintrag) {
+  aktuellerEintrag = eintrag;
+  document.getElementById("materialMenge").value = eintrag.menge;
+  fuelleBereichFilter(eintrag.bereichId);
+  fuelleMaterialAuswahl(eintrag.materialId);
+}
+
 // 📋 Materialliste anzeigen
 function aktualisiereListe() {
   const container = document.getElementById("materialListe");
@@ -90,6 +108,7 @@ function aktualisiereListe() {
       row.style.alignItems = "center";
       row.style.gap = "0.5rem";
       row.style.marginBottom = "0.3rem";
+      row.style.cursor = "pointer";
 
       const menge = document.createElement("span");
       menge.textContent = `${m.menge}`;
@@ -109,13 +128,19 @@ function aktualisiereListe() {
       const btnLoeschen = document.createElement("button");
       btnLoeschen.textContent = "🗑️";
       btnLoeschen.style.flexShrink = "0";
-      btnLoeschen.onclick = () => {
+      btnLoeschen.onclick = (e) => {
+        e.stopPropagation(); // verhindert Konflikt mit Zeilenklick
         const sicher = confirm(`Material "${m.name}" wirklich entfernen?`);
         if (!sicher) return;
         zuordnung = zuordnung.filter(z => z.id !== m.zid);
         projektMaterial[projekt.id] = zuordnung;
         localStorage.setItem("projektMaterial", JSON.stringify(projektMaterial));
         aktualisiereListe();
+      };
+
+      row.onclick = () => {
+        const eintrag = zuordnung.find(z => z.id === m.zid);
+        if (eintrag) bearbeiteEintrag(eintrag);
       };
 
       row.append(menge, einheit, name, btnLoeschen);
