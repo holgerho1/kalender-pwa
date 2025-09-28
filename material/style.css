@@ -63,8 +63,13 @@ button:hover {
   line-height: 1.4;
 }
 
+/* ✅ Materialname breiter + kein Umbruch */
 .projekt span:nth-child(3) {
   font-weight: 600;
+  width: 32rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .projektName {
@@ -77,4 +82,31 @@ button:hover {
 
 #buttonLeiste {
   margin-bottom: 1rem;
+}
+
+/* 📱 Optional: Mobilanpassung */
+@media screen and (max-width: 600px) {
+  body {
+    font-size: 24px;
+    padding: 1rem;
+  }
+
+  input, button, select {
+    font-size: 24px;
+  }
+
+  #materialEingabe label {
+    font-size: 24px;
+  }
+
+  .projekt span {
+    font-size: 24px;
+  }
+
+  .projekt span:nth-child(3) {
+    width: 100%;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
 }
