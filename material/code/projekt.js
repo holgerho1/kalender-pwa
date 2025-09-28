@@ -14,6 +14,28 @@ let zuordnung = projektMaterial[projekt.id] || [];
 
 let aktuellerEintrag = null;
 let aktiveZeile = null;
+let auswahlModusAktiv = false;
+
+// 🧾 Auswahlmodus umschalten
+window.toggleAuswahlModus = function () {
+  auswahlModusAktiv = !auswahlModusAktiv;
+  const btn = document.getElementById("auswahlModusButton");
+
+  if (auswahlModusAktiv) {
+    btn.textContent = "❌ Bearbeitung abbrechen";
+    btn.style.backgroundColor = "#cc0000";
+    btn.style.color = "white";
+  } else {
+    btn.textContent = "✏️ Bearbeiten starten";
+    btn.style.backgroundColor = "";
+    btn.style.color = "";
+    aktuellerEintrag = null;
+    document.getElementById("materialMenge").value = "";
+    if (aktiveZeile) aktiveZeile.classList.remove("aktiv");
+    aktiveZeile = null;
+    document.getElementById("abbrechenButton").style.display = "none";
+  }
+};
 
 // 🧾 Material speichern aus Eingabezeile
 window.materialSpeichern = function () {
@@ -42,7 +64,7 @@ window.materialSpeichern = function () {
   aktualisiereListe();
 };
 
-// 🧾 Bearbeitung abbrechen
+// 🧾 Bearbeitung abbrechen (separater Button)
 window.abbrechenBearbeitung = function () {
   aktuellerEintrag = null;
   document.getElementById("materialMenge").value = "";
@@ -127,7 +149,7 @@ function aktualisiereListe() {
       row.style.alignItems = "center";
       row.style.gap = "0.5rem";
       row.style.marginBottom = "0.3rem";
-      row.style.cursor = "pointer";
+      row.style.cursor = auswahlModusAktiv ? "pointer" : "default";
 
       const menge = document.createElement("span");
       menge.textContent = `${m.menge}`;
@@ -157,8 +179,8 @@ function aktualisiereListe() {
         aktualisiereListe();
       };
 
-      // 🖱️ Doppelklick aktiviert Bearbeitung
-      row.ondblclick = () => {
+      row.onclick = () => {
+        if (!auswahlModusAktiv) return;
         const eintrag = zuordnung.find(z => z.id === m.zid);
         if (eintrag) bearbeiteEintrag(eintrag, row);
       };
@@ -170,6 +192,7 @@ function aktualisiereListe() {
 }
 
 // 🔁 Initialisierung
+document.getElementById("auswahlModusButton").onclick = toggleAuswahlModus;
 const gespeicherterBereich = parseInt(localStorage.getItem("letzterBereich"));
 fuelleBereichFilter(gespeicherterBereich || bereiche[0]?.id);
 fuelleMaterialAuswahl();
