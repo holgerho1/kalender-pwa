@@ -2,13 +2,14 @@ import { ladeBereiche } from "./db.js";
 import { bearbeiteEintrag, auswahlModusAktiv } from "./eingabe.js";
 
 export function aktualisiereListe() {
+  const container = document.getElementById("materialListe");
+  container.innerHTML = "";
+
   const projekt = JSON.parse(localStorage.getItem("aktuellesProjekt"));
   const alleMaterialien = JSON.parse(localStorage.getItem("material")) || [];
   const bereiche = ladeBereiche();
   const projektMaterial = JSON.parse(localStorage.getItem("projektMaterial")) || {};
   const zuordnung = projektMaterial[projekt.id] || [];
-  const container = document.getElementById("materialListe");
-  container.innerHTML = "";
 
   const gruppiert = {};
   zuordnung.forEach(eintrag => {
@@ -88,12 +89,9 @@ export function aktualisiereListe() {
         const sicher = confirm(`Material "${m.name}" wirklich entfernen?`);
         if (!sicher) return;
 
-        let neueZuordnung;
-        if (window.duplikateZusammengefasst && m.zids) {
-          neueZuordnung = zuordnung.filter(z => !m.zids.includes(z.id));
-        } else {
-          neueZuordnung = zuordnung.filter(z => z.id !== m.zid);
-        }
+        const neueZuordnung = window.duplikateZusammengefasst && m.zids
+          ? zuordnung.filter(z => !m.zids.includes(z.id))
+          : zuordnung.filter(z => z.id !== m.zid);
 
         const projektMaterial = JSON.parse(localStorage.getItem("projektMaterial")) || {};
         projektMaterial[projekt.id] = neueZuordnung;

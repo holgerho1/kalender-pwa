@@ -1,7 +1,12 @@
 import { ladeBereiche } from "./db.js";
-import { fuelleBereichFilter, fuelleMaterialAuswahl } from "./eingabe.js";
+import {
+  fuelleBereichFilter,
+  fuelleMaterialAuswahl,
+  toggleAuswahlModus,
+  materialSpeichern,
+  adjustMenge
+} from "./eingabe.js";
 import { aktualisiereListe } from "./liste.js";
-import { toggleAuswahlModus, materialSpeichern, adjustMenge } from "./eingabe.js";
 
 export function initProjekt() {
   const projekt = JSON.parse(localStorage.getItem("aktuellesProjekt"));
@@ -12,20 +17,28 @@ export function initProjekt() {
   }
 
   document.getElementById("projektTitel").textContent = `📂 Projekt: ${projekt.name}`;
-  const gespeicherterBereich = parseInt(localStorage.getItem("letzterBereich"));
-  fuelleBereichFilter(gespeicherterBereich || ladeBereiche()[0]?.id);
-  fuelleMaterialAuswahl();
 
+  // 🔁 Event-Handler registrieren
   document.getElementById("auswahlModusButton").onclick = toggleAuswahlModus;
   document.getElementById("duplikateButton").onclick = () => {
     window.duplikateZusammengefasst = !window.duplikateZusammengefasst;
     aktualisiereListe();
     const btn = document.getElementById("duplikateButton");
-    btn.textContent = window.duplikateZusammengefasst ? "🔼 Originale anzeigen" : "🔽 Doppelte zusammenfassen";
+    btn.textContent = window.duplikateZusammengefasst
+      ? "🔼 Originale anzeigen"
+      : "🔽 Doppelte zusammenfassen";
   };
 
+  // 🔁 Globale Funktionen bereitstellen
   window.materialSpeichern = materialSpeichern;
   window.adjustMenge = adjustMenge;
 
+  // 🔁 Initiale Auswahl füllen
+  const gespeicherterBereich = parseInt(localStorage.getItem("letzterBereich"));
+  const bereiche = ladeBereiche();
+  fuelleBereichFilter(gespeicherterBereich || bereiche[0]?.id);
+  fuelleMaterialAuswahl();
+
+  // 📋 Liste anzeigen
   aktualisiereListe();
 }

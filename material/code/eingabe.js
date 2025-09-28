@@ -1,11 +1,11 @@
 import { ladeBereiche } from "./db.js";
-import { fuelleMaterialAuswahl } from "./eingabe.js"; // falls du das trennst
 import { aktualisiereListe } from "./liste.js";
 
 export let aktuellerEintrag = null;
 export let aktiveZeile = null;
 export let auswahlModusAktiv = false;
 
+// 🔁 Auswahlmodus umschalten
 export function toggleAuswahlModus() {
   auswahlModusAktiv = !auswahlModusAktiv;
   const btn = document.getElementById("auswahlModusButton");
@@ -25,6 +25,7 @@ export function toggleAuswahlModus() {
   }
 }
 
+// 💾 Material speichern
 export function materialSpeichern() {
   const menge = parseFloat(document.getElementById("materialMenge").value);
   const materialId = parseInt(document.getElementById("materialAuswahl").value);
@@ -34,6 +35,7 @@ export function materialSpeichern() {
   localStorage.setItem("letzterBereich", bereichId);
 
   const projekt = JSON.parse(localStorage.getItem("aktuellesProjekt"));
+  const alleMaterialien = JSON.parse(localStorage.getItem("material")) || [];
   let projektMaterial = JSON.parse(localStorage.getItem("projektMaterial")) || {};
   let zuordnung = projektMaterial[projekt.id] || [];
 
@@ -62,6 +64,7 @@ export function materialSpeichern() {
   aktualisiereListe();
 }
 
+// 🖱️ Eintrag zur Bearbeitung übernehmen
 export function bearbeiteEintrag(eintrag, zeile) {
   aktuellerEintrag = eintrag;
   document.getElementById("materialMenge").value = eintrag.menge;
@@ -73,6 +76,7 @@ export function bearbeiteEintrag(eintrag, zeile) {
   aktiveZeile.classList.add("aktiv");
 }
 
+// ➕ Mengenbuttons
 export function adjustMenge(wert) {
   const input = document.getElementById("materialMenge");
   let aktuelle = parseFloat(input.value) || 0;
@@ -85,6 +89,7 @@ export function adjustMenge(wert) {
   }
 }
 
+// 📂 Bereichsauswahl füllen
 export function fuelleBereichFilter(vorwahlId = null) {
   const bereiche = ladeBereiche();
   const select = document.getElementById("bereichFilter");
@@ -97,4 +102,21 @@ export function fuelleBereichFilter(vorwahlId = null) {
     select.appendChild(opt);
   });
   select.onchange = () => fuelleMaterialAuswahl();
+}
+
+// 📦 Materialauswahl füllen
+export function fuelleMaterialAuswahl(vorwahlId = null) {
+  const bereichId = parseInt(document.getElementById("bereichFilter").value);
+  const alleMaterialien = JSON.parse(localStorage.getItem("material")) || [];
+  const select = document.getElementById("materialAuswahl");
+  select.innerHTML = "";
+
+  const gefiltert = alleMaterialien.filter(m => m.bereiche?.includes(bereichId));
+  gefiltert.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = `${m.einheit} ${m.name}`;
+    if (m.id === vorwahlId) opt.selected = true;
+    select.appendChild(opt);
+  });
 }
