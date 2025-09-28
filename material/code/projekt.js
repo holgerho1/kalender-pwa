@@ -135,7 +135,7 @@ function aktualisiereListe() {
     if (!gruppe || gruppe.length === 0) return;
 
     const header = document.createElement("h3");
-    header.textContent = b.kuerzel || b.name;
+    header.textContent = b.name;
     container.appendChild(header);
 
     gruppe.sort((a, b) => a.name.localeCompare(b.name)).forEach(m => {
