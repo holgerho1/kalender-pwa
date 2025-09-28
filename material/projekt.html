@@ -11,25 +11,30 @@
 
   <!-- 🔧 Steuerbuttons -->
   <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-    <!-- ✏️ Auswahlmodus aktivieren -->
-    <button id="auswahlModusButton" style="font-size: 28px; padding: 0.4rem 1rem; border: none; border-radius: 4px; cursor: pointer;">
-      ✏️ Bearbeiten starten
-    </button>
-
-    <!-- 🔽 Duplikate zusammenfassen -->
-    <button id="duplikateButton" style="font-size: 28px; padding: 0.4rem 1rem; border: none; border-radius: 4px; cursor: pointer;">
-      🔽 Doppelte zusammenfassen
-    </button>
+    <button id="auswahlModusButton">✏️ Bearbeiten starten</button>
+    <button id="duplikateButton">🔽 Doppelte zusammenfassen</button>
   </div>
 
   <!-- 🧾 Material-Eingabezeile -->
   <div id="materialEingabe" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
     <label for="bereichFilter">Bereich:</label>
     <select id="bereichFilter"></select>
+
     <label for="materialAuswahl">Material:</label>
     <select id="materialAuswahl"></select>
+
     <label for="materialMenge">Menge:</label>
     <input id="materialMenge" type="number" placeholder="Menge" style="width: 6rem;" />
+
+    <!-- 🔧 Mengenbuttons -->
+    <div style="display: flex; gap: 0.3rem;">
+      <button onclick="adjustMenge(0.5)">+0,5</button>
+      <button onclick="adjustMenge(1)">+1</button>
+      <button onclick="adjustMenge(5)">+5</button>
+      <button onclick="adjustMenge(-1)">−1</button>
+      <button onclick="adjustMenge('reset')">0</button>
+    </div>
+
     <button onclick="materialSpeichern()">💾 Speichern</button>
   </div>
 

@@ -121,6 +121,18 @@ function bearbeiteEintrag(eintrag, zeile) {
   aktiveZeile.classList.add("aktiv");
 }
 
+window.adjustMenge = function (wert) {
+  const input = document.getElementById("materialMenge");
+  let aktuelle = parseFloat(input.value) || 0;
+
+  if (wert === "reset") {
+    input.value = "";
+  } else {
+    aktuelle += wert;
+    input.value = Math.max(0, Math.round(aktuelle * 100) / 100);
+  }
+};
+
 // 📋 Materialliste anzeigen
 function aktualisiereListe() {
   const container = document.getElementById("materialListe");
