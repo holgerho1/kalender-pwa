@@ -1,8 +1,9 @@
 import { ladeBereiche } from "./db.js";
 import { aktualisiereListe } from "./liste.js";
 
-export let aktuellerEintrag = null;
-export let aktiveZeile = null;
+// 🔧 Globale Zustände
+window.aktuellerEintrag = null;
+window.aktiveZeile = null;
 export let auswahlModusAktiv = false;
 
 // 🔁 Auswahlmodus umschalten
@@ -18,10 +19,10 @@ export function toggleAuswahlModus() {
     btn.textContent = "✏️ Bearbeiten starten";
     btn.style.backgroundColor = "";
     btn.style.color = "";
-    aktuellerEintrag = null;
+    window.aktuellerEintrag = null;
     document.getElementById("materialMenge").value = "";
-    if (aktiveZeile) aktiveZeile.classList.remove("aktiv");
-    aktiveZeile = null;
+    if (window.aktiveZeile) window.aktiveZeile.classList.remove("aktiv");
+    window.aktiveZeile = null;
   }
 }
 
@@ -39,11 +40,11 @@ export function materialSpeichern() {
   let projektMaterial = JSON.parse(localStorage.getItem("projektMaterial")) || {};
   let zuordnung = projektMaterial[projekt.id] || [];
 
-  if (aktuellerEintrag) {
-    aktuellerEintrag.materialId = materialId;
-    aktuellerEintrag.menge = menge;
-    aktuellerEintrag.bereichId = bereichId;
-    aktuellerEintrag = null;
+  if (window.aktuellerEintrag) {
+    window.aktuellerEintrag.materialId = materialId;
+    window.aktuellerEintrag.menge = menge;
+    window.aktuellerEintrag.bereichId = bereichId;
+    window.aktuellerEintrag = null;
   } else {
     zuordnung.push({ id: Date.now(), materialId, menge, bereichId });
   }
@@ -52,8 +53,8 @@ export function materialSpeichern() {
   localStorage.setItem("projektMaterial", JSON.stringify(projektMaterial));
   document.getElementById("materialMenge").value = "";
 
-  if (aktiveZeile) aktiveZeile.classList.remove("aktiv");
-  aktiveZeile = null;
+  if (window.aktiveZeile) window.aktiveZeile.classList.remove("aktiv");
+  window.aktiveZeile = null;
 
   auswahlModusAktiv = false;
   const btn = document.getElementById("auswahlModusButton");
@@ -66,14 +67,14 @@ export function materialSpeichern() {
 
 // 🖱️ Eintrag zur Bearbeitung übernehmen
 export function bearbeiteEintrag(eintrag, zeile) {
-  aktuellerEintrag = eintrag;
+  window.aktuellerEintrag = eintrag;
   document.getElementById("materialMenge").value = eintrag.menge;
   fuelleBereichFilter(eintrag.bereichId);
   fuelleMaterialAuswahl(eintrag.materialId);
 
-  if (aktiveZeile) aktiveZeile.classList.remove("aktiv");
-  aktiveZeile = zeile;
-  aktiveZeile.classList.add("aktiv");
+  if (window.aktiveZeile) window.aktiveZeile.classList.remove("aktiv");
+  window.aktiveZeile = zeile;
+  window.aktiveZeile.classList.add("aktiv");
 }
 
 // ➕ Mengenbuttons
