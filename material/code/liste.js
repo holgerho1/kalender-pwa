@@ -1,5 +1,5 @@
 import { ladeBereiche } from "./db.js";
-import { bearbeiteEintrag, auswahlModusAktiv } from "./eingabe.js";
+import * as eingabe from "./eingabe.js";
 
 export function aktualisiereListe() {
   const container = document.getElementById("materialListe");
@@ -64,7 +64,7 @@ export function aktualisiereListe() {
       row.style.alignItems = "center";
       row.style.gap = "0.5rem";
       row.style.marginBottom = "0.3rem";
-      row.style.cursor = auswahlModusAktiv && !window.duplikateZusammengefasst ? "pointer" : "default";
+      row.style.cursor = eingabe.auswahlModusAktiv && !window.duplikateZusammengefasst ? "pointer" : "default";
 
       const menge = document.createElement("span");
       menge.textContent = `${m.menge}`;
@@ -104,9 +104,9 @@ export function aktualisiereListe() {
       }
 
       row.onclick = () => {
-        if (!auswahlModusAktiv || window.duplikateZusammengefasst) return;
+        if (!eingabe.auswahlModusAktiv || window.duplikateZusammengefasst) return;
         const eintrag = zuordnung.find(z => z.id === m.zid);
-        if (eintrag) bearbeiteEintrag(eintrag, row);
+        if (eintrag) eingabe.bearbeiteEintrag(eintrag, row);
       };
 
       row.append(menge, einheit, name, btnLoeschen);
