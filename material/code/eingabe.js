@@ -41,9 +41,15 @@ export function materialSpeichern() {
   let zuordnung = projektMaterial[projekt.id] || [];
 
   if (window.aktuellerEintrag) {
-    window.aktuellerEintrag.materialId = materialId;
-    window.aktuellerEintrag.menge = menge;
-    window.aktuellerEintrag.bereichId = bereichId;
+    const index = zuordnung.findIndex(z => z.id === window.aktuellerEintrag.id);
+    if (index !== -1) {
+      zuordnung[index] = {
+        id: window.aktuellerEintrag.id,
+        materialId,
+        menge,
+        bereichId
+      };
+    }
     window.aktuellerEintrag = null;
   } else {
     zuordnung.push({ id: Date.now(), materialId, menge, bereichId });
