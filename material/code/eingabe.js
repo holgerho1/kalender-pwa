@@ -4,14 +4,14 @@ import { aktualisiereListe } from "./liste.js";
 // 🔧 Globale Zustände
 window.aktuellerEintrag = null;
 window.aktiveZeile = null;
-export let auswahlModusAktiv = false;
+window.auswahlModusAktiv = false;
 
 // 🔁 Auswahlmodus umschalten
 export function toggleAuswahlModus() {
-  auswahlModusAktiv = !auswahlModusAktiv;
+  window.auswahlModusAktiv = !window.auswahlModusAktiv;
   const btn = document.getElementById("auswahlModusButton");
 
-  if (auswahlModusAktiv) {
+  if (window.auswahlModusAktiv) {
     btn.textContent = "❌ Bearbeitung abbrechen";
     btn.style.backgroundColor = "#cc0000";
     btn.style.color = "white";
@@ -56,7 +56,7 @@ export function materialSpeichern() {
   if (window.aktiveZeile) window.aktiveZeile.classList.remove("aktiv");
   window.aktiveZeile = null;
 
-  auswahlModusAktiv = false;
+  window.auswahlModusAktiv = false;
   const btn = document.getElementById("auswahlModusButton");
   btn.textContent = "✏️ Bearbeiten starten";
   btn.style.backgroundColor = "";

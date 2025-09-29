@@ -64,7 +64,7 @@ export function aktualisiereListe() {
       row.style.alignItems = "center";
       row.style.gap = "0.5rem";
       row.style.marginBottom = "0.3rem";
-      row.style.cursor = eingabe.auswahlModusAktiv && !window.duplikateZusammengefasst ? "pointer" : "default";
+      row.style.cursor = window.auswahlModusAktiv && !window.duplikateZusammengefasst ? "pointer" : "default";
 
       const menge = document.createElement("span");
       menge.textContent = `${m.menge}`;
@@ -104,7 +104,7 @@ export function aktualisiereListe() {
       }
 
       row.onclick = () => {
-        if (!eingabe.auswahlModusAktiv || window.duplikateZusammengefasst) return;
+        if (!window.auswahlModusAktiv || window.duplikateZusammengefasst) return;
         const eintrag = zuordnung.find(z => z.id === m.zid);
         if (eintrag) eingabe.bearbeiteEintrag(eintrag, row);
       };
