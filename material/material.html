@@ -8,6 +8,7 @@
 <body>
   <h1>📦 Material</h1>
 
+  <!-- Eingabebereich für neues Material -->
   <div id="materialNeu" style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
     <input id="neuesMaterialEinheit" placeholder="Einheit" style="width: 6rem;" />
     <input id="neuesMaterialName" placeholder="Name" style="width: 16rem;" />
@@ -17,8 +18,10 @@
 
   <hr />
 
+  <!-- Liste aller Materialien -->
   <div id="materialListe"></div>
 
+  <!-- Modul lädt die Logik aus material.js -->
   <script type="module" src="./code/material.js"></script>
 </body>
 </html>

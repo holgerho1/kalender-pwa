@@ -1,7 +1,10 @@
 import { ladeProjekte, speichereProjekte } from "./code/db.js";
 import { sortiereNeueste, neuesProjekt, loescheProjekt } from "./code/projekte.js";
+// Optional: zentrale Zustandsverwaltung
+// import { state } from "./code/state.js";
 
 let projekte = ladeProjekte();
+// Optional: state.projekte = projekte;
 
 function aktualisiereListe() {
   const container = document.getElementById("projektListe");

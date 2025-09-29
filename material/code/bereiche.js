@@ -1,12 +1,13 @@
 import { ladeBereiche, speichereBereiche } from "./db.js";
+import { state } from "./state.js";
 
-let bereiche = ladeBereiche();
+state.bereiche = ladeBereiche();
 
 function aktualisiereListe() {
   const container = document.getElementById("bereichListe");
   container.innerHTML = "";
 
-  [...bereiche].sort((a, b) => b.id - a.id).forEach(bereich => {
+  [...state.bereiche].sort((a, b) => b.id - a.id).forEach(bereich => {
     const div = document.createElement("div");
     div.className = "projekt";
 
@@ -25,7 +26,7 @@ function aktualisiereListe() {
     const btnSpeichern = document.createElement("button");
     btnSpeichern.textContent = "💾 Speichern";
     btnSpeichern.onclick = () => {
-      speichereBereiche(bereiche);
+      speichereBereiche(state.bereiche);
       aktualisiereListe();
     };
 
@@ -34,8 +35,8 @@ function aktualisiereListe() {
     btnLoeschen.onclick = () => {
       const sicher = confirm(`Bereich "${bereich.name}" wirklich löschen?`);
       if (!sicher) return;
-      bereiche = bereiche.filter(b => b.id !== bereich.id);
-      speichereBereiche(bereiche);
+      state.bereiche = state.bereiche.filter(b => b.id !== bereich.id);
+      speichereBereiche(state.bereiche);
       aktualisiereListe();
     };
 
@@ -49,9 +50,9 @@ window.bereichHinzufuegen = function () {
   const name = input.value.trim();
   if (!name) return;
 
-  bereiche.push({ id: Date.now(), name, kuerzel: "" });
+  state.bereiche.push({ id: Date.now(), name, kuerzel: "" });
   input.value = "";
-  speichereBereiche(bereiche);
+  speichereBereiche(state.bereiche);
   aktualisiereListe();
 };
 

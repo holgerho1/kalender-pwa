@@ -1,7 +1,8 @@
 import { ladeBereiche } from "./db.js";
+import { state } from "./state.js";
 
-let material = JSON.parse(localStorage.getItem("material")) || [];
-const bereiche = ladeBereiche();
+state.material = JSON.parse(localStorage.getItem("material")) || [];
+state.bereiche = ladeBereiche();
 
 function bereichCheckboxen(ids = [], onChange) {
   const container = document.createElement("span");
@@ -9,7 +10,7 @@ function bereichCheckboxen(ids = [], onChange) {
   container.style.flexWrap = "wrap";
   container.style.gap = "0.3rem";
 
-  bereiche.forEach(b => {
+  state.bereiche.forEach(b => {
     const label = document.createElement("label");
     label.style.fontSize = "0.9rem";
 
@@ -29,7 +30,7 @@ function aktualisiereListe() {
   const container = document.getElementById("materialListe");
   container.innerHTML = "";
 
-  [...material].sort((a, b) => b.id - a.id).forEach(eintrag => {
+  [...state.material].sort((a, b) => b.id - a.id).forEach(eintrag => {
     const row = document.createElement("div");
     row.className = "projekt";
     row.style.display = "flex";
@@ -38,7 +39,6 @@ function aktualisiereListe() {
     row.style.gap = "0.5rem";
     row.style.marginBottom = "0.3rem";
 
-    // Einheit zuerst
     const inputEinheit = document.createElement("input");
     inputEinheit.value = eintrag.einheit;
     inputEinheit.placeholder = "Einheit";
@@ -63,7 +63,7 @@ function aktualisiereListe() {
     const btnSpeichern = document.createElement("button");
     btnSpeichern.textContent = "💾";
     btnSpeichern.onclick = () => {
-      localStorage.setItem("material", JSON.stringify(material));
+      localStorage.setItem("material", JSON.stringify(state.material));
       aktualisiereListe();
     };
 
@@ -72,12 +72,11 @@ function aktualisiereListe() {
     btnLoeschen.onclick = () => {
       const sicher = confirm(`Material "${eintrag.name}" wirklich löschen?`);
       if (!sicher) return;
-      material = material.filter(m => m.id !== eintrag.id);
-      localStorage.setItem("material", JSON.stringify(material));
+      state.material = state.material.filter(m => m.id !== eintrag.id);
+      localStorage.setItem("material", JSON.stringify(state.material));
       aktualisiereListe();
     };
 
-    // Einheit vor Name
     row.append(inputEinheit, inputName, bereichFeld, btnSpeichern, btnLoeschen);
     container.appendChild(row);
   });
@@ -91,14 +90,14 @@ window.materialHinzufuegen = function () {
   const checkboxen = document.querySelectorAll("#neueBereichCheckboxen input[type=checkbox]");
   const zugeordnete = [];
   checkboxen.forEach((cb, i) => {
-    if (cb.checked) zugeordnete.push(bereiche[i].id);
+    if (cb.checked) zugeordnete.push(state.bereiche[i].id);
   });
 
-  material.push({ id: Date.now(), name, einheit, bereiche: zugeordnete });
+  state.material.push({ id: Date.now(), name, einheit, bereiche: zugeordnete });
   document.getElementById("neuesMaterialName").value = "";
   document.getElementById("neuesMaterialEinheit").value = "";
   checkboxen.forEach(cb => cb.checked = false);
-  localStorage.setItem("material", JSON.stringify(material));
+  localStorage.setItem("material", JSON.stringify(state.material));
   aktualisiereListe();
 };
 

@@ -7,6 +7,7 @@ import {
   adjustMenge
 } from "./eingabe.js";
 import { aktualisiereListe } from "./liste.js";
+import { state } from "./state.js";
 
 export function initProjekt() {
   const projekt = JSON.parse(localStorage.getItem("aktuellesProjekt"));
@@ -21,10 +22,10 @@ export function initProjekt() {
   // 🔁 Event-Handler registrieren
   document.getElementById("auswahlModusButton").onclick = toggleAuswahlModus;
   document.getElementById("duplikateButton").onclick = () => {
-    window.duplikateZusammengefasst = !window.duplikateZusammengefasst;
+    state.duplikateZusammengefasst = !state.duplikateZusammengefasst;
     aktualisiereListe();
     const btn = document.getElementById("duplikateButton");
-    btn.textContent = window.duplikateZusammengefasst
+    btn.textContent = state.duplikateZusammengefasst
       ? "🔼 Originale anzeigen"
       : "🔽 Doppelte zusammenfassen";
   };

@@ -1,17 +1,13 @@
 import { ladeBereiche } from "./db.js";
 import { aktualisiereListe } from "./liste.js";
-
-// 🔧 Globale Zustände
-window.aktuellerEintrag = null;
-window.aktiveZeile = null;
-window.auswahlModusAktiv = false;
+import { state } from "./state.js";
 
 // 🔁 Auswahlmodus umschalten
 export function toggleAuswahlModus() {
-  window.auswahlModusAktiv = !window.auswahlModusAktiv;
+  state.auswahlModusAktiv = !state.auswahlModusAktiv;
   const btn = document.getElementById("auswahlModusButton");
 
-  if (window.auswahlModusAktiv) {
+  if (state.auswahlModusAktiv) {
     btn.textContent = "❌ Bearbeitung abbrechen";
     btn.style.backgroundColor = "#cc0000";
     btn.style.color = "white";
@@ -19,10 +15,10 @@ export function toggleAuswahlModus() {
     btn.textContent = "✏️ Bearbeiten starten";
     btn.style.backgroundColor = "";
     btn.style.color = "";
-    window.aktuellerEintrag = null;
+    state.aktuellerEintrag = null;
     document.getElementById("materialMenge").value = "";
-    if (window.aktiveZeile) window.aktiveZeile.classList.remove("aktiv");
-    window.aktiveZeile = null;
+    if (state.aktiveZeile) state.aktiveZeile.classList.remove("aktiv");
+    state.aktiveZeile = null;
   }
 }
 
@@ -40,17 +36,17 @@ export function materialSpeichern() {
   let projektMaterial = JSON.parse(localStorage.getItem("projektMaterial")) || {};
   let zuordnung = projektMaterial[projekt.id] || [];
 
-  if (window.aktuellerEintrag) {
-    const index = zuordnung.findIndex(z => z.id === window.aktuellerEintrag.id);
+  if (state.aktuellerEintrag) {
+    const index = zuordnung.findIndex(z => z.id === state.aktuellerEintrag.id);
     if (index !== -1) {
       zuordnung[index] = {
-        id: window.aktuellerEintrag.id,
+        id: state.aktuellerEintrag.id,
         materialId,
         menge,
         bereichId
       };
     }
-    window.aktuellerEintrag = null;
+    state.aktuellerEintrag = null;
   } else {
     zuordnung.push({ id: Date.now(), materialId, menge, bereichId });
   }
@@ -59,10 +55,10 @@ export function materialSpeichern() {
   localStorage.setItem("projektMaterial", JSON.stringify(projektMaterial));
   document.getElementById("materialMenge").value = "";
 
-  if (window.aktiveZeile) window.aktiveZeile.classList.remove("aktiv");
-  window.aktiveZeile = null;
+  if (state.aktiveZeile) state.aktiveZeile.classList.remove("aktiv");
+  state.aktiveZeile = null;
 
-  window.auswahlModusAktiv = false;
+  state.auswahlModusAktiv = false;
   const btn = document.getElementById("auswahlModusButton");
   btn.textContent = "✏️ Bearbeiten starten";
   btn.style.backgroundColor = "";
@@ -73,14 +69,14 @@ export function materialSpeichern() {
 
 // 🖱️ Eintrag zur Bearbeitung übernehmen
 export function bearbeiteEintrag(eintrag, zeile) {
-  window.aktuellerEintrag = eintrag;
+  state.aktuellerEintrag = eintrag;
   document.getElementById("materialMenge").value = eintrag.menge;
   fuelleBereichFilter(eintrag.bereichId);
   fuelleMaterialAuswahl(eintrag.materialId);
 
-  if (window.aktiveZeile) window.aktiveZeile.classList.remove("aktiv");
-  window.aktiveZeile = zeile;
-  window.aktiveZeile.classList.add("aktiv");
+  if (state.aktiveZeile) state.aktiveZeile.classList.remove("aktiv");
+  state.aktiveZeile = zeile;
+  state.aktiveZeile.classList.add("aktiv");
 }
 
 // ➕ Mengenbuttons

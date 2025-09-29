@@ -1,5 +1,6 @@
 import { ladeBereiche } from "./db.js";
 import * as eingabe from "./eingabe.js";
+import { state } from "./state.js";
 
 export function aktualisiereListe() {
   const container = document.getElementById("materialListe");
@@ -17,7 +18,7 @@ export function aktualisiereListe() {
     if (!material) return;
     const gruppe = gruppiert[eintrag.bereichId] ||= [];
 
-    if (window.duplikateZusammengefasst) {
+    if (state.duplikateZusammengefasst) {
       const vorhanden = gruppe.find(g => g.name === material.name && g.einheit === material.einheit);
       if (vorhanden) {
         vorhanden.menge += eintrag.menge;
@@ -55,7 +56,7 @@ export function aktualisiereListe() {
     const gesehen = new Set();
     gruppe.sort((a, b) => a.name.localeCompare(b.name)).forEach(m => {
       const key = `${m.name}|${m.einheit}`;
-      if (window.duplikateZusammengefasst && gesehen.has(key)) return;
+      if (state.duplikateZusammengefasst && gesehen.has(key)) return;
       gesehen.add(key);
 
       const row = document.createElement("div");
@@ -64,7 +65,7 @@ export function aktualisiereListe() {
       row.style.alignItems = "center";
       row.style.gap = "0.5rem";
       row.style.marginBottom = "0.3rem";
-      row.style.cursor = window.auswahlModusAktiv && !window.duplikateZusammengefasst ? "pointer" : "default";
+      row.style.cursor = state.auswahlModusAktiv && !state.duplikateZusammengefasst ? "pointer" : "default";
 
       const menge = document.createElement("span");
       menge.textContent = `${m.menge}`;
@@ -89,7 +90,7 @@ export function aktualisiereListe() {
         const sicher = confirm(`Material "${m.name}" wirklich entfernen?`);
         if (!sicher) return;
 
-        const neueZuordnung = window.duplikateZusammengefasst && m.zids
+        const neueZuordnung = state.duplikateZusammengefasst && m.zids
           ? zuordnung.filter(z => !m.zids.includes(z.id))
           : zuordnung.filter(z => z.id !== m.zid);
 
@@ -99,12 +100,12 @@ export function aktualisiereListe() {
         aktualisiereListe();
       };
 
-      if (!window.duplikateZusammengefasst && nameZaehler[key] > 1) {
+      if (!state.duplikateZusammengefasst && nameZaehler[key] > 1) {
         row.classList.add("duplikat");
       }
 
       row.onclick = () => {
-        if (!window.auswahlModusAktiv || window.duplikateZusammengefasst) return;
+        if (!state.auswahlModusAktiv || state.duplikateZusammengefasst) return;
         const eintrag = zuordnung.find(z => z.id === m.zid);
         if (eintrag) eingabe.bearbeiteEintrag(eintrag, row);
       };
