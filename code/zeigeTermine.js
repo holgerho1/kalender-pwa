@@ -117,7 +117,7 @@ export function zeigeTermine() {
   input.style.flex = "1";
   input.style.width = "100%";
   input.style.marginTop = "0.5rem";
-  input.style.fontSize = window.innerWidth < 1100 ? "2rem" : "0.8rem";// ← hier anpassen
+  input.style.fontSize = window.innerWidth < 1100 ? "1rem" : "0.8rem";// ← hier anpassen
   input.style.padding = "4px 6px";
   input.style.border = "1px solid #ccc";
   input.style.borderRadius = "4px";
