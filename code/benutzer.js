@@ -6,6 +6,7 @@ export const benutzerListe = Object.freeze([
   { kuerzel: "HB", name: "Behrend" },
   { kuerzel: "DK", name: "Kollat" },
   { kuerzel: "NS", name: "Stiegmann" },
+  { kuerzel: "IK", name: "Krause" },
   { kuerzel: "CK", name: "Kannenberg" }
 ]);
 
