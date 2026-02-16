@@ -1,5 +1,45 @@
 import { benutzerListe } from "./benutzer.js";
-import { notoSansRegular, notoSansBold } from "./fonts.js";
+
+// 🔧 Bruch-Ersetzung (einzeln + kombiniert)
+function ersetzeBrueche(text) {
+  if (!text) return text;
+
+  // Ganze Zahl + Bruch (z.B. 1¼ → 1 1/4)
+  text = text
+    .replace(/(\d)¼/g, "$1 1/4")
+    .replace(/(\d)½/g, "$1 1/2")
+    .replace(/(\d)¾/g, "$1 3/4")
+    .replace(/(\d)⅓/g, "$1 1/3")
+    .replace(/(\d)⅔/g, "$1 2/3")
+    .replace(/(\d)⅕/g, "$1 1/5")
+    .replace(/(\d)⅖/g, "$1 2/5")
+    .replace(/(\d)⅗/g, "$1 3/5")
+    .replace(/(\d)⅘/g, "$1 4/5")
+    .replace(/(\d)⅙/g, "$1 1/6")
+    .replace(/(\d)⅚/g, "$1 5/6")
+    .replace(/(\d)⅛/g, "$1 1/8")
+    .replace(/(\d)⅜/g, "$1 3/8")
+    .replace(/(\d)⅝/g, "$1 5/8")
+    .replace(/(\d)⅞/g, "$1 7/8");
+
+  // Einzelne Brüche (z.B. ⅝ → 5/8)
+  return text
+    .replace(/½/g, "1/2")
+    .replace(/⅓/g, "1/3")
+    .replace(/⅔/g, "2/3")
+    .replace(/¼/g, "1/4")
+    .replace(/¾/g, "3/4")
+    .replace(/⅕/g, "1/5")
+    .replace(/⅖/g, "2/5")
+    .replace(/⅗/g, "3/5")
+    .replace(/⅘/g, "4/5")
+    .replace(/⅙/g, "1/6")
+    .replace(/⅚/g, "5/6")
+    .replace(/⅛/g, "1/8")
+    .replace(/⅜/g, "3/8")
+    .replace(/⅝/g, "5/8")
+    .replace(/⅞/g, "7/8");
+}
 
 function berechneIsoKW(datum) {
   const temp = new Date(datum);
@@ -13,27 +53,21 @@ export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
 
-  // 🔥 Unicode‑Font einbetten (NotoSans)
-  doc.addFileToVFS("NotoSans-Regular.ttf", notoSansRegular);
-  doc.addFont("NotoSans-Regular.ttf", "NotoSans", "normal");
-
-  doc.addFileToVFS("NotoSans-Bold.ttf", notoSansBold);
-  doc.addFont("NotoSans-Bold.ttf", "NotoSans", "bold");
-
-  doc.setFont("NotoSans", "normal");
+  // ❌ KEINE FONTS MEHR
+  // fonts.js kann gelöscht werden
 
   if (!termine || termine.length === 0) {
     alert("⚠️ Keine Termine vorhanden für den PDF-Export.");
     return;
   }
 
-  // Frühester Termin als Basis
+  // Frühester Termin
   const firstTimestamp = Math.min(...termine.map(t => t.timestamp));
   const firstDate = new Date(firstTimestamp);
   const kw = berechneIsoKW(firstDate);
   const jahr = firstDate.getFullYear();
 
-  // Wochenbereich berechnen
+  // Wochenbereich
   const monday = new Date(firstDate);
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
   const sunday = new Date(monday);
@@ -43,13 +77,12 @@ export function exportierePdf(termine) {
   const von = formatter.format(monday);
   const bis = formatter.format(sunday);
 
-  // Hauptnutzer aus URL
+  // Nutzername
   const kuerzel = window.location.pathname.replace("/", "").toUpperCase();
   const name = benutzerListe.find(b => b.kuerzel === kuerzel)?.name || kuerzel;
 
-  // Hauptüberschrift
+  // Titel
   doc.setFontSize(18);
-  doc.setFont("NotoSans", "bold");
   const title = "Arbeitsnachweis";
   const pageWidth = doc.internal.pageSize.getWidth();
   const textWidth = doc.getTextWidth(title);
@@ -60,11 +93,10 @@ export function exportierePdf(termine) {
 
   // Infozeile
   doc.setFontSize(14);
-  doc.setFont("NotoSans", "bold");
   const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}                         KW: ${kw}                          Name: ${name}`;
   doc.text(infoText, centerX, 30, { align: "center" });
 
-  // Tabelle vorbereiten
+  // Tabelle
   const rows = [];
   let lastDatum = "";
 
@@ -78,42 +110,38 @@ export function exportierePdf(termine) {
 
     rows.push([
       datumZelle,
-      e.arbeit || "",
-      e.fahr || "",
-      e.über || "",
+      ersetzeBrueche(e.arbeit || ""),
+      ersetzeBrueche(e.fahr || ""),
+      ersetzeBrueche(e.über || ""),
       "",
-      e.titel || "",
-      e.beschreibung || "",
-      e.material || "",
-      e.mitarbeiter || ""
+      ersetzeBrueche(e.titel || ""),
+      ersetzeBrueche(e.beschreibung || ""),
+      ersetzeBrueche(e.material || ""),
+      ersetzeBrueche(e.mitarbeiter || "")
     ]);
   });
 
   doc.autoTable({
-    head: [
-      [
-        "Datum",
-        "Arbeit- zeit",
-        "Fahr- zeit",
-        "Über- zeit",
-        "Kom. Nr.",
-        "Kunde",
-        "Durchgeführte Arbeiten",
-        "Materialeinsatz",
-        "Mit- arbeiter"
-      ]
-    ],
+    head: [[
+      "Datum",
+      "Arbeit- zeit",
+      "Fahr- zeit",
+      "Über- zeit",
+      "Kom. Nr.",
+      "Kunde",
+      "Durchgeführte Arbeiten",
+      "Materialeinsatz",
+      "Mit- arbeiter"
+    ]],
     body: rows,
     startY: 32,
     styles: {
-      font: "NotoSans",
       fontSize: 11,
       cellPadding: 2,
       lineColor: [200, 200, 200],
       lineWidth: 0.2
     },
     headStyles: {
-      font: "NotoSans",
       fontStyle: "bold",
       fontSize: 12,
       fillColor: [220, 220, 220],
@@ -136,7 +164,7 @@ export function exportierePdf(termine) {
     margin: { left: 10, right: 10 }
   });
 
-  // 📁 Dateiname mit Hauptnutzername und Versionsverwaltung
+  // Dateiname + Version
   const kwText = `KW${kw}`;
   const basisName = `Stundenschein_${name}_${jahr}_${kwText}`;
   const versionKey = `pdfVersion_${basisName}`;
@@ -148,10 +176,9 @@ export function exportierePdf(termine) {
     ? `${basisName}.pdf`
     : `${basisName}v${version}.pdf`;
 
-  // PDF speichern
   doc.save(dateiname);
 
-  // Erfolgsmeldung anzeigen
+  // Info-Box
   const infoBox = document.createElement("div");
   infoBox.innerHTML = `
     ✅ PDF erfolgreich erstellt: <strong>${dateiname}</strong><br>
