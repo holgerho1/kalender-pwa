@@ -1,4 +1,5 @@
 import { benutzerListe } from "./benutzer.js";
+import { notoSansRegular, notoSansBold } from "./fonts.js";
 
 function berechneIsoKW(datum) {
   const temp = new Date(datum);
@@ -11,6 +12,15 @@ function berechneIsoKW(datum) {
 export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
+
+  // 🔥 Unicode‑Font einbetten (NotoSans)
+  doc.addFileToVFS("NotoSans-Regular.ttf", notoSansRegular);
+  doc.addFont("NotoSans-Regular.ttf", "NotoSans", "normal");
+
+  doc.addFileToVFS("NotoSans-Bold.ttf", notoSansBold);
+  doc.addFont("NotoSans-Bold.ttf", "NotoSans", "bold");
+
+  doc.setFont("NotoSans", "normal");
 
   if (!termine || termine.length === 0) {
     alert("⚠️ Keine Termine vorhanden für den PDF-Export.");
@@ -39,7 +49,7 @@ export function exportierePdf(termine) {
 
   // Hauptüberschrift
   doc.setFontSize(18);
-  doc.setFont(undefined, "bold");
+  doc.setFont("NotoSans", "bold");
   const title = "Arbeitsnachweis";
   const pageWidth = doc.internal.pageSize.getWidth();
   const textWidth = doc.getTextWidth(title);
@@ -50,7 +60,7 @@ export function exportierePdf(termine) {
 
   // Infozeile
   doc.setFontSize(14);
-  doc.setFont(undefined, "bold");
+  doc.setFont("NotoSans", "bold");
   const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}                         KW: ${kw}                          Name: ${name}`;
   doc.text(infoText, centerX, 30, { align: "center" });
 
@@ -71,7 +81,7 @@ export function exportierePdf(termine) {
       e.arbeit || "",
       e.fahr || "",
       e.über || "",
-      "", // Kom. Nr.
+      "",
       e.titel || "",
       e.beschreibung || "",
       e.material || "",
@@ -96,16 +106,18 @@ export function exportierePdf(termine) {
     body: rows,
     startY: 32,
     styles: {
+      font: "NotoSans",
       fontSize: 11,
       cellPadding: 2,
       lineColor: [200, 200, 200],
       lineWidth: 0.2
     },
     headStyles: {
+      font: "NotoSans",
+      fontStyle: "bold",
       fontSize: 12,
       fillColor: [220, 220, 220],
-      textColor: 0,
-      fontStyle: "bold"
+      textColor: 0
     },
     alternateRowStyles: {
       fillColor: [245, 245, 245]
