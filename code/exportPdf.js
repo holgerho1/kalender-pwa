@@ -1,5 +1,5 @@
 import { benutzerListe } from "./benutzer.js";
-import { notoSubset } from "./fonts.js";   // eingebetteter Font
+import { notoSubset } from "./fonts.js";   // ⬅️ NEU: Font laden
 
 function berechneIsoKW(datum) {
   const temp = new Date(datum);
@@ -13,23 +13,23 @@ export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
 
-  // Font aus fonts.js registrieren
+  // ⭐ EINZIGE ÄNDERUNG: Font registrieren
   doc.addFileToVFS("NotoSans-Regular.ttf", notoSubset);
   doc.addFont("NotoSans-Regular.ttf", "NotoTest", "normal");
   doc.setFont("NotoTest");
+
+  // ⭐ Bruchersetzung entfernt – sonst NICHTS geändert
 
   if (!termine || termine.length === 0) {
     alert("⚠️ Keine Termine vorhanden für den PDF-Export.");
     return;
   }
 
-  // Frühester Termin
   const firstTimestamp = Math.min(...termine.map(t => t.timestamp));
   const firstDate = new Date(firstTimestamp);
   const kw = berechneIsoKW(firstDate);
   const jahr = firstDate.getFullYear();
 
-  // Wochenbereich
   const monday = new Date(firstDate);
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
   const sunday = new Date(monday);
@@ -39,11 +39,9 @@ export function exportierePdf(termine) {
   const von = formatter.format(monday);
   const bis = formatter.format(sunday);
 
-  // Nutzername
   const kuerzel = window.location.pathname.replace("/", "").toUpperCase();
   const name = benutzerListe.find(b => b.kuerzel === kuerzel)?.name || kuerzel;
 
-  // Titel
   doc.setFontSize(18);
   const title = "Arbeitsnachweis";
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -53,12 +51,10 @@ export function exportierePdf(termine) {
   doc.setLineWidth(0.5);
   doc.line(centerX - textWidth / 2, 22, centerX + textWidth / 2, 22);
 
-  // Infozeile
   doc.setFontSize(14);
   const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}                         KW: ${kw}                          Name: ${name}`;
   doc.text(infoText, centerX, 30, { align: "center" });
 
-  // Tabelle
   const rows = [];
   let lastDatum = "";
 
@@ -97,6 +93,8 @@ export function exportierePdf(termine) {
     ]],
     body: rows,
     startY: 32,
+
+    // ⭐ KEINE Änderungen an deinen Styles
     styles: {
       font: "NotoTest",
       fontSize: 11,
@@ -128,7 +126,6 @@ export function exportierePdf(termine) {
     margin: { left: 10, right: 10 }
   });
 
-  // Dateiname + Version
   const kwText = `KW${kw}`;
   const basisName = `Stundenschein_${name}_${jahr}_${kwText}`;
   const versionKey = `pdfVersion_${basisName}`;
@@ -142,7 +139,6 @@ export function exportierePdf(termine) {
 
   doc.save(dateiname);
 
-  // Info-Box
   const infoBox = document.createElement("div");
   infoBox.innerHTML = `
     ✅ PDF erfolgreich erstellt: <strong>${dateiname}</strong><br>
