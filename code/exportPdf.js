@@ -1,5 +1,26 @@
 import { benutzerListe } from "./benutzer.js";
-import { notoSubset } from "./fonts.js";   // vollständiger Base64-Font
+import { notoSubset } from "./fonts.js";
+
+// Prüft, ob ein Text Brüche enthält
+function hatBruch(text) {
+  if (!text) return false;
+  return /[¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]/.test(text);
+}
+
+// Prüft, ob im gesamten Dokument Brüche vorkommen
+function dokumentHatBrueche(termine) {
+  return termine.some(e =>
+    [
+      e.arbeit,
+      e.fahr,
+      e.über,
+      e.titel,
+      e.beschreibung,
+      e.material,
+      e.mitarbeiter
+    ].some(z => hatBruch(z))
+  );
+}
 
 function berechneIsoKW(datum) {
   const temp = new Date(datum);
@@ -13,10 +34,16 @@ export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
 
-  // ⭐ Vollständigen Font einbinden
-  doc.addFileToVFS("NotoSans-Regular.ttf", notoSubset);
-  doc.addFont("NotoSans-Regular.ttf", "NotoFull", "normal");
-  doc.setFont("NotoFull");
+  // Standard bleibt Helvetica
+  doc.setFont("helvetica");
+
+  // Nur wenn Brüche existieren → Font einbinden
+  let fontAktiv = false;
+  if (dokumentHatBrueche(termine)) {
+    doc.addFileToVFS("NotoSans-Regular.ttf", notoSubset);
+    doc.addFont("NotoSans-Regular.ttf", "NotoFull", "normal");
+    fontAktiv = true;
+  }
 
   if (!termine || termine.length === 0) {
     alert("⚠️ Keine Termine vorhanden für den PDF-Export.");
@@ -55,7 +82,7 @@ export function exportierePdf(termine) {
   const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}                         KW: ${kw}                          Name: ${name}`;
   doc.text(infoText, centerX, 30, { align: "center" });
 
-  // Tabelle
+  // Tabelle vorbereiten
   const rows = [];
   let lastDatum = "";
 
@@ -94,15 +121,16 @@ export function exportierePdf(termine) {
     ]],
     body: rows,
     startY: 32,
+
     styles: {
-      font: "NotoFull",
+      font: "helvetica",
       fontSize: 11,
       cellPadding: 2,
       lineColor: [200, 200, 200],
       lineWidth: 0.2
     },
     headStyles: {
-      font: "NotoFull",
+      font: "helvetica",
       fontStyle: "bold",
       fontSize: 12,
       fillColor: [220, 220, 220],
@@ -111,6 +139,20 @@ export function exportierePdf(termine) {
     alternateRowStyles: {
       fillColor: [245, 245, 245]
     },
+
+    // ZELLENWEISE Font-Umschaltung
+    didParseCell: function (data) {
+      if (data.section === "body") {
+        const cellText = data.cell.raw || "";
+
+        if (fontAktiv && hatBruch(cellText)) {
+          data.cell.styles.font = "NotoFull";   // nur diese Zelle
+        } else {
+          data.cell.styles.font = "helvetica";  // Standard
+        }
+      }
+    },
+
     columnStyles: {
       0: { cellWidth: 19 },
       1: { cellWidth: 19 },
@@ -137,18 +179,4 @@ export function exportierePdf(termine) {
     : `${basisName}v${version}.pdf`;
 
   doc.save(dateiname);
-
-  const infoBox = document.createElement("div");
-  infoBox.innerHTML = `
-    ✅ PDF erfolgreich erstellt: <strong>${dateiname}</strong><br>
-    <a href="#" onclick="window.open('${doc.output('dataurlstring')}', '_blank')">📄 PDF anzeigen</a>
-  `;
-  infoBox.style.padding = "1rem";
-  infoBox.style.marginTop = "1rem";
-  infoBox.style.background = "#e0ffe0";
-  infoBox.style.border = "1px solid #88cc88";
-  infoBox.style.borderRadius = "6px";
-  infoBox.style.fontSize = "1rem";
-
-  document.getElementById("termine").appendChild(infoBox);
 }
