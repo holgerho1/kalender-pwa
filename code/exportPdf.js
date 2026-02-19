@@ -1,45 +1,5 @@
 import { benutzerListe } from "./benutzer.js";
-
-// 🔧 Bruch-Ersetzung (einzeln + kombiniert)
-function ersetzeBrueche(text) {
-  if (!text) return text;
-
-  // Ganze Zahl + Bruch (z.B. 1¼ → 1 1/4)
-  text = text
-    .replace(/(\d)¼/g, "$1 1/4")
-    .replace(/(\d)½/g, "$1 1/2")
-    .replace(/(\d)¾/g, "$1 3/4")
-    .replace(/(\d)⅓/g, "$1 1/3")
-    .replace(/(\d)⅔/g, "$1 2/3")
-    .replace(/(\d)⅕/g, "$1 1/5")
-    .replace(/(\d)⅖/g, "$1 2/5")
-    .replace(/(\d)⅗/g, "$1 3/5")
-    .replace(/(\d)⅘/g, "$1 4/5")
-    .replace(/(\d)⅙/g, "$1 1/6")
-    .replace(/(\d)⅚/g, "$1 5/6")
-    .replace(/(\d)⅛/g, "$1 1/8")
-    .replace(/(\d)⅜/g, "$1 3/8")
-    .replace(/(\d)⅝/g, "$1 5/8")
-    .replace(/(\d)⅞/g, "$1 7/8");
-
-  // Einzelne Brüche (z.B. ⅝ → 5/8)
-  return text
-    .replace(/½/g, "1/2")
-    .replace(/⅓/g, "1/3")
-    .replace(/⅔/g, "2/3")
-    .replace(/¼/g, "1/4")
-    .replace(/¾/g, "3/4")
-    .replace(/⅕/g, "1/5")
-    .replace(/⅖/g, "2/5")
-    .replace(/⅗/g, "3/5")
-    .replace(/⅘/g, "4/5")
-    .replace(/⅙/g, "1/6")
-    .replace(/⅚/g, "5/6")
-    .replace(/⅛/g, "1/8")
-    .replace(/⅜/g, "3/8")
-    .replace(/⅝/g, "5/8")
-    .replace(/⅞/g, "7/8");
-}
+import { notoSubset } from "./fonts.js";   // eingebetteter Font
 
 function berechneIsoKW(datum) {
   const temp = new Date(datum);
@@ -53,8 +13,10 @@ export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
 
-  // ❌ KEINE FONTS MEHR
-  // fonts.js kann gelöscht werden
+  // Font aus fonts.js registrieren
+  doc.addFileToVFS("NotoSans-Regular.ttf", notoSubset);
+  doc.addFont("NotoSans-Regular.ttf", "NotoTest", "normal");
+  doc.setFont("NotoTest");
 
   if (!termine || termine.length === 0) {
     alert("⚠️ Keine Termine vorhanden für den PDF-Export.");
@@ -110,14 +72,14 @@ export function exportierePdf(termine) {
 
     rows.push([
       datumZelle,
-      ersetzeBrueche(e.arbeit || ""),
-      ersetzeBrueche(e.fahr || ""),
-      ersetzeBrueche(e.über || ""),
+      e.arbeit || "",
+      e.fahr || "",
+      e.über || "",
       "",
-      ersetzeBrueche(e.titel || ""),
-      ersetzeBrueche(e.beschreibung || ""),
-      ersetzeBrueche(e.material || ""),
-      ersetzeBrueche(e.mitarbeiter || "")
+      e.titel || "",
+      e.beschreibung || "",
+      e.material || "",
+      e.mitarbeiter || ""
     ]);
   });
 
@@ -136,12 +98,14 @@ export function exportierePdf(termine) {
     body: rows,
     startY: 32,
     styles: {
+      font: "NotoTest",
       fontSize: 11,
       cellPadding: 2,
       lineColor: [200, 200, 200],
       lineWidth: 0.2
     },
     headStyles: {
+      font: "NotoTest",
       fontStyle: "bold",
       fontSize: 12,
       fillColor: [220, 220, 220],
