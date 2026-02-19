@@ -1,5 +1,5 @@
 import { benutzerListe } from "./benutzer.js";
-import { notoSubset } from "./fonts.js";   // ⬅️ NEU: Font laden
+import { notoSubset } from "./fonts.js";   // ⬅️ Font importieren
 
 function berechneIsoKW(datum) {
   const temp = new Date(datum);
@@ -13,12 +13,12 @@ export function exportierePdf(termine) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
 
-  // ⭐ EINZIGE ÄNDERUNG: Font registrieren
+  // ⭐ EINZIGE NEUE SACHE: Font registrieren
   doc.addFileToVFS("NotoSans-Regular.ttf", notoSubset);
   doc.addFont("NotoSans-Regular.ttf", "NotoTest", "normal");
   doc.setFont("NotoTest");
 
-  // ⭐ Bruchersetzung entfernt – sonst NICHTS geändert
+  // ⭐ Bruchersetzung entfernt — sonst NICHTS geändert
 
   if (!termine || termine.length === 0) {
     alert("⚠️ Keine Termine vorhanden für den PDF-Export.");
@@ -94,7 +94,7 @@ export function exportierePdf(termine) {
     body: rows,
     startY: 32,
 
-    // ⭐ KEINE Änderungen an deinen Styles
+    // ⭐ NICHTS verändert — exakt wie vorher
     styles: {
       font: "NotoTest",
       fontSize: 11,
