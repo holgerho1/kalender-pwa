@@ -110,20 +110,20 @@ export function zeigeTermine() {
 
     const feldInputs = {};
     ["arbeit", "fahr", "über"].forEach((feld) => {
-  const input = document.createElement("input");
-  input.type = "text";
-  input.value = event[feld] || "";
-  input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
-  input.style.flex = "1";
-  input.style.width = "100%";
-  input.style.marginTop = "0.5rem";
-  input.style.fontSize = window.innerWidth < 1100 ? "0.8rem" : "0.8rem";// ← hier anpassen
-  input.style.padding = "4px 6px";
-  input.style.border = "1px solid #ccc";
-  input.style.borderRadius = "4px";
-  feldInputs[feld] = input;
-  stundenZeile.appendChild(input);
-});
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = event[feld] || "";
+      input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
+      input.style.flex = "1";
+      input.style.width = "100%";
+      input.style.marginTop = "0.5rem";
+      input.style.fontSize = window.innerWidth < 1100 ? "0.8rem" : "0.8rem";
+      input.style.padding = "4px 6px";
+      input.style.border = "1px solid #ccc";
+      input.style.borderRadius = "4px";
+      feldInputs[feld] = input;
+      stundenZeile.appendChild(input);
+    });
 
     const beschreibung = document.createElement("textarea");
     beschreibung.value = event.beschreibung;
@@ -144,12 +144,14 @@ export function zeigeTermine() {
     mitarbeiterInput.style.width = "100%";
     mitarbeiterInput.style.marginTop = "0.5rem";
 
-    
-
     const loeschen = document.createElement("button");
     loeschen.textContent = "❌ Löschen";
     loeschen.style.marginLeft = "10px";
+
+    // *** Scroll-Position speichern ***
     loeschen.onclick = () => {
+      localStorage.setItem("scrollPos", window.scrollY);
+
       const termine = getTermine();
       const indexImOriginal = termine.findIndex((t) => t.id === event.id);
       if (indexImOriginal !== -1) {
@@ -178,43 +180,8 @@ function zeigeSteuerung(gefiltert) {
   const steuerung = document.createElement("div");
   steuerung.style.marginTop = "1rem";
 
-  const neuerBtn = document.createElement("button");
-  neuerBtn.textContent = "➕ Neuer Termin";
-  neuerBtn.onclick = () => {
-    const jetzt = new Date();
-    const datum = jetzt.toLocaleDateString("de-DE");
-    const start = jetzt.toLocaleTimeString("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-    const timestamp = new Date(
-      `${datum.split(".").reverse().join("-")}T${start}`
-    ).getTime();
-
-    const neu = {
-      id: Date.now().toString(),
-      datum,
-      start,
-      ende: start,
-      titel: "Neuer Termin",
-      beschreibung: "",
-      material: "",
-      mitarbeiter: "",
-      arbeit: "",
-      fahr: "",
-      über: "",
-      timestamp
-    };
-
-    const termine = getTermine();
-    termine.push(neu);
-    setTermine(termine);
-    zeigeTermine();
-  };
-
   const reloadBtn = document.createElement("button");
   reloadBtn.textContent = "🧹 Neu laden";
-  reloadBtn.style.marginLeft = "10px";
   reloadBtn.onclick = () => {
     neuLaden();
   };
@@ -293,7 +260,6 @@ function zeigeSteuerung(gefiltert) {
     exportierePdf(gefiltert);
   };
 
-  //steuerung.appendChild(neuerBtn);
   steuerung.appendChild(reloadBtn);
   steuerung.appendChild(prevBtn);
   steuerung.appendChild(nextBtn);
