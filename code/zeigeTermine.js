@@ -148,7 +148,7 @@ export function zeigeTermine() {
     loeschen.textContent = "❌ Löschen";
     loeschen.style.marginLeft = "10px";
 
-    // *** Scroll-Position speichern ***
+    // 🔥 Scroll-Position speichern
     loeschen.onclick = () => {
       localStorage.setItem("scrollPos", window.scrollY);
 
@@ -172,6 +172,13 @@ export function zeigeTermine() {
   });
 
   zeigeSteuerung(gefiltert);
+
+  // 🔥 Scroll-Position NACH dem Rendern wiederherstellen
+  const pos = localStorage.getItem("scrollPos");
+  if (pos !== null) {
+    window.scrollTo(0, parseInt(pos));
+    localStorage.removeItem("scrollPos");
+  }
 }
 
 function zeigeSteuerung(gefiltert) {
