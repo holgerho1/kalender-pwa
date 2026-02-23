@@ -23,21 +23,25 @@ export function mitarbeiterbearbeiten(e) {
   debug("📋 Erkannte Kürzel: " + erkannteKuerzel.join(", "));
   debug("🔍 Hauptkürzel: " + hauptKuerzel);
 
-  // Fall 1: Kein gültiger Kürzel → Termin bleibt erhalten
+  // ❌ Fall 1: Kein gültiger Kürzel → Termin löschen
   if (erkannteKuerzel.length === 0) {
-    debug("🟡 Kein gültiger Kürzelblock – Termin bleibt erhalten");
-    return e;
+    debug("🗑️ Kein gültiger Kürzelblock – Termin wird gelöscht");
+    return null;
   }
 
-  // ✅ Fall 2: Hauptkürzel fehlt → nur löschen, wenn Hauptnutzer gesetzt
+  // ❌ Fall 2: Hauptkürzel fehlt → Termin löschen
   if (hauptKuerzel && !erkannteKuerzel.includes(hauptKuerzel)) {
     debug(`🗑️ Hauptnutzer ${hauptKuerzel} nicht beteiligt – Termin wird gelöscht`);
     return null;
   }
 
-  // Fall 3: Hauptkürzel ist dabei → andere als Mitarbeiter setzen
+  // ✅ Fall 3: Hauptkürzel ist dabei → andere als Mitarbeiter setzen
   const mitarbeiter = erkannteKuerzel.filter(k => k !== hauptKuerzel);
-  e.mitarbeiter = mitarbeiter.map(k => benutzerListe.find(b => b.kuerzel === k)?.name).join(", ");
+  e.mitarbeiter = mitarbeiter
+    .map(k => benutzerListe.find(b => b.kuerzel === k)?.name)
+    .filter(Boolean)
+    .join(", ");
+
   debug("👥 Mitarbeiter gesetzt: " + (e.mitarbeiter || "[leer]"));
 
   // Titel bereinigen: Kürzelblock entfernen
