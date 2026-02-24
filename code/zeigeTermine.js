@@ -21,15 +21,18 @@ export function zeigeTermine() {
     container.appendChild(leer);
   }
 
-  // 🟦 Tages-Sammelstruktur für Mo–Fr
+  // Tagesstruktur (nur Blöcke sammeln)
   const tage = {
-    1: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] },
-    2: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] },
-    3: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] },
-    4: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] },
-    5: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] },
+    1: { blocks: [] }, // Montag
+    2: { blocks: [] }, // Dienstag
+    3: { blocks: [] }, // Mittwoch
+    4: { blocks: [] }, // Donnerstag
+    5: { blocks: [] }, // Freitag
   };
 
+  // -----------------------------
+  // 1) ALLE BLÖCKE RENDERN
+  // -----------------------------
   gefiltert.forEach((event) => {
     const block = document.createElement("div");
     block.dataset.id = event.id;
@@ -61,7 +64,6 @@ export function zeigeTermine() {
     stundenZeile.style.gap = "8px";
     stundenZeile.style.marginTop = "0.5rem";
 
-    const feldInputs = {};
     ["arbeit", "fahr", "über"].forEach((feld) => {
       const input = document.createElement("input");
       input.type = "text";
@@ -70,11 +72,10 @@ export function zeigeTermine() {
       input.style.flex = "1";
       input.style.width = "100%";
       input.style.marginTop = "0.5rem";
-      input.style.fontSize = window.innerWidth < 1100 ? "0.8rem" : "0.8rem";
+      input.style.fontSize = "0.8rem";
       input.style.padding = "4px 6px";
       input.style.border = "1px solid #ccc";
       input.style.borderRadius = "4px";
-      feldInputs[feld] = input;
       stundenZeile.appendChild(input);
     });
 
@@ -122,29 +123,40 @@ export function zeigeTermine() {
     block.appendChild(loeschen);
     container.appendChild(block);
 
-    // 🟦 FIX: Werte IMMER aus den Input-Feldern holen (nicht aus event!)
+    // Nur Blöcke sammeln, noch NICHT rechnen
     const wtag = datumObj.getDay();
-
     if (wtag >= 1 && wtag <= 5) {
-      const arbeit = parseFloat(feldInputs["arbeit"].value) || 0;
-      const fahr = parseFloat(feldInputs["fahr"].value) || 0;
-      const ueber = parseFloat(feldInputs["über"].value) || 0;
-
-      tage[wtag].arbeit += arbeit;
-      tage[wtag].fahr += fahr;
-      tage[wtag].ueber += ueber;
       tage[wtag].blocks.push(block);
     }
   });
 
-  // 🟩🟥 Tagesprüfung + Einfärbung
+  // -----------------------------
+  // 2) NACH DEM RENDERN: TAGESWERTE LESEN UND FÄRBEN
+  // -----------------------------
   Object.keys(tage).forEach(key => {
     const t = tage[key];
-
     if (t.blocks.length === 0) return;
 
-    const summe = t.arbeit + t.fahr;
-    const zielwert = 8 + t.ueber;
+    let arbeitSum = 0;
+    let fahrSum = 0;
+    let ueberSum = 0;
+
+    // Werte aus DOM lesen
+    t.blocks.forEach(block => {
+      const inputs = block.querySelectorAll("input");
+
+      inputs.forEach(input => {
+        const name = input.placeholder.toLowerCase();
+        const val = parseFloat(input.value) || 0;
+
+        if (name === "arbeit") arbeitSum += val;
+        if (name === "fahr") fahrSum += val;
+        if (name === "über") ueberSum += val;
+      });
+    });
+
+    const summe = arbeitSum + fahrSum;
+    const zielwert = 8 + ueberSum;
 
     const voll = (summe === zielwert);
     const farbe = voll ? "#e6ffe6" : "#ffe6e6";
