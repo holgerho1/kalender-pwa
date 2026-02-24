@@ -23,11 +23,11 @@ export function zeigeTermine() {
 
   // 🟦 Tages-Sammelstruktur für Mo–Fr
   const tage = {
-    1: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] }, // Montag
-    2: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] }, // Dienstag
-    3: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] }, // Mittwoch
-    4: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] }, // Donnerstag
-    5: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] }, // Freitag
+    1: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] },
+    2: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] },
+    3: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] },
+    4: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] },
+    5: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] },
   };
 
   gefiltert.forEach((event) => {
@@ -122,13 +122,13 @@ export function zeigeTermine() {
     block.appendChild(loeschen);
     container.appendChild(block);
 
-    // 🟦 Werte für Tagesprüfung sammeln
-    const wtag = datumObj.getDay(); // 1–5 = Mo–Fr
+    // 🟦 FIX: Werte IMMER aus den Input-Feldern holen (nicht aus event!)
+    const wtag = datumObj.getDay();
 
     if (wtag >= 1 && wtag <= 5) {
-      const arbeit = parseFloat(event.arbeit) || 0;
-      const fahr = parseFloat(event.fahr) || 0;
-      const ueber = parseFloat(event.über) || 0;
+      const arbeit = parseFloat(feldInputs["arbeit"].value) || 0;
+      const fahr = parseFloat(feldInputs["fahr"].value) || 0;
+      const ueber = parseFloat(feldInputs["über"].value) || 0;
 
       tage[wtag].arbeit += arbeit;
       tage[wtag].fahr += fahr;
