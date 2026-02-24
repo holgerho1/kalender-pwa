@@ -1,59 +1,3 @@
-import {
-  getTermine,
-  setTermine,
-  getKwOffset,
-  setKwOffset,
-  getFilterAktiv,
-  setFilterAktiv
-} from "./state.js";
-import { debug } from "./debug.js";
-import { verarbeiteTermin } from "./verarbeiteTermin.js";
-import { neuLaden } from "./neuLaden.js";
-import { exportierePdf } from "./exportPdf.js";
-
-const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
-
-function berechneKalenderwoche(datum = new Date()) {
-  const kopie = new Date(Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()));
-  const tag = kopie.getUTCDay() || 7;
-  kopie.setUTCDate(kopie.getUTCDate() + 4 - tag);
-  const jahrStart = new Date(Date.UTC(kopie.getUTCFullYear(), 0, 1));
-  return Math.ceil((((kopie - jahrStart) / 86400000) + 1) / 7);
-}
-
-function getKWZeitraum(offset = 0) {
-  const heute = new Date();
-  heute.setHours(0, 0, 0, 0);
-  const wochentag = heute.getDay();
-  const montag = new Date(heute);
-  montag.setDate(heute.getDate() - ((wochentag + 6) % 7) + offset * 7);
-
-  const sonntag = new Date(montag);
-  sonntag.setDate(montag.getDate() + 6);
-  sonntag.setHours(23, 59, 59, 999);
-
-  return { montag, sonntag };
-}
-
-function zeigeWocheninfo() {
-  const { montag, sonntag } = getKWZeitraum(getKwOffset());
-
-  const formatter = new Intl.DateTimeFormat("de-DE", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric"
-  });
-  const von = formatter.format(montag);
-  const bis = formatter.format(sonntag);
-
-  const kw = berechneKalenderwoche(montag);
-
-  const info = document.getElementById("wocheninfo");
-  if (info) {
-    info.textContent = `📆 KW ${kw}: ${von} – ${bis}${getFilterAktiv() ? "" : " (alle Termine)"}`;
-  }
-}
-
 export function zeigeTermine() {
   zeigeWocheninfo();
 
@@ -76,6 +20,15 @@ export function zeigeTermine() {
     leer.style.fontStyle = "italic";
     container.appendChild(leer);
   }
+
+  // 🟦 Tages-Sammelstruktur für Mo–Fr
+  const tage = {
+    1: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] }, // Montag
+    2: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] }, // Dienstag
+    3: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] }, // Mittwoch
+    4: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] }, // Donnerstag
+    5: { arbeit: 0, fahr: 0, ueber: 0, blocks: [] }, // Freitag
+  };
 
   gefiltert.forEach((event) => {
     const block = document.createElement("div");
@@ -148,7 +101,6 @@ export function zeigeTermine() {
     loeschen.textContent = "❌ Löschen";
     loeschen.style.marginLeft = "10px";
 
-    // 🔥 Scroll-Position speichern
     loeschen.onclick = () => {
       localStorage.setItem("scrollPos", window.scrollY);
 
@@ -169,108 +121,44 @@ export function zeigeTermine() {
     block.appendChild(mitarbeiterInput);
     block.appendChild(loeschen);
     container.appendChild(block);
+
+    // 🟦 Werte für Tagesprüfung sammeln
+    const wtag = datumObj.getDay(); // 1–5 = Mo–Fr
+
+    if (wtag >= 1 && wtag <= 5) {
+      const arbeit = parseFloat(event.arbeit) || 0;
+      const fahr = parseFloat(event.fahr) || 0;
+      const ueber = parseFloat(event.über) || 0;
+
+      tage[wtag].arbeit += arbeit;
+      tage[wtag].fahr += fahr;
+      tage[wtag].ueber += ueber;
+      tage[wtag].blocks.push(block);
+    }
+  });
+
+  // 🟩🟥 Tagesprüfung + Einfärbung
+  Object.keys(tage).forEach(key => {
+    const t = tage[key];
+
+    if (t.blocks.length === 0) return;
+
+    const summe = t.arbeit + t.fahr;
+    const zielwert = 8 + t.ueber;
+
+    const voll = (summe === zielwert);
+    const farbe = voll ? "#e6ffe6" : "#ffe6e6";
+
+    t.blocks.forEach(b => {
+      b.style.backgroundColor = farbe;
+    });
   });
 
   zeigeSteuerung(gefiltert);
 
-  // 🔥 Scroll-Position NACH dem Rendern wiederherstellen
   const pos = localStorage.getItem("scrollPos");
   if (pos !== null) {
     window.scrollTo(0, parseInt(pos));
     localStorage.removeItem("scrollPos");
   }
-}
-
-function zeigeSteuerung(gefiltert) {
-  const container = document.getElementById("termine");
-
-  const steuerung = document.createElement("div");
-  steuerung.style.marginTop = "1rem";
-
-  const reloadBtn = document.createElement("button");
-  reloadBtn.textContent = "🧹 Neu laden";
-  reloadBtn.onclick = () => {
-    neuLaden();
-  };
-
-  const prevBtn = document.createElement("button");
-  prevBtn.textContent = "◀️ Vorige Woche";
-  prevBtn.style.marginLeft = "10px";
-  prevBtn.onclick = () => {
-    setKwOffset(getKwOffset() - 1);
-    zeigeTermine();
-  };
-
-  const nextBtn = document.createElement("button");
-  nextBtn.textContent = "▶️ Nächste Woche";
-  nextBtn.style.marginLeft = "10px";
-  nextBtn.onclick = () => {
-    setKwOffset(getKwOffset() + 1);
-    zeigeTermine();
-  };
-
-  const toggleBtn = document.createElement("button");
-  toggleBtn.textContent = getFilterAktiv() ? "🔄 Filter aus" : "🔄 Filter an";
-  toggleBtn.style.marginLeft = "10px";
-  toggleBtn.onclick = () => {
-    setFilterAktiv(!getFilterAktiv());
-    zeigeTermine();
-  };
-
-  const exportBtn = document.createElement("button");
-  exportBtn.textContent = "📄 PDF Export";
-  exportBtn.style.marginLeft = "10px";
-  exportBtn.onclick = () => {
-    const blocks = document.querySelectorAll("#termine > div");
-    const termine = getTermine();
-
-    const { montag, sonntag } = getKWZeitraum(getKwOffset());
-    const startMillis = montag.getTime();
-    const endMillis = sonntag.getTime();
-
-    blocks.forEach((block) => {
-      const id = block.dataset.id;
-      const event = termine.find(t => t.id === id);
-      if (!event) return;
-
-      const titel = block.querySelector("textarea:nth-of-type(1)");
-      const beschreibung = block.querySelector("textarea:nth-of-type(2)");
-      const material = block.querySelector("textarea[placeholder='Material']");
-      const mitarbeiter = block.querySelector("textarea:nth-of-type(4)");
-
-      event.titel = titel?.value || "";
-      event.beschreibung = beschreibung?.value || "";
-      event.material = material?.value || "";
-      event.mitarbeiter = mitarbeiter?.value || "";
-
-      const feldInputs = block.querySelectorAll("input");
-      feldInputs.forEach((input) => {
-        const name = input.placeholder?.toLowerCase();
-        if (name === "arbeit") event.arbeit = input.value;
-        else if (name === "fahr") event.fahr = input.value;
-        else if (name === "über") event.über = input.value;
-      });
-
-      const neuVerarbeitet = verarbeiteTermin(event);
-      if (neuVerarbeitet) Object.assign(event, neuVerarbeitet);
-    });
-
-    setTermine(termine);
-
-    const gefiltert = getFilterAktiv()
-      ? termine.filter(e => {
-          const d = new Date(e.timestamp);
-          return d >= montag && d <= sonntag;
-        })
-      : termine;
-
-    exportierePdf(gefiltert);
-  };
-
-  steuerung.appendChild(reloadBtn);
-  steuerung.appendChild(prevBtn);
-  steuerung.appendChild(nextBtn);
-  steuerung.appendChild(toggleBtn);
-  steuerung.appendChild(exportBtn);
-  container.appendChild(steuerung);
 }
