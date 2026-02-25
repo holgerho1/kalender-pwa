@@ -13,6 +13,20 @@ import { exportierePdf } from "./exportPdf.js";
 
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
+// ---------------------------------------------------------
+// 🔥 GLOBAL-TEXTFELD LADEN (PUNKT 2 – NUR LADEN)
+// ---------------------------------------------------------
+
+async function ladeTextfeld() {
+  const res = await fetch("/data/textfeld.json");
+  const data = await res.json();
+  return data.text || "";
+}
+
+// ---------------------------------------------------------
+// 🔥 AB HIER DEIN ORIGINALCODE
+// ---------------------------------------------------------
+
 function berechneKalenderwoche(datum = new Date()) {
   const kopie = new Date(Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()));
   const tag = kopie.getUTCDay() || 7;
