@@ -13,16 +13,12 @@ import { exportierePdf } from "./exportPdf.js";
 
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-// ---------------------------------------------------------
-// Textfeld laden (textfeld.json liegt neben index.html)
-// ---------------------------------------------------------
+// Textfeld laden aus /public/textfeld.json
 async function ladeTextfeld() {
   const res = await fetch("/textfeld.json");
   const data = await res.json();
   return data.text || "";
 }
-
-// ---------------------------------------------------------
 
 function berechneKalenderwoche(datum = new Date()) {
   const kopie = new Date(Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()));
@@ -181,13 +177,7 @@ export function zeigeTermine() {
     container.appendChild(block);
   });
 
-  const tage = {
-    1: { blocks: [] },
-    2: { blocks: [] },
-    3: { blocks: [] },
-    4: { blocks: [] },
-    5: { blocks: [] }
-  };
+  const tage = { 1:{blocks:[]},2:{blocks:[]},3:{blocks:[]},4:{blocks:[]},5:{blocks:[]} };
 
   document.querySelectorAll("#termine > div[data-id]").forEach(block => {
     const id = block.dataset.id;
@@ -195,37 +185,29 @@ export function zeigeTermine() {
     if (!event) return;
 
     const wtag = new Date(event.timestamp).getDay();
-    if (wtag >= 1 && wtag <= 5) {
-      tage[wtag].blocks.push(block);
-    }
+    if (wtag >= 1 && wtag <= 5) tage[wtag].blocks.push(block);
   });
 
   Object.keys(tage).forEach(key => {
     const t = tage[key];
     if (t.blocks.length === 0) return;
 
-    let arbeitSum = 0;
-    let fahrSum = 0;
-    let ueberSum = 0;
+    let arbeitSum = 0, fahrSum = 0, ueberSum = 0;
 
     t.blocks.forEach(block => {
       const inputs = block.querySelectorAll("input");
-
       inputs.forEach(input => {
         const name = input.placeholder.toLowerCase();
         const val = parseFloat(input.value.replace(",", ".")) || 0;
-
         if (name === "arbeit") arbeitSum += val;
-        if (name === "fahr")   fahrSum += val;
-        if (name === "über")   ueberSum += val;
+        if (name === "fahr") fahrSum += val;
+        if (name === "über") ueberSum += val;
       });
     });
 
     const summe = arbeitSum + fahrSum;
     const ziel = 8 + ueberSum;
-
     const farbe = (summe === ziel) ? "#e6ffe6" : "#ffe6e6";
-
     t.blocks.forEach(b => b.style.backgroundColor = farbe);
   });
 
@@ -246,9 +228,7 @@ function zeigeSteuerung(gefiltert) {
 
   const reloadBtn = document.createElement("button");
   reloadBtn.textContent = "🧹 Neu laden";
-  reloadBtn.onclick = () => {
-    neuLaden();
-  };
+  reloadBtn.onclick = () => neuLaden();
 
   const prevBtn = document.createElement("button");
   prevBtn.textContent = "◀️ Vorige Woche";
@@ -282,8 +262,6 @@ function zeigeSteuerung(gefiltert) {
     const termine = getTermine();
 
     const { montag, sonntag } = getKWZeitraum(getKwOffset());
-    const startMillis = montag.getTime();
-    const endMillis = sonntag.getTime();
 
     blocks.forEach((block) => {
       const id = block.dataset.id;
@@ -304,8 +282,8 @@ function zeigeSteuerung(gefiltert) {
       feldInputs.forEach((input) => {
         const name = input.placeholder?.toLowerCase();
         if (name === "arbeit") event.arbeit = input.value;
-        else if (name === "fahr") event.fahr = input.value;
-        else if (name === "über") event.über = input.value;
+        if (name === "fahr") event.fahr = input.value;
+        if (name === "über") event.über = input.value;
       });
 
       const neuVerarbeitet = verarbeiteTermin(event);
@@ -330,9 +308,7 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(toggleBtn);
   steuerung.appendChild(exportBtn);
 
-  // ---------------------------------------------------------
-  // Textfeld einfügen
-  // ---------------------------------------------------------
+  // Textfeld unten einfügen
   const textfeld = document.createElement("textarea");
   textfeld.rows = 4;
   textfeld.style.width = "100%";
