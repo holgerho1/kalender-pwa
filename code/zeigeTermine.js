@@ -332,5 +332,19 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(nextBtn);
   steuerung.appendChild(toggleBtn);
   steuerung.appendChild(exportBtn);
+
+  // ---------------------------------------------------------
+  // 🔥 Textfeld wie ein Button einfügen
+  // ---------------------------------------------------------
+  const textfeld = document.createElement("textarea");
+  textfeld.rows = 4;
+  textfeld.style.width = "100%";
+  textfeld.style.marginTop = "1rem";
+  textfeld.placeholder = "Text aus GitHub wird geladen …";
+
+  ladeTextfeld().then(text => textfeld.value = text);
+
+  steuerung.appendChild(textfeld);
+
   container.appendChild(steuerung);
 }
