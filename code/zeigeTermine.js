@@ -343,3 +343,4 @@ textfeld.addEventListener("input", () => {
 
 steuerung.appendChild(textfeld);
 container.appendChild(steuerung);
+}
