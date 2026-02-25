@@ -14,7 +14,7 @@ import { exportierePdf } from "./exportPdf.js";
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
 // ---------------------------------------------------------
-// 🔥 TEXTFELD-LADE- UND BAUFUNKTION (PUNKT 2 – NUR LADEN)
+// 🔥 GLOBAL-TEXTFELD (PUNKT 2 – NUR LADEN)
 // ---------------------------------------------------------
 
 async function ladeTextfeld() {
@@ -23,7 +23,7 @@ async function ladeTextfeld() {
   return data.text || "";
 }
 
-async function baueTextfeldUnten(container) {
+async function baueGlobalesTextfeld(container) {
   const wrapper = document.createElement("div");
   wrapper.style.marginTop = "2rem";
   wrapper.style.padding = "1rem";
@@ -259,11 +259,6 @@ export function zeigeTermine() {
     window.scrollTo(0, parseInt(pos));
     localStorage.removeItem("scrollPos");
   }
-
-  // ---------------------------------------------------------
-  // 🔥 TEXTFELD GANZ UNTEN EINBAUEN
-  // ---------------------------------------------------------
-  baueTextfeldUnten(container);
 }
 
 function zeigeSteuerung(gefiltert) {
@@ -357,5 +352,11 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(nextBtn);
   steuerung.appendChild(toggleBtn);
   steuerung.appendChild(exportBtn);
+
+  // ---------------------------------------------------------
+  // 🔥 GLOBAL-TEXTFELD GANZ UNTEN
+  // ---------------------------------------------------------
+  baueGlobalesTextfeld(container);
+
   container.appendChild(steuerung);
 }
