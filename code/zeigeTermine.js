@@ -13,9 +13,9 @@ import { exportierePdf } from "./exportPdf.js";
 
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-// Textfeld laden aus /public/textfeld.json
+// Textfeld laden (textfeld.json liegt direkt neben index.html)
 async function ladeTextfeld() {
-  const res = await fetch("/textfeld.json");
+  const res = await fetch("textfeld.json");
   const data = await res.json();
   return data.text || "";
 }
@@ -282,8 +282,8 @@ function zeigeSteuerung(gefiltert) {
       feldInputs.forEach((input) => {
         const name = input.placeholder?.toLowerCase();
         if (name === "arbeit") event.arbeit = input.value;
-        if (name === "fahr") event.fahr = input.value;
-        if (name === "über") event.über = input.value;
+        else if (name === "fahr") event.fahr = input.value;
+        else if (name === "über") event.über = input.value;
       });
 
       const neuVerarbeitet = verarbeiteTermin(event);
