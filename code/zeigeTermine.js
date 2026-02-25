@@ -1,3 +1,37 @@
+// ---------------------------------------------------------
+// 🔥 TEXTFELD-LADE- UND BAUFUNKTION (PUNKT 2 – NUR LADEN)
+// ---------------------------------------------------------
+
+async function ladeTextfeld() {
+  const res = await fetch("/data/textfeld.json");
+  const data = await res.json();
+  return data.text || "";
+}
+
+async function baueTextfeld(container) {
+  const wrapper = document.createElement("div");
+  wrapper.style.marginBottom = "1rem";
+  wrapper.style.padding = "1rem";
+  wrapper.style.background = "#fff";
+  wrapper.style.borderLeft = "4px solid #0077cc";
+  wrapper.style.borderRadius = "6px";
+
+  const textarea = document.createElement("textarea");
+  textarea.id = "zusatzText";
+  textarea.rows = 4;
+  textarea.style.width = "100%";
+  textarea.placeholder = "Text, der aus GitHub geladen wird …";
+
+  textarea.value = await ladeTextfeld();
+
+  wrapper.appendChild(textarea);
+  container.appendChild(wrapper);
+}
+
+// ---------------------------------------------------------
+// 🔥 AB HIER DEIN ORIGINALCODE (UNVERÄNDERT)
+// ---------------------------------------------------------
+
 import {
   getTermine,
   setTermine,
@@ -59,6 +93,11 @@ export function zeigeTermine() {
 
   const container = document.getElementById("termine");
   container.innerHTML = "";
+
+  // ---------------------------------------------------------
+  // 🔥 TEXTFELD EINBAU (PUNKT 2)
+  // ---------------------------------------------------------
+  baueTextfeld(container);
 
   const { montag, sonntag } = getKWZeitraum(getKwOffset());
   const termine = getTermine();
@@ -170,10 +209,6 @@ export function zeigeTermine() {
     container.appendChild(block);
   });
 
-  // ---------------------------------------------------------
-  // 🔥 TAGESBERECHNUNG NACH DEM RENDERN
-  // ---------------------------------------------------------
-
   const tage = {
     1: { blocks: [] },
     2: { blocks: [] },
@@ -221,8 +256,6 @@ export function zeigeTermine() {
 
     t.blocks.forEach(b => b.style.backgroundColor = farbe);
   });
-
-  // ---------------------------------------------------------
 
   zeigeSteuerung(gefiltert);
 
