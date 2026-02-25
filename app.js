@@ -1,3 +1,60 @@
+// -------------------------------------------------------------
+// GitHub-Speicherfunktion für textfeld.json
+// -------------------------------------------------------------
+async function speichereTextfeld(text) {
+  const owner = "holgerho1";
+  const repo = "kalender-pwa";
+  const path = "textfeld.json";
+
+  // ❗ TOKEN ENTFERNT – MUSS LEER BLEIBEN
+  const token = "";
+
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+
+  // 1. SHA der aktuellen Datei holen
+  const getRes = await fetch(url, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/vnd.github+json"
+    }
+  });
+
+  if (!getRes.ok) {
+    console.error("Fehler beim Lesen von textfeld.json:", await getRes.text());
+    return;
+  }
+
+  const fileData = await getRes.json();
+  const sha = fileData.sha;
+
+  // 2. Neue Version hochladen
+  const newContent = {
+    message: "Update textfeld.json",
+    content: btoa(JSON.stringify({ text }, null, 2)),
+    sha
+  };
+
+  const putRes = await fetch(url, {
+    method: "PUT",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/vnd.github+json"
+    },
+    body: JSON.stringify(newContent)
+  });
+
+  if (!putRes.ok) {
+    console.error("Fehler beim Speichern von textfeld.json:", await putRes.text());
+    return;
+  }
+
+  console.log("textfeld.json erfolgreich in GitHub gespeichert");
+}
+
+// -------------------------------------------------------------
+// Dein bisheriger Code
+// -------------------------------------------------------------
+
 import { benutzerListe } from "./code/benutzer.js";
 import { neuLaden } from "./code/neuLaden.js";
 import { exportierePdf } from "./code/exportPdf.js";
