@@ -320,7 +320,7 @@ ladeTextfeld().then(text => {
   textfeld.value = text;
 });
 
-// 🔥 Variante 1: Speichern bei jeder Änderung
+// Speichern bei jeder Änderung
 textfeld.addEventListener("input", async () => {
   const text = textfeld.value;
 
@@ -330,7 +330,6 @@ textfeld.addEventListener("input", async () => {
     body: JSON.stringify({ text })
   });
 
-  // Optional: Fehler anzeigen
   if (!res.ok) {
     console.error("Speichern fehlgeschlagen");
   }
