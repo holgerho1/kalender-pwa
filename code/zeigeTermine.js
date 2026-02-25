@@ -1,3 +1,18 @@
+import {
+  getTermine,
+  setTermine,
+  getKwOffset,
+  setKwOffset,
+  getFilterAktiv,
+  setFilterAktiv
+} from "./state.js";
+import { debug } from "./debug.js";
+import { verarbeiteTermin } from "./verarbeiteTermin.js";
+import { neuLaden } from "./neuLaden.js";
+import { exportierePdf } from "./exportPdf.js";
+
+const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+
 // ---------------------------------------------------------
 // 🔥 TEXTFELD-LADE- UND BAUFUNKTION (PUNKT 2 – NUR LADEN)
 // ---------------------------------------------------------
@@ -8,9 +23,9 @@ async function ladeTextfeld() {
   return data.text || "";
 }
 
-async function baueTextfeld(container) {
+async function baueTextfeldUnten(container) {
   const wrapper = document.createElement("div");
-  wrapper.style.marginBottom = "1rem";
+  wrapper.style.marginTop = "2rem";
   wrapper.style.padding = "1rem";
   wrapper.style.background = "#fff";
   wrapper.style.borderLeft = "4px solid #0077cc";
@@ -29,23 +44,8 @@ async function baueTextfeld(container) {
 }
 
 // ---------------------------------------------------------
-// 🔥 AB HIER DEIN ORIGINALCODE (UNVERÄNDERT)
+// 🔥 AB HIER DEIN ORIGINALCODE
 // ---------------------------------------------------------
-
-import {
-  getTermine,
-  setTermine,
-  getKwOffset,
-  setKwOffset,
-  getFilterAktiv,
-  setFilterAktiv
-} from "./state.js";
-import { debug } from "./debug.js";
-import { verarbeiteTermin } from "./verarbeiteTermin.js";
-import { neuLaden } from "./neuLaden.js";
-import { exportierePdf } from "./exportPdf.js";
-
-const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
 function berechneKalenderwoche(datum = new Date()) {
   const kopie = new Date(Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()));
@@ -93,11 +93,6 @@ export function zeigeTermine() {
 
   const container = document.getElementById("termine");
   container.innerHTML = "";
-
-  // ---------------------------------------------------------
-  // 🔥 TEXTFELD EINBAU (PUNKT 2)
-  // ---------------------------------------------------------
-  baueTextfeld(container);
 
   const { montag, sonntag } = getKWZeitraum(getKwOffset());
   const termine = getTermine();
@@ -264,6 +259,11 @@ export function zeigeTermine() {
     window.scrollTo(0, parseInt(pos));
     localStorage.removeItem("scrollPos");
   }
+
+  // ---------------------------------------------------------
+  // 🔥 TEXTFELD GANZ UNTEN EINBAUEN
+  // ---------------------------------------------------------
+  baueTextfeldUnten(container);
 }
 
 function zeigeSteuerung(gefiltert) {
