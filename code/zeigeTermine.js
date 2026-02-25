@@ -320,21 +320,26 @@ ladeTextfeld().then(text => {
   textfeld.value = text;
 });
 
-// Speichern bei jeder Änderung
-textfeld.addEventListener("input", async () => {
-  const text = textfeld.value;
+// 🔥 Debounce: Speichern erst 800ms nach letzter Eingabe
+let saveTimeout;
 
-  const res = await fetch("/api/speichereText", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text })
-  });
+textfeld.addEventListener("input", () => {
+  clearTimeout(saveTimeout);
 
-  if (!res.ok) {
-    console.error("Speichern fehlgeschlagen");
-  }
+  saveTimeout = setTimeout(async () => {
+    const text = textfeld.value;
+
+    const res = await fetch("/api/speichereTextfeld", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
+
+    if (!res.ok) {
+      console.error("Speichern fehlgeschlagen");
+    }
+  }, 800);
 });
 
 steuerung.appendChild(textfeld);
 container.appendChild(steuerung);
-}
