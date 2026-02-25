@@ -329,7 +329,7 @@ textfeld.addEventListener("input", () => {
   saveTimeout = setTimeout(async () => {
     const text = textfeld.value;
 
-    const res = await fetch("/api/speichereTextfeld", {
+    const res = await fetch("/api/speichereText", {   // ← HIER korrigiert
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text })
