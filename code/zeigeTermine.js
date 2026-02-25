@@ -254,6 +254,11 @@ export function zeigeTermine() {
 
   zeigeSteuerung(gefiltert);
 
+  // ---------------------------------------------------------
+  // 🔥 GLOBAL-TEXTFELD GANZ UNTEN (RICHTIGE STELLE)
+  // ---------------------------------------------------------
+  await baueGlobalesTextfeld(container);
+
   const pos = localStorage.getItem("scrollPos");
   if (pos !== null) {
     window.scrollTo(0, parseInt(pos));
@@ -352,11 +357,6 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(nextBtn);
   steuerung.appendChild(toggleBtn);
   steuerung.appendChild(exportBtn);
-
-  // ---------------------------------------------------------
-  // 🔥 GLOBAL-TEXTFELD GANZ UNTEN
-  // ---------------------------------------------------------
-  baueGlobalesTextfeld(container);
 
   container.appendChild(steuerung);
 }
