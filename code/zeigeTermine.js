@@ -308,26 +308,33 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(toggleBtn);
   steuerung.appendChild(exportBtn);
 
-  // Textfeld unten einfügen
-  const textfeld = document.createElement("textarea");
+// Textfeld unten einfügen
+const textfeld = document.createElement("textarea");
 textfeld.rows = 4;
 textfeld.style.width = "100%";
 textfeld.style.marginTop = "1rem";
 textfeld.placeholder = "Text aus textfeld.json wird geladen …";
 
-ladeTextfeld().then(text => textfeld.value = text);
+// Text laden
+ladeTextfeld().then(text => {
+  textfeld.value = text;
+});
 
 // 🔥 Variante 1: Speichern bei jeder Änderung
 textfeld.addEventListener("input", async () => {
   const text = textfeld.value;
 
-  await fetch("/api/speichereText", {
+  const res = await fetch("/api/speichereText", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text })
   });
+
+  // Optional: Fehler anzeigen
+  if (!res.ok) {
+    console.error("Speichern fehlgeschlagen");
+  }
 });
 
 steuerung.appendChild(textfeld);
-  container.appendChild(steuerung);
-}
+container.appendChild(steuerung);
