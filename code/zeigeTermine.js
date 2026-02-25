@@ -13,40 +13,6 @@ import { exportierePdf } from "./exportPdf.js";
 
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-// ---------------------------------------------------------
-// 🔥 GLOBAL-TEXTFELD (PUNKT 2 – NUR LADEN)
-// ---------------------------------------------------------
-
-async function ladeTextfeld() {
-  const res = await fetch("/data/textfeld.json");
-  const data = await res.json();
-  return data.text || "";
-}
-
-async function baueGlobalesTextfeld(container) {
-  const wrapper = document.createElement("div");
-  wrapper.style.marginTop = "2rem";
-  wrapper.style.padding = "1rem";
-  wrapper.style.background = "#fff";
-  wrapper.style.borderLeft = "4px solid #0077cc";
-  wrapper.style.borderRadius = "6px";
-
-  const textarea = document.createElement("textarea");
-  textarea.id = "zusatzText";
-  textarea.rows = 4;
-  textarea.style.width = "100%";
-  textarea.placeholder = "Text, der aus GitHub geladen wird …";
-
-  textarea.value = await ladeTextfeld();
-
-  wrapper.appendChild(textarea);
-  container.appendChild(wrapper);
-}
-
-// ---------------------------------------------------------
-// 🔥 AB HIER DEIN ORIGINALCODE
-// ---------------------------------------------------------
-
 function berechneKalenderwoche(datum = new Date()) {
   const kopie = new Date(Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()));
   const tag = kopie.getUTCDay() || 7;
@@ -254,11 +220,6 @@ export function zeigeTermine() {
 
   zeigeSteuerung(gefiltert);
 
-  // ---------------------------------------------------------
-  // 🔥 GLOBAL-TEXTFELD GANZ UNTEN (RICHTIGE STELLE)
-  // ---------------------------------------------------------
-  await baueGlobalesTextfeld(container);
-
   const pos = localStorage.getItem("scrollPos");
   if (pos !== null) {
     window.scrollTo(0, parseInt(pos));
@@ -357,6 +318,5 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(nextBtn);
   steuerung.appendChild(toggleBtn);
   steuerung.appendChild(exportBtn);
-
   container.appendChild(steuerung);
 }
