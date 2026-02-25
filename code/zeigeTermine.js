@@ -14,17 +14,14 @@ import { exportierePdf } from "./exportPdf.js";
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
 // ---------------------------------------------------------
-// 🔥 GLOBAL-TEXTFELD LADEN (PUNKT 2 – NUR LADEN)
+// Textfeld laden (textfeld.json liegt neben index.html)
 // ---------------------------------------------------------
-
 async function ladeTextfeld() {
-  const res = await fetch("/data/textfeld.json");
+  const res = await fetch("/textfeld.json");
   const data = await res.json();
   return data.text || "";
 }
 
-// ---------------------------------------------------------
-// 🔥 AB HIER DEIN ORIGINALCODE
 // ---------------------------------------------------------
 
 function berechneKalenderwoche(datum = new Date()) {
@@ -334,13 +331,13 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(exportBtn);
 
   // ---------------------------------------------------------
-  // 🔥 Textfeld wie ein Button einfügen
+  // Textfeld einfügen
   // ---------------------------------------------------------
   const textfeld = document.createElement("textarea");
   textfeld.rows = 4;
   textfeld.style.width = "100%";
   textfeld.style.marginTop = "1rem";
-  textfeld.placeholder = "Text aus GitHub wird geladen …";
+  textfeld.placeholder = "Text aus textfeld.json wird geladen …";
 
   ladeTextfeld().then(text => textfeld.value = text);
 
