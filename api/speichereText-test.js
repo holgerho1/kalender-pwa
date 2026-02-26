@@ -1,7 +1,6 @@
 export default async function handler(req, res) {
   try {
-    // Wir testen einen echten POST an deine Speicher-API
-    const response = await fetch(`${req.headers.origin}/api/speichereText`, {
+    const response = await fetch("https://kalender-pwa.vercel.app/api/speichereText", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: "TEST_FROM_TEST_API" })
