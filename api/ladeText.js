@@ -6,13 +6,16 @@ export default async function handler(req, res) {
   const { get } = await import("https://esm.sh/@vercel/blob");
 
   try {
-    const { blob } = await get("textfeld.json");
+    const result = await get("textfeld.json");
 
-    if (!blob) {
+    if (!result || !result.url) {
       return res.status(404).json({ error: "Keine Datei gefunden" });
     }
 
-    const text = await blob.text();
+    // Dateiinhalt per fetch laden
+    const fileRes = await fetch(result.url);
+    const text = await fileRes.text();
+
     const data = JSON.parse(text);
 
     return res.status(200).json(data);
