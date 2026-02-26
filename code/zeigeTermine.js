@@ -13,9 +13,9 @@ import { exportierePdf } from "./exportPdf.js";
 
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-// Textfeld laden (textfeld.json liegt direkt neben index.html)
+// Textfeld laden – jetzt über Blob-API
 async function ladeTextfeld() {
-  const res = await fetch("textfeld.json");
+  const res = await fetch("/api/ladeText");
   const data = await res.json();
   return data.text || "";
 }
@@ -308,39 +308,39 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(toggleBtn);
   steuerung.appendChild(exportBtn);
 
-// Textfeld unten einfügen
-const textfeld = document.createElement("textarea");
-textfeld.rows = 4;
-textfeld.style.width = "100%";
-textfeld.style.marginTop = "1rem";
-textfeld.placeholder = "Text aus textfeld.json wird geladen …";
+  // Textfeld unten einfügen
+  const textfeld = document.createElement("textarea");
+  textfeld.rows = 4;
+  textfeld.style.width = "100%";
+  textfeld.style.marginTop = "1rem";
+  textfeld.placeholder = "Text wird geladen …";
 
-// Text laden
-ladeTextfeld().then(text => {
-  textfeld.value = text;
-});
+  // Text laden
+  ladeTextfeld().then(text => {
+    textfeld.value = text;
+  });
 
-// 🔥 Debounce: Speichern erst 800ms nach letzter Eingabe
-let saveTimeout;
+  // Speichern mit Debounce
+  let saveTimeout;
 
-textfeld.addEventListener("input", () => {
-  clearTimeout(saveTimeout);
+  textfeld.addEventListener("input", () => {
+    clearTimeout(saveTimeout);
 
-  saveTimeout = setTimeout(async () => {
-    const text = textfeld.value;
+    saveTimeout = setTimeout(async () => {
+      const text = textfeld.value;
 
-    const res = await fetch("/api/speichereText", {   // ← HIER korrigiert
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
-    });
+      const res = await fetch("/api/speichereText", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
 
-    if (!res.ok) {
-      console.error("Speichern fehlgeschlagen");
-    }
-  }, 800);
-});
+      if (!res.ok) {
+        console.error("Speichern fehlgeschlagen");
+      }
+    }, 800);
+  });
 
-steuerung.appendChild(textfeld);
-container.appendChild(steuerung);
+  steuerung.appendChild(textfeld);
+  container.appendChild(steuerung);
 }
