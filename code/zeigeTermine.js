@@ -13,12 +13,6 @@ import { exportierePdf } from "./exportPdf.js";
 
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-// Textfeld laden – jetzt über Blob-API
-async function ladeTextfeld() {
-  const res = await fetch("/api/ladeText");
-  const data = await res.json();
-  return data.text || "";
-}
 
 function berechneKalenderwoche(datum = new Date()) {
   const kopie = new Date(Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()));
@@ -308,39 +302,6 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(toggleBtn);
   steuerung.appendChild(exportBtn);
 
-  // Textfeld unten einfügen
-  const textfeld = document.createElement("textarea");
-  textfeld.rows = 4;
-  textfeld.style.width = "100%";
-  textfeld.style.marginTop = "1rem";
-  textfeld.placeholder = "Text wird geladen …";
-
-  // Text laden
-  ladeTextfeld().then(text => {
-    textfeld.value = text;
-  });
-
-  // Speichern mit Debounce
-  let saveTimeout;
-
-  textfeld.addEventListener("input", () => {
-    clearTimeout(saveTimeout);
-
-    saveTimeout = setTimeout(async () => {
-      const text = textfeld.value;
-
-      const res = await fetch("/api/speichereText", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
-      });
-
-      if (!res.ok) {
-        console.error("Speichern fehlgeschlagen");
-      }
-    }, 800);
-  });
-
-  steuerung.appendChild(textfeld);
+  
   container.appendChild(steuerung);
 }
