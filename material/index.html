@@ -24,14 +24,7 @@
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
-    // ---------------------------------------------------------
-    // DEINE SUPABASE URL
-    // ---------------------------------------------------------
     const SUPABASE_URL = "https://hzsgocmulzcxllihkmmh.supabase.co";
-
-    // ---------------------------------------------------------
-    // DEIN ANON-KEY
-    // ---------------------------------------------------------
     const SUPABASE_KEY = "sb_publishable_wPtPDhWmKxWQ6RJ42ljoNg_DEwYEaL1";
 
     const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -67,6 +60,8 @@
         .select();
 
       log("UPDATE RESULT:", data, error);
+
+      await laden();
     }
 
     laden();
