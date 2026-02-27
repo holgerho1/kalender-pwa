@@ -2,10 +2,41 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Testseite</title>
+    <title>Supabase DB</title>
+    <script type="module">
+        import { createClient } from "https://esm.sh/@supabase/supabase-js";
+
+        const SUPABASE_URL = "https://hzsgocmulzcxllihkmmh.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_wPtPDhWmKxWQ6RJ42ljoNg_DEwYEaL1";
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function lade() {
+            const { data } = await supabase
+                .from("tabelle1")
+                .select("feld1")
+                .eq("id", 1)
+                .single();
+
+            document.getElementById("eingabe").value = data?.feld1 || "";
+        }
+
+        async function speichern() {
+            const wert = document.getElementById("eingabe").value;
+
+            await supabase
+                .from("tabelle1")
+                .update({ feld1: wert })
+                .eq("id", 1);
+
+            alert("Gespeichert.");
+        }
+
+        window.onload = lade;
+    </script>
 </head>
 <body>
-    <input type="text" id="eingabe" placeholder="Text eingeben">
-    <button id="btn">Absenden</button>
+    <input id="eingabe" type="text" placeholder="Text eingeben">
+    <button onclick="speichern()">Speichern</button>
 </body>
 </html>
