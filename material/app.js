@@ -1,5 +1,4 @@
-const SUPABASE_URL = "https://hzsgocmulzcxllihkmmh.supabase.co";
-const SUPABASE_KEY = "sb_publishable_wPtPDhWmKxWQ6RJ42ljoNg_DEwYEaL1";
+import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
 
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -37,5 +36,7 @@ async function speichern() {
 
   await laden();
 }
+
+window.speichern = speichern;
 
 laden();
