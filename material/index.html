@@ -2,35 +2,49 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Supabase Test – tabelle1</title>
+  <title>Supabase Test</title>
+  <style>
+    #log {
+      background: #eee;
+      padding: 10px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
   <h1>Supabase Test</h1>
 
-  <label for="eingabe">feld1:</label>
-  <input type="text" id="eingabe" />
+  <input id="eingabe" type="text" />
   <button onclick="speichern()">Speichern</button>
 
-  <pre id="log"></pre>
+  <div id="log"></div>
 
-  <!-- Supabase JS -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
-    // HIER deine echten Werte eintragen:
+    // ---------------------------------------------------------
+    // DEINE SUPABASE URL
+    // ---------------------------------------------------------
     const SUPABASE_URL = "https://hzsgocmulzcxllihkmmh.supabase.co";
+
+    // ---------------------------------------------------------
+    // DEIN ANON-KEY
+    // ---------------------------------------------------------
     const SUPABASE_KEY = "sb_publishable_wPtPDhWmKxWQ6RJ42ljoNg_DEwYEaL1";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const logEl = document.getElementById("log");
     function log(...args) {
-      console.log(...args);
-      logEl.textContent += args.map(a => JSON.stringify(a, null, 2)).join(" ") + "\n";
+      const el = document.getElementById("log");
+      el.textContent += args.map(a => JSON.stringify(a, null, 2)).join(" ") + "\n";
     }
 
     async function laden() {
       log("Lade…");
-      const { data, error } = await supabase
+
+      const { data, error } = await supa
         .from("tabelle1")
         .select("feld1")
         .eq("id", 1)
@@ -38,10 +52,6 @@
 
       log("SELECT RESULT:", data, error);
 
-      if (error) {
-        alert("Fehler beim Laden: " + error.message);
-        return;
-      }
       if (data) {
         document.getElementById("eingabe").value = data.feld1 ?? "";
       }
@@ -49,24 +59,16 @@
 
     async function speichern() {
       const wert = document.getElementById("eingabe").value;
-      log("Speichere…", { feld1: wert });
 
-      const { data, error } = await supabase
+      const { data, error } = await supa
         .from("tabelle1")
         .update({ feld1: wert })
         .eq("id", 1)
-        .select(); // damit wir sehen, was zurückkommt
+        .select();
 
       log("UPDATE RESULT:", data, error);
-
-      if (error) {
-        alert("Fehler beim Speichern: " + error.message);
-        return;
-      }
-      alert("Gespeichert.");
     }
 
-    // Beim Laden der Seite sofort aus DB holen
     laden();
   </script>
 </body>
