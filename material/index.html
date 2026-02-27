@@ -1,42 +1,73 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <title>Supabase DB</title>
-    <script type="module">
-        import { createClient } from "https://esm.sh/@supabase/supabase-js";
-
-        const SUPABASE_URL = "https://hzsgocmulzcxllihkmmh.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_wPtPDhWmKxWQ6RJ42ljoNg_DEwYEaL1";
-
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        async function lade() {
-            const { data } = await supabase
-                .from("tabelle1")
-                .select("feld1")
-                .eq("id", 1)
-                .single();
-
-            document.getElementById("eingabe").value = data?.feld1 || "";
-        }
-
-        async function speichern() {
-            const wert = document.getElementById("eingabe").value;
-
-            await supabase
-                .from("tabelle1")
-                .update({ feld1: wert })
-                .eq("id", 1);
-
-            alert("Gespeichert.");
-        }
-
-        window.onload = lade;
-    </script>
+  <meta charset="UTF-8" />
+  <title>Supabase Test – tabelle1</title>
 </head>
 <body>
-    <input id="eingabe" type="text" placeholder="Text eingeben">
-    <button onclick="speichern()">Speichern</button>
+  <h1>Supabase Test</h1>
+
+  <label for="eingabe">feld1:</label>
+  <input type="text" id="eingabe" />
+  <button onclick="speichern()">Speichern</button>
+
+  <pre id="log"></pre>
+
+  <!-- Supabase JS -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script>
+    // HIER deine echten Werte eintragen:
+    const SUPABASE_URL = "https://DEIN_PROJEKT.supabase.co";
+    const SUPABASE_KEY = "DEIN_ANON_KEY";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const logEl = document.getElementById("log");
+    function log(...args) {
+      console.log(...args);
+      logEl.textContent += args.map(a => JSON.stringify(a, null, 2)).join(" ") + "\n";
+    }
+
+    async function laden() {
+      log("Lade…");
+      const { data, error } = await supabase
+        .from("tabelle1")
+        .select("feld1")
+        .eq("id", 1)
+        .single();
+
+      log("SELECT RESULT:", data, error);
+
+      if (error) {
+        alert("Fehler beim Laden: " + error.message);
+        return;
+      }
+      if (data) {
+        document.getElementById("eingabe").value = data.feld1 ?? "";
+      }
+    }
+
+    async function speichern() {
+      const wert = document.getElementById("eingabe").value;
+      log("Speichere…", { feld1: wert });
+
+      const { data, error } = await supabase
+        .from("tabelle1")
+        .update({ feld1: wert })
+        .eq("id", 1)
+        .select(); // damit wir sehen, was zurückkommt
+
+      log("UPDATE RESULT:", data, error);
+
+      if (error) {
+        alert("Fehler beim Speichern: " + error.message);
+        return;
+      }
+      alert("Gespeichert.");
+    }
+
+    // Beim Laden der Seite sofort aus DB holen
+    laden();
+  </script>
 </body>
 </html>
