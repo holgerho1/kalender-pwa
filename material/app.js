@@ -41,7 +41,7 @@ function getFilter() {
 }
 
 //
-// LISTE LADEN (mit Filtern)
+// LISTE LADEN (mit Filtern + Sortierung NEUESTE zuerst)
 //
 async function listeLaden() {
   const f = getFilter();
@@ -49,7 +49,7 @@ async function listeLaden() {
   let query = supa
     .from("tabelle1")
     .select("id, feld1, JAHR, KW, KZ")
-    .order("id", { ascending: true });
+    .order("id", { ascending: false });   // <<< NEUESTE OBEN
 
   if (f.jahr !== null) query = query.eq("JAHR", f.jahr);
   if (f.kw !== null) query = query.eq("KW", f.kw);
@@ -73,7 +73,7 @@ async function listeLaden() {
 
   if (data.length > 0) {
     if (!data.some(r => r.id === aktuelleId)) {
-      aktuelleId = data[0].id;
+      aktuelleId = data[0].id; // neueste ID
     }
     sel.value = aktuelleId;
   } else {
