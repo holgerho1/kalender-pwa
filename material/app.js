@@ -26,15 +26,38 @@ const FELDER = {
 };
 
 //
-// LISTE LADEN
+// FILTER EINLESEN
+//
+function getFilter() {
+  const jahr = document.getElementById("filter_jahr").value;
+  const kw = document.getElementById("filter_kw").value;
+  const kz = document.getElementById("filter_kz").value;
+
+  return {
+    jahr: jahr === "" ? null : parseInt(jahr, 10),
+    kw: kw === "" ? null : parseInt(kw, 10),
+    kz: kz === "" ? null : kz.trim()
+  };
+}
+
+//
+// LISTE LADEN (mit Filtern)
 //
 async function listeLaden() {
-  const { data, error } = await supa
+  const f = getFilter();
+
+  let query = supa
     .from("tabelle1")
-    .select("id, feld1")
+    .select("id, feld1, JAHR, KW, KZ")
     .order("id", { ascending: true });
 
-  log("LISTE:", data, error);
+  if (f.jahr !== null) query = query.eq("JAHR", f.jahr);
+  if (f.kw !== null) query = query.eq("KW", f.kw);
+  if (f.kz !== null && f.kz !== "") query = query.ilike("KZ", `%${f.kz}%`);
+
+  const { data, error } = await query;
+
+  log("LISTE (gefiltert):", data, error);
 
   const sel = document.getElementById("liste");
   sel.innerHTML = "";
@@ -44,16 +67,18 @@ async function listeLaden() {
   data.forEach(row => {
     const opt = document.createElement("option");
     opt.value = row.id;
-    opt.textContent = `${row.id} – ${row.feld1}`;
+    opt.textContent = `${row.id} – ${row.feld1} – ${row.JAHR}/${row.KW} – ${row.KZ}`;
     sel.appendChild(opt);
   });
 
-  // Falls noch keine ID gesetzt ist → ersten Datensatz wählen
-  if (aktuelleId === null && data.length > 0) {
-    aktuelleId = data[0].id;
+  if (data.length > 0) {
+    if (!data.some(r => r.id === aktuelleId)) {
+      aktuelleId = data[0].id;
+    }
+    sel.value = aktuelleId;
+  } else {
+    aktuelleId = null;
   }
-
-  sel.value = aktuelleId;
 }
 
 //
@@ -178,9 +203,16 @@ async function loeschen() {
   await listeLaden();
 
   const sel = document.getElementById("liste");
-  aktuelleId = Number(sel.value);
+  aktuelleId = sel.value ? Number(sel.value) : null;
 
   await laden();
+}
+
+//
+// FILTER AKTUALISIEREN
+//
+function filterAktualisieren() {
+  listeLaden().then(laden);
 }
 
 //
@@ -190,6 +222,7 @@ window.speichern = speichern;
 window.auswahlGeaendert = auswahlGeaendert;
 window.neu = neu;
 window.loeschen = loeschen;
+window.filterAktualisieren = filterAktualisieren;
 
 //
 // START

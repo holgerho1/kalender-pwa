@@ -39,11 +39,27 @@
       border: 1px solid #ccc;
       margin-top: 30px;
     }
+
+    hr {
+      margin: 25px 0;
+    }
   </style>
 </head>
 
 <body>
   <h1>Supabase Test</h1>
+
+  <!-- FILTER -->
+  <label for="filter_jahr">Filter Jahr</label>
+  <input id="filter_jahr" type="number" oninput="filterAktualisieren()">
+
+  <label for="filter_kw">Filter KW</label>
+  <input id="filter_kw" type="number" oninput="filterAktualisieren()">
+
+  <label for="filter_kz">Filter KZ</label>
+  <input id="filter_kz" type="text" oninput="filterAktualisieren()">
+
+  <hr>
 
   <!-- LISTE -->
   <label for="liste">Datensatz auswählen</label>
@@ -54,47 +70,37 @@
 
   <hr>
 
-  <!-- FELD1 -->
+  <!-- FORMULAR -->
   <label for="eingabe_feld1">Feld1</label>
   <input id="eingabe_feld1" type="text" />
 
-  <!-- JAHR -->
   <label for="eingabe_jahr">Jahr</label>
   <input id="eingabe_jahr" type="number" />
 
-  <!-- KW -->
   <label for="eingabe_kw">Kalenderwoche</label>
   <input id="eingabe_kw" type="number" />
 
-  <!-- URLAUB -->
   <label for="eingabe_urlaub">Urlaub</label>
   <input id="eingabe_urlaub" type="number" step="0.1" />
 
-  <!-- URLAUBgen -->
   <label for="eingabe_urlaubgen">Urlaub (gen.)</label>
   <input id="eingabe_urlaubgen" type="number" step="0.1" />
 
-  <!-- KRANK -->
   <label for="eingabe_krank">Krank</label>
   <input id="eingabe_krank" type="number" step="0.1" />
 
-  <!-- KRANKau -->
   <label for="eingabe_krankau">Krank (AU)</label>
   <input id="eingabe_krankau" type="number" step="0.1" />
 
-  <!-- ÜBER -->
   <label for="eingabe_ueber">Überstunden</label>
   <input id="eingabe_ueber" type="number" step="0.1" />
 
-  <!-- BEREIT -->
   <label for="eingabe_bereit">Bereitschaft</label>
   <input id="eingabe_bereit" type="number" step="0.1" />
 
-  <!-- KZ -->
   <label for="eingabe_kz">Kürzel</label>
   <input id="eingabe_kz" type="text" />
 
-  <!-- BUTTON -->
   <button onclick="speichern()">Speichern</button>
 
   <!-- LOG -->
