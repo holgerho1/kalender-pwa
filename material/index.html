@@ -16,7 +16,7 @@
       font-weight: bold;
     }
 
-    input {
+    input, select {
       font-size: 1.4em;
       padding: 0.3em;
       width: 100%;
@@ -24,10 +24,10 @@
     }
 
     button {
-      font-size: 1.6em;
+      font-size: 1.4em;
       padding: 0.4em 0.8em;
       width: 100%;
-      margin-top: 25px;
+      margin-top: 15px;
       box-sizing: border-box;
     }
 
@@ -44,6 +44,15 @@
 
 <body>
   <h1>Supabase Test</h1>
+
+  <!-- LISTE -->
+  <label for="liste">Datensatz auswählen</label>
+  <select id="liste" onchange="auswahlGeaendert()"></select>
+
+  <button onclick="neu()">Neu</button>
+  <button onclick="loeschen()">Löschen</button>
+
+  <hr>
 
   <!-- FELD1 -->
   <label for="eingabe_feld1">Feld1</label>
