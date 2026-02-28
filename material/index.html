@@ -3,19 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <title>Supabase Test</title>
+
   <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
     input {
-      font-size: 1.8em;
-      padding: 0.4em;
+      font-size: 1.4em;
+      padding: 0.3em;
       width: 100%;
       box-sizing: border-box;
     }
 
     button {
-      font-size: 1.8em;
+      font-size: 1.6em;
       padding: 0.4em 0.8em;
       width: 100%;
-      margin-top: 20px;
+      margin-top: 25px;
       box-sizing: border-box;
     }
 
@@ -25,18 +37,61 @@
       white-space: pre-wrap;
       font-family: monospace;
       border: 1px solid #ccc;
-      margin-top: 20px;
+      margin-top: 30px;
     }
   </style>
 </head>
+
 <body>
   <h1>Supabase Test</h1>
 
-  <input id="eingabe" type="text" />
+  <!-- FELD1 -->
+  <label for="eingabe_feld1">Feld1</label>
+  <input id="eingabe_feld1" type="text" />
+
+  <!-- JAHR -->
+  <label for="eingabe_jahr">Jahr</label>
+  <input id="eingabe_jahr" type="number" />
+
+  <!-- KW -->
+  <label for="eingabe_kw">Kalenderwoche</label>
+  <input id="eingabe_kw" type="number" />
+
+  <!-- URLAUB -->
+  <label for="eingabe_urlaub">Urlaub</label>
+  <input id="eingabe_urlaub" type="number" step="0.1" />
+
+  <!-- URLAUBgen -->
+  <label for="eingabe_urlaubgen">Urlaub (gen.)</label>
+  <input id="eingabe_urlaubgen" type="number" step="0.1" />
+
+  <!-- KRANK -->
+  <label for="eingabe_krank">Krank</label>
+  <input id="eingabe_krank" type="number" step="0.1" />
+
+  <!-- KRANKau -->
+  <label for="eingabe_krankau">Krank (AU)</label>
+  <input id="eingabe_krankau" type="number" step="0.1" />
+
+  <!-- ÜBER -->
+  <label for="eingabe_ueber">Überstunden</label>
+  <input id="eingabe_ueber" type="number" step="0.1" />
+
+  <!-- BEREIT -->
+  <label for="eingabe_bereit">Bereitschaft</label>
+  <input id="eingabe_bereit" type="number" step="0.1" />
+
+  <!-- KZ -->
+  <label for="eingabe_kz">Kürzel</label>
+  <input id="eingabe_kz" type="text" />
+
+  <!-- BUTTON -->
   <button onclick="speichern()">Speichern</button>
 
+  <!-- LOG -->
   <div id="log"></div>
 
+  <!-- Supabase + App -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script type="module" src="app.js"></script>
 </body>
