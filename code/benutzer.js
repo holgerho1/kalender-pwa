@@ -1,12 +1,12 @@
 // 🔌 Supabase laden
-import { SUPABASE_URL, SUPABASE_KEY } from "../config.js";
+import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 🧩 Dynamische Benutzerliste (ersetzt die feste Liste)
+// 🧩 Dynamische Benutzerliste
 export let benutzerListe = [];
 
-// 🔄 Benutzer aus der Tabelle "mitarbeiter" laden
-export async function ladeBenutzer() {
+// 🔄 Benutzer aus Tabelle "mitarbeiter" laden
+async function ladeBenutzerIntern() {
   const { data, error } = await supa
     .from("mitarbeiter")
     .select("kuerzel, name")
@@ -20,17 +20,11 @@ export async function ladeBenutzer() {
   benutzerListe = data ?? [];
 }
 
-// 🛠️ Debug-Ausgabe
-function debug(msg) {
-  console.log(msg);
-  const log = document.getElementById("debug-log");
-  if (log) log.insertAdjacentHTML("beforeend", `<div>${msg}</div>`);
-}
+// 🔁 Automatisch beim Laden der Datei starten
+ladeBenutzerIntern();
 
-// 📋 Benutzerliste anzeigen – jetzt dynamisch
+// 📋 Benutzerliste anzeigen
 export function zeigeBenutzerListe() {
-  debug("📋 Zeige Benutzerliste aus Tabelle 'mitarbeiter'");
-
   const container = document.getElementById("benutzerListe");
   if (!container) return;
 
