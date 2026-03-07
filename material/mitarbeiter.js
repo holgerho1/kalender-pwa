@@ -1,10 +1,6 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
 
-// Supabase-Client
-const supabase = createClient(
-  "https://YOUR-PROJECT.supabase.co",
-  "public-anon-key"
-);
+const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let aktuellerId = null;
 
@@ -12,10 +8,10 @@ let aktuellerId = null;
 // LISTE LADEN
 // ---------------------------------------------------------
 async function ladeListe() {
-  const { data, error } = await supabase
+  const { data, error } = await supa
     .from("mitarbeiter")
     .select("*")
-    .order("name");
+    .order("kuerzel");
 
   if (error) {
     log("Fehler beim Laden der Liste:\n" + error.message);
@@ -28,7 +24,7 @@ async function ladeListe() {
   data.forEach(row => {
     const opt = document.createElement("option");
     opt.value = row.id;
-    opt.textContent = row.name;
+    opt.textContent = row.kuerzel;
     liste.appendChild(opt);
   });
 
@@ -47,7 +43,7 @@ window.auswahlGeaendert = async function () {
 
   if (!id) return;
 
-  const { data, error } = await supabase
+  const { data, error } = await supa
     .from("mitarbeiter")
     .select("*")
     .eq("id", id)
@@ -58,9 +54,9 @@ window.auswahlGeaendert = async function () {
     return;
   }
 
-  document.getElementById("eingabe_name").value = data.name || "";
-  document.getElementById("eingabe_rolle").value = data.rolle || "";
-  document.getElementById("eingabe_email").value = data.email || "";
+  document.getElementById("eingabe_name").value = data.name ?? "";
+  document.getElementById("eingabe_rolle").value = data.rolle ?? "";
+  document.getElementById("eingabe_email").value = data.email ?? "";
 };
 
 // ---------------------------------------------------------
@@ -92,13 +88,11 @@ window.speichern = async function () {
   let result;
 
   if (aktuellerId === null) {
-    // NEU
-    result = await supabase
+    result = await supa
       .from("mitarbeiter")
       .insert({ name, rolle, email });
   } else {
-    // UPDATE
-    result = await supabase
+    result = await supa
       .from("mitarbeiter")
       .update({ name, rolle, email })
       .eq("id", aktuellerId);
@@ -122,7 +116,7 @@ window.loeschen = async function () {
     return;
   }
 
-  const { error } = await supabase
+  const { error } = await supa
     .from("mitarbeiter")
     .delete()
     .eq("id", aktuellerId);
