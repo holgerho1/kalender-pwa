@@ -1,25 +1,35 @@
-// 🧩 Feste Nutzertabelle – unveränderbar
-export const benutzerListe = Object.freeze([
-  { kuerzel: "HH", name: "Heckel" },
-  { kuerzel: "SW", name: "Weber" },
-  { kuerzel: "CM", name: "Magarin" },
-  { kuerzel: "HB", name: "Behrend" },
-  { kuerzel: "DK", name: "Kollat" },
-  { kuerzel: "NS", name: "Stiegmann" },
-  { kuerzel: "IK", name: "Krause" },
-  { kuerzel: "CK", name: "Kannenberg" }
-]);
+// 🔌 Supabase laden
+import { SUPABASE_URL, SUPABASE_KEY } from "../config.js";
+const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 🛠️ Debug-Ausgabe im Browser und Konsole
+// 🧩 Dynamische Benutzerliste (ersetzt die feste Liste)
+export let benutzerListe = [];
+
+// 🔄 Benutzer aus der Tabelle "mitarbeiter" laden
+export async function ladeBenutzer() {
+  const { data, error } = await supa
+    .from("mitarbeiter")
+    .select("kuerzel, name")
+    .order("kuerzel");
+
+  if (error) {
+    console.error("Fehler beim Laden der Benutzer:", error);
+    return;
+  }
+
+  benutzerListe = data ?? [];
+}
+
+// 🛠️ Debug-Ausgabe
 function debug(msg) {
   console.log(msg);
   const log = document.getElementById("debug-log");
   if (log) log.insertAdjacentHTML("beforeend", `<div>${msg}</div>`);
 }
 
-// 📋 Benutzerliste anzeigen – rein lesend mit Direktlink
+// 📋 Benutzerliste anzeigen – jetzt dynamisch
 export function zeigeBenutzerListe() {
-  debug("📋 Zeige feste Benutzerliste");
+  debug("📋 Zeige Benutzerliste aus Tabelle 'mitarbeiter'");
 
   const container = document.getElementById("benutzerListe");
   if (!container) return;
