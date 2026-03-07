@@ -49,6 +49,13 @@
 <body>
   <h1>Supabase Test</h1>
 
+  <!-- NEUER BUTTON: Mitarbeiter-Verwaltung -->
+  <button onclick="window.location.href='mitarbeiter.html'">
+    Mitarbeiter verwalten
+  </button>
+
+  <hr>
+
   <!-- FILTER -->
   <label for="filter_jahr">Filter Jahr</label>
   <input id="filter_jahr" type="number" oninput="filterAktualisieren()">
@@ -98,7 +105,7 @@
   <label for="eingabe_bereit">Bereitschaft</label>
   <input id="eingabe_bereit" type="number" step="0.1" />
 
-  <!-- NEU: Mitarbeiter-Auswahl statt Textfeld -->
+  <!-- Mitarbeiter-Auswahl -->
   <label for="eingabe_kz">Mitarbeiter</label>
   <select id="eingabe_kz">
     <option value="">-- bitte wählen --</option>
