@@ -6,12 +6,10 @@ async function speichereTextfeld(text) {
   const repo = "kalender-pwa";
   const path = "textfeld.json";
 
-  // ❗ TOKEN ENTFERNT – MUSS LEER BLEIBEN
   const token = "";
 
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
-  // 1. SHA der aktuellen Datei holen
   const getRes = await fetch(url, {
     headers: {
       "Authorization": `Bearer ${token}`,
@@ -27,7 +25,6 @@ async function speichereTextfeld(text) {
   const fileData = await getRes.json();
   const sha = fileData.sha;
 
-  // 2. Neue Version hochladen
   const newContent = {
     message: "Update textfeld.json",
     content: btoa(JSON.stringify({ text }, null, 2)),
@@ -55,9 +52,15 @@ async function speichereTextfeld(text) {
 // Dein bisheriger Code
 // -------------------------------------------------------------
 
-import { benutzerListe } from "./code/benutzer.js";
+import { ladeBenutzer, benutzerListe, zeigeBenutzerListe } from "./code/benutzer.js";
 import { neuLaden } from "./code/neuLaden.js";
 import { exportierePdf } from "./code/exportPdf.js";
+
+// 🔥 WICHTIG: Benutzer zuerst laden
+await ladeBenutzer();
+
+// 🔥 Danach Liste anzeigen
+zeigeBenutzerListe();
 
 // Direktlink-Erkennung aus URL-Pfad
 const pfad = window.location.pathname.replace("/", "").toUpperCase();
@@ -67,7 +70,6 @@ const kuerzelNamen = Object.fromEntries(
   benutzerListe.map(({ kuerzel, name }) => [kuerzel, name])
 );
 
-// Wenn Kürzel im Pfad vorhanden und bekannt → als Hauptbenutzer anzeigen
 window.addEventListener("load", () => {
   neuLaden();
 
@@ -82,7 +84,6 @@ window.addEventListener("load", () => {
     infoBox.style.color = "#0077cc";
     document.body.insertBefore(infoBox, document.getElementById("wocheninfo"));
 
-    // Bestimmte Bereiche ausblenden bei Direktlink
     const debugLog = document.getElementById("debug-log");
     if (debugLog) debugLog.style.display = "none";
 
@@ -93,7 +94,6 @@ window.addEventListener("load", () => {
     if (direktLinks) direktLinks.style.display = "none";
   }
 
-  // Direktlink-Vorschau generieren (nur wenn kein gültiger Kürzel im Pfad)
   const linkContainer = document.getElementById("linkListe");
   if (linkContainer && !kuerzelNamen[pfad]) {
     benutzerListe.forEach(({ kuerzel, name }) => {
@@ -112,7 +112,6 @@ window.addEventListener("load", () => {
     });
   }
 
-  // PDF-Export-Button verbinden (optional)
   const exportBtn = document.getElementById("pdf-export");
   if (exportBtn) {
     exportBtn.onclick = () => {
