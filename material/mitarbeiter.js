@@ -5,7 +5,7 @@ const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let aktuellerId = null;
 
 // ---------------------------------------------------------
-// LISTE LADEN
+// LISTE LADEN (UL statt Dropdown)
 // ---------------------------------------------------------
 async function ladeListe() {
   const { data, error } = await supa
@@ -22,31 +22,45 @@ async function ladeListe() {
   liste.innerHTML = "";
 
   data.forEach(row => {
-    const opt = document.createElement("option");
-    opt.value = row.id;
-    opt.textContent = row.kuerzel;
-    liste.appendChild(opt);
+    const li = document.createElement("li");
+    li.textContent = `${row.kuerzel} – ${row.name ?? ""}`;
+    li.style.padding = "10px";
+    li.style.borderBottom = "1px solid #ccc";
+    li.style.cursor = "pointer";
+
+    li.onclick = () => {
+      aktuellerId = row.id;
+      auswahlGeaendert();
+      markiereAuswahl(li);
+    };
+
+    liste.appendChild(li);
+  });
+}
+
+// ---------------------------------------------------------
+// AUSWAHL MARKIEREN
+// ---------------------------------------------------------
+function markiereAuswahl(li) {
+  document.querySelectorAll("#liste li").forEach(el => {
+    el.style.background = "";
+    el.style.fontWeight = "";
   });
 
-  if (data.length > 0) {
-    liste.value = data[0].id;
-    auswahlGeaendert();
-  }
+  li.style.background = "#def";
+  li.style.fontWeight = "bold";
 }
 
 // ---------------------------------------------------------
 // AUSWAHL GEÄNDERT
 // ---------------------------------------------------------
 window.auswahlGeaendert = async function () {
-  const id = document.getElementById("liste").value;
-  aktuellerId = id;
-
-  if (!id) return;
+  if (!aktuellerId) return;
 
   const { data, error } = await supa
     .from("mitarbeiter")
     .select("*")
-    .eq("id", id)
+    .eq("id", aktuellerId)
     .single();
 
   if (error) {
@@ -54,8 +68,8 @@ window.auswahlGeaendert = async function () {
     return;
   }
 
-  document.getElementById("eingabe_name").value = data.name ?? "";
   document.getElementById("eingabe_kuerzel").value = data.kuerzel ?? "";
+  document.getElementById("eingabe_name").value = data.name ?? "";
 };
 
 // ---------------------------------------------------------
@@ -64,8 +78,8 @@ window.auswahlGeaendert = async function () {
 window.neu = function () {
   aktuellerId = null;
 
-  document.getElementById("eingabe_name").value = "";
   document.getElementById("eingabe_kuerzel").value = "";
+  document.getElementById("eingabe_name").value = "";
 
   log("Neuer Mitarbeiter – bitte Daten eingeben.");
 };
@@ -74,8 +88,8 @@ window.neu = function () {
 // SPEICHERN
 // ---------------------------------------------------------
 window.speichern = async function () {
-  const name = document.getElementById("eingabe_name").value.trim();
   const kuerzel = document.getElementById("eingabe_kuerzel").value.trim();
+  const name = document.getElementById("eingabe_name").value.trim();
 
   if (kuerzel === "") {
     log("Kürzel darf nicht leer sein.");
@@ -85,13 +99,15 @@ window.speichern = async function () {
   let result;
 
   if (aktuellerId === null) {
+    // NEU
     result = await supa
       .from("mitarbeiter")
-      .insert({ name, kuerzel });
+      .insert({ kuerzel, name });
   } else {
+    // UPDATE
     result = await supa
       .from("mitarbeiter")
-      .update({ name, kuerzel })
+      .update({ kuerzel, name })
       .eq("id", aktuellerId);
   }
 

@@ -31,6 +31,16 @@
       box-sizing: border-box;
     }
 
+    #liste li {
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+      cursor: pointer;
+    }
+
+    #liste li:hover {
+      background: #eef;
+    }
+
     #log {
       background: #eee;
       padding: 10px;
@@ -57,8 +67,8 @@
   <hr>
 
   <!-- LISTE -->
-  <label for="liste">Mitarbeiter auswählen</label>
-  <select id="liste" onchange="auswahlGeaendert()"></select>
+  <label>Mitarbeiter auswählen</label>
+  <ul id="liste" style="list-style:none; padding:0; margin:0;"></ul>
 
   <button onclick="neu()">Neu</button>
   <button onclick="loeschen()">Löschen</button>
