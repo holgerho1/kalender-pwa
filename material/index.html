@@ -98,8 +98,11 @@
   <label for="eingabe_bereit">Bereitschaft</label>
   <input id="eingabe_bereit" type="number" step="0.1" />
 
-  <label for="eingabe_kz">Kürzel</label>
-  <input id="eingabe_kz" type="text" />
+  <!-- NEU: Mitarbeiter-Auswahl statt Textfeld -->
+  <label for="eingabe_kz">Mitarbeiter</label>
+  <select id="eingabe_kz">
+    <option value="">-- bitte wählen --</option>
+  </select>
 
   <button onclick="speichern()">Speichern</button>
 

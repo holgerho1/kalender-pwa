@@ -11,6 +11,9 @@ function log(...args) {
 // Aktuell ausgewählter Datensatz
 let aktuelleId = null;
 
+// Mitarbeiterliste (UUID → Kürzel)
+let MITARBEITER = [];
+
 // Mapping: DB-Feld → Input-ID
 const FELDER = {
   feld1: "eingabe_feld1",
@@ -22,8 +25,35 @@ const FELDER = {
   KRANKau: "eingabe_krankau",
   ÜBER: "eingabe_ueber",
   BEREIT: "eingabe_bereit",
-  KZ: "eingabe_kz"
+  KZ: "eingabe_kz"   // jetzt ein SELECT mit UUID
 };
+
+//
+// MITARBEITER LADEN (für Dropdown)
+//
+async function loadMitarbeiter() {
+  const { data, error } = await supa
+    .from("mitarbeiter")
+    .select("id, kuerzel")
+    .order("kuerzel");
+
+  if (error) {
+    log("Fehler Mitarbeiter:", error);
+    return;
+  }
+
+  MITARBEITER = data;
+
+  const sel = document.getElementById("eingabe_kz");
+  sel.innerHTML = '<option value="">-- bitte wählen --</option>';
+
+  data.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m.id;          // UUID
+    opt.textContent = m.kuerzel; // Kürzel anzeigen
+    sel.appendChild(opt);
+  });
+}
 
 //
 // FILTER EINLESEN
@@ -49,11 +79,23 @@ async function listeLaden() {
   let query = supa
     .from("tabelle1")
     .select("id, feld1, JAHR, KW, KZ")
-    .order("id", { ascending: false });   // <<< NEUESTE OBEN
+    .order("id", { ascending: false });
 
   if (f.jahr !== null) query = query.eq("JAHR", f.jahr);
   if (f.kw !== null) query = query.eq("KW", f.kw);
-  if (f.kz !== null && f.kz !== "") query = query.ilike("KZ", `%${f.kz}%`);
+
+  // Filter nach Kürzel → wir müssen UUIDs der passenden Kürzel finden
+  if (f.kz !== null && f.kz !== "") {
+    const passende = MITARBEITER
+      .filter(m => m.kuerzel.toLowerCase().includes(f.kz.toLowerCase()))
+      .map(m => m.id);
+
+    if (passende.length > 0) {
+      query = query.in("KZ", passende);
+    } else {
+      query = query.eq("KZ", "___KEINE___"); // garantiert leer
+    }
+  }
 
   const { data, error } = await query;
 
@@ -65,15 +107,16 @@ async function listeLaden() {
   if (error) return;
 
   data.forEach(row => {
+    const kuerzel = MITARBEITER.find(m => m.id === row.KZ)?.kuerzel ?? "??";
     const opt = document.createElement("option");
     opt.value = row.id;
-    opt.textContent = `${row.id} – ${row.feld1} – ${row.JAHR}/${row.KW} – ${row.KZ}`;
+    opt.textContent = `${row.id} – ${row.feld1} – ${row.JAHR}/${row.KW} – ${kuerzel}`;
     sel.appendChild(opt);
   });
 
   if (data.length > 0) {
     if (!data.some(r => r.id === aktuelleId)) {
-      aktuelleId = data[0].id; // neueste ID
+      aktuelleId = data[0].id;
     }
     sel.value = aktuelleId;
   } else {
@@ -102,7 +145,13 @@ async function laden() {
   // Alle Felder ins UI schreiben
   for (const [feld, inputId] of Object.entries(FELDER)) {
     const el = document.getElementById(inputId);
-    if (el) el.value = data?.[feld] ?? "";
+    if (!el) continue;
+
+    if (feld === "KZ") {
+      el.value = data.KZ ?? "";
+    } else {
+      el.value = data?.[feld] ?? "";
+    }
   }
 }
 
@@ -120,12 +169,10 @@ async function speichern() {
 
     let wert = el.value;
 
-    // numeric-Felder
     if (["URLAUB","URLAUBgen","KRANK","KRANKau","ÜBER","BEREIT"].includes(feld)) {
       wert = wert === "" ? null : Number(wert);
     }
 
-    // int-Felder
     if (["JAHR","KW"].includes(feld)) {
       wert = wert === "" ? null : parseInt(wert, 10);
     }
@@ -168,7 +215,7 @@ async function neu() {
     KRANKau: null,
     ÜBER: null,
     BEREIT: null,
-    KZ: ""
+    KZ: null
   };
 
   const { data, error } = await supa
@@ -227,4 +274,6 @@ window.filterAktualisieren = filterAktualisieren;
 //
 // START
 //
-listeLaden().then(laden);
+await loadMitarbeiter();
+await listeLaden();
+await laden();
