@@ -55,8 +55,7 @@ window.auswahlGeaendert = async function () {
   }
 
   document.getElementById("eingabe_name").value = data.name ?? "";
-  document.getElementById("eingabe_rolle").value = data.rolle ?? "";
-  document.getElementById("eingabe_email").value = data.email ?? "";
+  document.getElementById("eingabe_kuerzel").value = data.kuerzel ?? "";
 };
 
 // ---------------------------------------------------------
@@ -66,8 +65,7 @@ window.neu = function () {
   aktuellerId = null;
 
   document.getElementById("eingabe_name").value = "";
-  document.getElementById("eingabe_rolle").value = "";
-  document.getElementById("eingabe_email").value = "";
+  document.getElementById("eingabe_kuerzel").value = "";
 
   log("Neuer Mitarbeiter – bitte Daten eingeben.");
 };
@@ -77,11 +75,10 @@ window.neu = function () {
 // ---------------------------------------------------------
 window.speichern = async function () {
   const name = document.getElementById("eingabe_name").value.trim();
-  const rolle = document.getElementById("eingabe_rolle").value.trim();
-  const email = document.getElementById("eingabe_email").value.trim();
+  const kuerzel = document.getElementById("eingabe_kuerzel").value.trim();
 
-  if (name === "") {
-    log("Name darf nicht leer sein.");
+  if (kuerzel === "") {
+    log("Kürzel darf nicht leer sein.");
     return;
   }
 
@@ -90,11 +87,11 @@ window.speichern = async function () {
   if (aktuellerId === null) {
     result = await supa
       .from("mitarbeiter")
-      .insert({ name, rolle, email });
+      .insert({ name, kuerzel });
   } else {
     result = await supa
       .from("mitarbeiter")
-      .update({ name, rolle, email })
+      .update({ name, kuerzel })
       .eq("id", aktuellerId);
   }
 
