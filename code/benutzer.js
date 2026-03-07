@@ -7,10 +7,14 @@ export let benutzerListe = [];
 
 // 🔄 Benutzer aus Tabelle "mitarbeiter" laden
 async function ladeBenutzerIntern() {
+  console.log("ladeBenutzerIntern gestartet");
+
   const { data, error } = await supa
     .from("mitarbeiter")
     .select("kuerzel, name")
     .order("kuerzel");
+
+  console.log("Supabase Antwort:", { data, error });
 
   if (error) {
     console.error("Fehler beim Laden der Benutzer:", error);
