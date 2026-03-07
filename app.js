@@ -49,33 +49,40 @@ async function speichereTextfeld(text) {
 }
 
 // -------------------------------------------------------------
-// Dein bisheriger Code
+// Benutzer laden + App starten
 // -------------------------------------------------------------
 
 import { ladeBenutzer, benutzerListe, zeigeBenutzerListe } from "./code/benutzer.js";
 import { neuLaden } from "./code/neuLaden.js";
 import { exportierePdf } from "./code/exportPdf.js";
 
-// 🔥 WICHTIG: Benutzer zuerst laden
+// 🔥 1. Benutzer wirklich laden
 await ladeBenutzer();
 
-// 🔥 Danach Liste anzeigen
+// 🔥 2. Benutzerliste anzeigen (Benutzerverwaltung)
 zeigeBenutzerListe();
 
-// Direktlink-Erkennung aus URL-Pfad
-const pfad = window.location.pathname.replace("/", "").toUpperCase();
-
-// Kürzel-Namens-Zuordnung aus benutzerListe generieren
+// 🔥 3. Jetzt erst kuerzelNamen erzeugen (weil Liste jetzt gefüllt ist)
 const kuerzelNamen = Object.fromEntries(
-  benutzerListe.map(({ kuerzel, name }) => [kuerzel, name])
+  benutzerListe.map(({ kuerzel, name }) => [kuerzel.toUpperCase(), name])
 );
 
+// -------------------------------------------------------------
+// Direktlink-Erkennung aus URL-Pfad
+// -------------------------------------------------------------
+
+const pfad = window.location.pathname.replace("/", "").toUpperCase();
+
 window.addEventListener("load", () => {
+  // 🔥 4. neuLaden erst jetzt starten – nach Benutzerliste
   neuLaden();
 
   const kuerzel = pfad;
   const name = kuerzelNamen[kuerzel] || kuerzel;
 
+  // -------------------------------------------------------------
+  // Benutzer im Pfad erkannt → Direktlink-Modus
+  // -------------------------------------------------------------
   if (kuerzelNamen[kuerzel]) {
     const infoBox = document.createElement("div");
     infoBox.textContent = `👤 Aktiver Benutzer: ${name} (${kuerzel})`;
@@ -94,7 +101,11 @@ window.addEventListener("load", () => {
     if (direktLinks) direktLinks.style.display = "none";
   }
 
+  // -------------------------------------------------------------
+  // Direktlink-Liste erzeugen (nur wenn kein Benutzer im Pfad)
+  // -------------------------------------------------------------
   const linkContainer = document.getElementById("linkListe");
+
   if (linkContainer && !kuerzelNamen[pfad]) {
     benutzerListe.forEach(({ kuerzel, name }) => {
       const btn = document.createElement("a");
@@ -112,6 +123,9 @@ window.addEventListener("load", () => {
     });
   }
 
+  // -------------------------------------------------------------
+  // PDF-Export
+  // -------------------------------------------------------------
   const exportBtn = document.getElementById("pdf-export");
   if (exportBtn) {
     exportBtn.onclick = () => {
