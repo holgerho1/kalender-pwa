@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Holgers Terminplaner</title>
 
+  <!-- Supabase laden (WICHTIG!) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
@@ -103,15 +106,8 @@
     <div id="linkListe"></div>
   </div>
 
+  <!-- Dein App-Code -->
   <script type="module" src="app.js"></script>
-
-  <script type="module">
-    /*
-    import { speichereBenutzer, zeigeBenutzerListe } from './code/benutzer.js';
-    window.speichereBenutzer = speichereBenutzer;
-    window.addEventListener("DOMContentLoaded", zeigeBenutzerListe);
-    */
-  </script>
 
   <script>
     const debug = document.getElementById("debug-log");
