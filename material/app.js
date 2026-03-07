@@ -29,7 +29,7 @@ const FELDER = {
 };
 
 //
-// MITARBEITER LADEN (für Dropdown)
+// MITARBEITER LADEN (Dropdown)
 //
 async function loadMitarbeiter() {
   const { data, error } = await supa
@@ -274,6 +274,6 @@ window.filterAktualisieren = filterAktualisieren;
 //
 // START
 //
-await loadMitarbeiter();
+await loadMitarbeiter();   // MUSS zuerst!
 await listeLaden();
 await laden();
