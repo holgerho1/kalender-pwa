@@ -421,7 +421,6 @@ datenBox.innerHTML = `
   Urlaub: –<br>
   Urlaub genommen: –<br>
   Krank: –<br>
-  Überstunden: –<br>
   Bereitschaft: –
 `;
 }
