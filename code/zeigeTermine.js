@@ -17,14 +17,12 @@ const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "
 // 🔥 Fuzzy Matching – wortbasiert, tolerant, aber ohne falsche Treffer
 // -------------------------------------------------------------
 function fuzzyMatch(text, patterns) {
-  // Normalisieren
   text = text.toLowerCase()
     .replace("ä", "a")
     .replace("ö", "o")
     .replace("ü", "u")
     .replace(/[^a-z0-9\s]/g, " ");
 
-  // In einzelne Wörter zerlegen
   const woerter = text.split(/\s+/).filter(w => w.length > 0);
 
   return woerter.some(wort => {
@@ -35,10 +33,8 @@ function fuzzyMatch(text, patterns) {
         .replace("ü", "u")
         .replace(/[^a-z0-9]/g, "");
 
-      // Exakt oder fast exakt
       if (wort === p) return true;
 
-      // Toleranz: 1 Zeichen Abweichung
       if (Math.abs(wort.length - p.length) <= 1) {
         let fehler = 0;
         for (let i = 0; i < Math.min(wort.length, p.length); i++) {
@@ -393,7 +389,7 @@ function zeigeSteuerung(gefiltert) {
 
     if (fuzzyMatch(titel, ["urlaub"])) urlaubCount++;
     if (fuzzyMatch(titel, ["krank"])) krankCount++;
-    if (fuzzyMatch(titel, ["bereitschaft"])) bereitsschaftCount++;
+    if (fuzzyMatch(titel, ["bereitschaft"])) bereitschaftCount++;
   });
 
   datenBox.innerHTML = `
