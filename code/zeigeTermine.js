@@ -13,6 +13,41 @@ import { exportierePdf } from "./exportPdf.js";
 
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
+// -------------------------------------------------------------
+// 🔥 Fuzzy Matching für Titel (tolerant gegenüber Fehlern)
+// -------------------------------------------------------------
+function fuzzyMatch(text, patterns) {
+  text = text.toLowerCase()
+    .replace("ä", "a")
+    .replace("ö", "o")
+    .replace("ü", "u")
+    .replace(/[^a-z0-9]/g, "");
+
+  return patterns.some(p => {
+    p = p.toLowerCase()
+      .replace("ä", "a")
+      .replace("ö", "o")
+      .replace("ü", "u")
+      .replace(/[^a-z0-9]/g, "");
+
+    if (text.includes(p)) return true;
+
+    if (Math.abs(text.length - p.length) <= 1) {
+      let fehler = 0;
+      for (let i = 0; i < Math.min(text.length, p.length); i++) {
+        if (text[i] !== p[i]) fehler++;
+        if (fehler > 1) return false;
+      }
+      return true;
+    }
+
+    return false;
+  });
+}
+
+// -------------------------------------------------------------
+// KW-Berechnung
+// -------------------------------------------------------------
 function berechneKalenderwoche(datum = new Date()) {
   const kopie = new Date(Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()));
   const tag = kopie.getUTCDay() || 7;
@@ -54,6 +89,9 @@ function zeigeWocheninfo() {
   }
 }
 
+// -------------------------------------------------------------
+// Hauptfunktion
+// -------------------------------------------------------------
 export function zeigeTermine() {
   zeigeWocheninfo();
 
@@ -77,6 +115,9 @@ export function zeigeTermine() {
     container.appendChild(leer);
   }
 
+  // -------------------------------------------------------------
+  // Termine rendern
+  // -------------------------------------------------------------
   gefiltert.forEach((event) => {
     const block = document.createElement("div");
     block.dataset.id = event.id;
@@ -108,7 +149,6 @@ export function zeigeTermine() {
     stundenZeile.style.gap = "8px";
     stundenZeile.style.marginTop = "0.5rem";
 
-    const feldInputs = {};
     ["arbeit", "fahr", "über"].forEach((feld) => {
       const input = document.createElement("input");
       input.type = "text";
@@ -121,7 +161,6 @@ export function zeigeTermine() {
       input.style.padding = "4px 6px";
       input.style.border = "1px solid #ccc";
       input.style.borderRadius = "4px";
-      feldInputs[feld] = input;
       stundenZeile.appendChild(input);
     });
 
@@ -170,6 +209,9 @@ export function zeigeTermine() {
     container.appendChild(block);
   });
 
+  // -------------------------------------------------------------
+  // Tagesfarben (deine Original-Logik)
+  // -------------------------------------------------------------
   const tage = { 1:{blocks:[]},2:{blocks:[]},3:{blocks:[]},4:{blocks:[]},5:{blocks:[]} };
 
   document.querySelectorAll("#termine > div[data-id]").forEach(block => {
@@ -213,6 +255,9 @@ export function zeigeTermine() {
   }
 }
 
+// -------------------------------------------------------------
+// Steuerungsbereich + Datenanzeige
+// -------------------------------------------------------------
 function zeigeSteuerung(gefiltert) {
   const container = document.getElementById("termine");
 
@@ -304,7 +349,7 @@ function zeigeSteuerung(gefiltert) {
   container.appendChild(steuerung);
 
   // -------------------------------------------------------------
-  // 🔥 DATENANZEIGEBEREICH UNTERHALB DER BUTTONS
+  // 🔥 DATENANZEIGEBEREICH
   // -------------------------------------------------------------
   let datenBox = document.getElementById("datenanzeige");
   if (!datenBox) {
@@ -318,32 +363,38 @@ function zeigeSteuerung(gefiltert) {
     container.appendChild(datenBox);
   }
 
-  // Montag der aktuell angezeigten Woche
   const { montag } = getKWZeitraum(getKwOffset());
   const jahr = montag.getFullYear();
   const kw = berechneKalenderwoche(montag);
 
-  // 🔥 Überstunden berechnen
+  // Überstunden
   let ueberstundenSumme = 0;
   gefiltert.forEach(e => {
     const val = parseFloat(String(e.über || "0").replace(",", ".")) || 0;
     ueberstundenSumme += val;
   });
-
   const ueberstunden = ueberstundenSumme.toFixed(2).replace(".", ",");
 
-  // Platzhalter (Logik kommt später)
-  const urlaub = "–";
-  const krank = "–";
-  const bereitschaft = "–";
+  // Urlaub / Krank / Bereitschaft
+  let urlaubCount = 0;
+  let krankCount = 0;
+  let bereitschaftCount = 0;
+
+  gefiltert.forEach(e => {
+    const titel = String(e.titel || "");
+
+    if (fuzzyMatch(titel, ["urlaub", "urlaubs"])) urlaubCount++;
+    if (fuzzyMatch(titel, ["krank", "krankschreibung"])) krankCount++;
+    if (fuzzyMatch(titel, ["bereitschaft", "bereitscaft", "bereitschat"])) bereitschaftCount++;
+  });
 
   datenBox.innerHTML = `
     <strong>Daten dieser Woche</strong><br><br>
     Jahr: ${jahr}<br>
     KW: ${kw}<br>
-    Urlaub: ${urlaub}<br>
-    Krank: ${krank}<br>
+    Urlaub: ${urlaubCount}<br>
+    Krank: ${krankCount}<br>
     Überstunden: ${ueberstunden}<br>
-    Bereitschaft: ${bereitschaft}
+    Bereitschaft: ${bereitschaftCount}
   `;
 }
