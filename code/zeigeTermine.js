@@ -399,14 +399,24 @@ gefiltert.forEach(e => {
   if (fuzzyMatch(titel, ["bereitschaft"])) bereitschaftCount++;
 });
 
-// ⭐ HIER kommt das Kürzel rein – exakt diese Stelle ⭐
+// ⭐ Kürzel aus URL
 const kuerzel = holeAktivenBenutzerKuerzel();
+
+// ⭐ Mitarbeiter-ID anhand des Kürzels holen
+const { data: mitarbeiter, error: mitarbeiterError } = await supabase
+  .from("mitarbeiter")
+  .select("id")
+  .eq("kuerzel", kuerzel)
+  .single();
+
+const mitarbeiterId = mitarbeiter?.id || "–";
 
 datenBox.innerHTML = `
     <strong>Daten dieser Woche</strong><br><br>
     Jahr: ${jahr}<br>
     KW: ${kw}<br>
-    Kürzel: ${kuerzel}<br>   <!-- Anzeige -->
+    Kürzel: ${kuerzel}<br>
+    ID: ${mitarbeiterId}<br>
     Urlaub: ${urlaubCount}<br>
     Krank: ${krankCount}<br>
     Überstunden: ${ueberstunden}<br>
