@@ -420,6 +420,7 @@ datenBox.innerHTML = `
   <strong>Letzter Eintrag (Platzhalter)</strong><br><br>
   Urlaub: –<br>
   Urlaub genommen: –<br>
+  Text: –<br>
   Krank: –<br>
   Bereitschaft: –
 `;
