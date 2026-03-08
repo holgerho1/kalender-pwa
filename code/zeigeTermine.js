@@ -14,34 +14,42 @@ import { exportierePdf } from "./exportPdf.js";
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
 // -------------------------------------------------------------
-// 🔥 Fuzzy Matching für Titel (tolerant gegenüber Fehlern)
+// 🔥 Fuzzy Matching – wortbasiert, tolerant, aber ohne falsche Treffer
 // -------------------------------------------------------------
 function fuzzyMatch(text, patterns) {
+  // Normalisieren
   text = text.toLowerCase()
     .replace("ä", "a")
     .replace("ö", "o")
     .replace("ü", "u")
-    .replace(/[^a-z0-9]/g, "");
+    .replace(/[^a-z0-9\s]/g, " ");
 
-  return patterns.some(p => {
-    p = p.toLowerCase()
-      .replace("ä", "a")
-      .replace("ö", "o")
-      .replace("ü", "u")
-      .replace(/[^a-z0-9]/g, "");
+  // In einzelne Wörter zerlegen
+  const woerter = text.split(/\s+/).filter(w => w.length > 0);
 
-    if (text.includes(p)) return true;
+  return woerter.some(wort => {
+    return patterns.some(p => {
+      p = p.toLowerCase()
+        .replace("ä", "a")
+        .replace("ö", "o")
+        .replace("ü", "u")
+        .replace(/[^a-z0-9]/g, "");
 
-    if (Math.abs(text.length - p.length) <= 1) {
-      let fehler = 0;
-      for (let i = 0; i < Math.min(text.length, p.length); i++) {
-        if (text[i] !== p[i]) fehler++;
-        if (fehler > 1) return false;
+      // Exakt oder fast exakt
+      if (wort === p) return true;
+
+      // Toleranz: 1 Zeichen Abweichung
+      if (Math.abs(wort.length - p.length) <= 1) {
+        let fehler = 0;
+        for (let i = 0; i < Math.min(wort.length, p.length); i++) {
+          if (wort[i] !== p[i]) fehler++;
+          if (fehler > 1) return false;
+        }
+        return true;
       }
-      return true;
-    }
 
-    return false;
+      return false;
+    });
   });
 }
 
@@ -383,9 +391,9 @@ function zeigeSteuerung(gefiltert) {
   gefiltert.forEach(e => {
     const titel = String(e.titel || "");
 
-    if (fuzzyMatch(titel, ["urlaub", "urlaubs"])) urlaubCount++;
-    if (fuzzyMatch(titel, ["krank", "krankschreibung"])) krankCount++;
-    if (fuzzyMatch(titel, ["bereitschaft", "bereitscaft", "bereitschat"])) bereitschaftCount++;
+    if (fuzzyMatch(titel, ["urlaub"])) urlaubCount++;
+    if (fuzzyMatch(titel, ["krank"])) krankCount++;
+    if (fuzzyMatch(titel, ["bereitschaft"])) bereitsschaftCount++;
   });
 
   datenBox.innerHTML = `
