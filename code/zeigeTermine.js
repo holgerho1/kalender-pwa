@@ -323,10 +323,18 @@ function zeigeSteuerung(gefiltert) {
   const jahr = montag.getFullYear();
   const kw = berechneKalenderwoche(montag);
 
+  // 🔥 Überstunden berechnen
+  let ueberstundenSumme = 0;
+  gefiltert.forEach(e => {
+    const val = parseFloat(String(e.über || "0").replace(",", ".")) || 0;
+    ueberstundenSumme += val;
+  });
+
+  const ueberstunden = ueberstundenSumme.toFixed(2).replace(".", ",");
+
   // Platzhalter (Logik kommt später)
   const urlaub = "–";
   const krank = "–";
-  const ueberstunden = "–";
   const bereitschaft = "–";
 
   datenBox.innerHTML = `
