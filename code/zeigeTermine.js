@@ -14,6 +14,14 @@ import { exportierePdf } from "./exportPdf.js";
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
 // -------------------------------------------------------------
+// ⭐ HIER MUSS DIE FUNKTION HIN – DAS IST DER KORREKTE ORT ⭐
+// -------------------------------------------------------------
+function holeAktivenBenutzerKuerzel() {
+  const teile = window.location.pathname.split("/");
+  return teile[teile.length - 1];
+}
+
+// -------------------------------------------------------------
 // 🔥 Fuzzy Matching – wortbasiert, tolerant, aber ohne falsche Treffer
 // -------------------------------------------------------------
 function fuzzyMatch(text, patterns) {
@@ -351,72 +359,76 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(exportBtn);
 
   container.appendChild(steuerung);
+// -------------------------------------------------------------
+// 🔥 DATENANZEIGEBEREICH
+// -------------------------------------------------------------
+let datenBox = document.getElementById("datenanzeige");
+if (!datenBox) {
+  datenBox = document.createElement("div");
+  datenBox.id = "datenanzeige";
+  datenBox.style.marginTop = "1rem";
+  datenBox.style.padding = "1rem";
+  datenBox.style.background = "#fff";
+  datenBox.style.borderRadius = "6px";
+  datenBox.style.boxShadow = "0 0 4px rgba(0,0,0,0.1)";
+  container.appendChild(datenBox);
+}
 
-  // -------------------------------------------------------------
-  // 🔥 DATENANZEIGEBEREICH
-  // -------------------------------------------------------------
-  let datenBox = document.getElementById("datenanzeige");
-  if (!datenBox) {
-    datenBox = document.createElement("div");
-    datenBox.id = "datenanzeige";
-    datenBox.style.marginTop = "1rem";
-    datenBox.style.padding = "1rem";
-    datenBox.style.background = "#fff";
-    datenBox.style.borderRadius = "6px";
-    datenBox.style.boxShadow = "0 0 4px rgba(0,0,0,0.1)";
-    container.appendChild(datenBox);
-  }
+const { montag } = getKWZeitraum(getKwOffset());
+const jahr = montag.getFullYear();
+const kw = berechneKalenderwoche(montag);
 
-  const { montag } = getKWZeitraum(getKwOffset());
-  const jahr = montag.getFullYear();
-  const kw = berechneKalenderwoche(montag);
+// Überstunden
+let ueberstundenSumme = 0;
+gefiltert.forEach(e => {
+  const val = parseFloat(String(e.über || "0").replace(",", ".")) || 0;
+  ueberstundenSumme += val;
+});
+const ueberstunden = ueberstundenSumme.toFixed(2).replace(".", ",");
 
-  // Überstunden
-  let ueberstundenSumme = 0;
-  gefiltert.forEach(e => {
-    const val = parseFloat(String(e.über || "0").replace(",", ".")) || 0;
-    ueberstundenSumme += val;
-  });
-  const ueberstunden = ueberstundenSumme.toFixed(2).replace(".", ",");
+// Urlaub / Krank / Bereitschaft
+let urlaubCount = 0;
+let krankCount = 0;
+let bereitschaftCount = 0;
 
-  // Urlaub / Krank / Bereitschaft
-  let urlaubCount = 0;
-  let krankCount = 0;
-  let bereitschaftCount = 0;
+gefiltert.forEach(e => {
+  const titel = String(e.titel || "");
 
-  gefiltert.forEach(e => {
-    const titel = String(e.titel || "");
+  if (fuzzyMatch(titel, ["urlaub"])) urlaubCount++;
+  if (fuzzyMatch(titel, ["krank"])) krankCount++;
+  if (fuzzyMatch(titel, ["bereitschaft"])) bereitschaftCount++;
+});
 
-    if (fuzzyMatch(titel, ["urlaub"])) urlaubCount++;
-    if (fuzzyMatch(titel, ["krank"])) krankCount++;
-    if (fuzzyMatch(titel, ["bereitschaft"])) bereitschaftCount++;
-  });
+// ⭐ HIER kommt das Kürzel rein – exakt diese Stelle ⭐
+const kuerzel = holeAktivenBenutzerKuerzel();
+
 datenBox.innerHTML = `
     <strong>Daten dieser Woche</strong><br><br>
     Jahr: ${jahr}<br>
     KW: ${kw}<br>
+    Kürzel: ${kuerzel}<br>   <!-- Anzeige -->
     Urlaub: ${urlaubCount}<br>
     Krank: ${krankCount}<br>
     Überstunden: ${ueberstunden}<br>
     Bereitschaft: ${bereitschaftCount}
   `;
 
-  // -------------------------------------------------------------
-  // 🔥 Zweite Datenbox: Platzhalter für letzten Eintrag
-  // -------------------------------------------------------------
-  let datenBox2 = document.getElementById("datenanzeige2");
-  if (!datenBox2) {
-    datenBox2 = document.createElement("div");
-    datenBox2.id = "datenanzeige2";
-    datenBox2.style.marginTop = "1rem";
-    datenBox2.style.padding = "1rem";
-    datenBox2.style.background = "#fff";
-    datenBox2.style.borderRadius = "6px";
-    datenBox2.style.boxShadow = "0 0 4px rgba(0,0,0,0.1)";
-    container.appendChild(datenBox2);
-  }
+// -------------------------------------------------------------
+// 🔥 Zweite Datenbox: Platzhalter für letzten Eintrag
+// -------------------------------------------------------------
+let datenBox2 = document.getElementById("datenanzeige2");
+if (!datenBox2) {
+  datenBox2 = document.createElement("div");
+  datenBox2.id = "datenanzeige2";
+  datenBox2.style.marginTop = "1rem";
+  datenBox2.style.padding = "1rem";
+  datenBox2.style.background = "#fff";
+  datenBox2.style.borderRadius = "6px";
+  datenBox2.style.boxShadow = "0 0 4px rgba(0,0,0,0.1)";
+  container.appendChild(datenBox2);
+}
 
-  datenBox2.innerHTML = `
+datenBox2.innerHTML = `
   <strong>Letzter Eintrag (Platzhalter)</strong><br><br>
   Urlaub: –<br>
   Urlaub genommen: –<br>
