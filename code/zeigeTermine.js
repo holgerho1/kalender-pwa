@@ -417,12 +417,10 @@ datenBox.innerHTML = `
   }
 
   datenBox2.innerHTML = `
-    <strong>Letzter Eintrag (Platzhalter)</strong><br><br>
-    Jahr: –<br>
-    KW: –<br>
-    Urlaub: –<br>
-    Krank: –<br>
-    Überstunden: –<br>
-    Bereitschaft: –
-  `;
+  <strong>Letzter Eintrag (Platzhalter)</strong><br><br>
+  Urlaub: –<br>
+  Krank: –<br>
+  Überstunden: –<br>
+  Bereitschaft: –
+`;
 }
