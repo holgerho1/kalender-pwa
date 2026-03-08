@@ -419,6 +419,7 @@ datenBox.innerHTML = `
   datenBox2.innerHTML = `
   <strong>Letzter Eintrag (Platzhalter)</strong><br><br>
   Urlaub: –<br>
+  Urlaub genommen: –<br>
   Krank: –<br>
   Überstunden: –<br>
   Bereitschaft: –
