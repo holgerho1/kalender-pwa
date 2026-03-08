@@ -391,8 +391,7 @@ function zeigeSteuerung(gefiltert) {
     if (fuzzyMatch(titel, ["krank"])) krankCount++;
     if (fuzzyMatch(titel, ["bereitschaft"])) bereitschaftCount++;
   });
-
-  datenBox.innerHTML = `
+datenBox.innerHTML = `
     <strong>Daten dieser Woche</strong><br><br>
     Jahr: ${jahr}<br>
     KW: ${kw}<br>
@@ -400,5 +399,30 @@ function zeigeSteuerung(gefiltert) {
     Krank: ${krankCount}<br>
     Überstunden: ${ueberstunden}<br>
     Bereitschaft: ${bereitschaftCount}
+  `;
+
+  // -------------------------------------------------------------
+  // 🔥 Zweite Datenbox: Platzhalter für letzten Eintrag
+  // -------------------------------------------------------------
+  let datenBox2 = document.getElementById("datenanzeige2");
+  if (!datenBox2) {
+    datenBox2 = document.createElement("div");
+    datenBox2.id = "datenanzeige2";
+    datenBox2.style.marginTop = "1rem";
+    datenBox2.style.padding = "1rem";
+    datenBox2.style.background = "#fff";
+    datenBox2.style.borderRadius = "6px";
+    datenBox2.style.boxShadow = "0 0 4px rgba(0,0,0,0.1)";
+    container.appendChild(datenBox2);
+  }
+
+  datenBox2.innerHTML = `
+    <strong>Letzter Eintrag (Platzhalter)</strong><br><br>
+    Jahr: –<br>
+    KW: –<br>
+    Urlaub: –<br>
+    Krank: –<br>
+    Überstunden: –<br>
+    Bereitschaft: –
   `;
 }
