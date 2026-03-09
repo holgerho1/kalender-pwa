@@ -470,5 +470,5 @@ function zeigeSteuerung(gefiltert) {
     Krank: –<br>
     Bereitschaft: –
   `;
-}
+
 //Ende Teil3
