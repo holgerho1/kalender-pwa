@@ -79,123 +79,28 @@ function fuzzyMatch(text, patterns) {
     });
   });
 }
-// -------------------------------------------------------------
-// Hauptfunktion
-// -------------------------------------------------------------
-export function zeigeTermine() {
-  zeigeWocheninfo();
-// -------------------------------------------------------------
-// Termine rendern
-// -------------------------------------------------------------
-gefiltert.forEach((event) => {
-  const block = document.createElement("div");
-  block.dataset.id = event.id;
-  block.style.marginBottom = "1rem";
-  block.style.padding = "1rem";
-  block.style.background = "#fff";
-  block.style.borderLeft = "4px solid #0077cc";
-  block.style.borderRadius = "6px";
 
-  // -------------------------------------------------------------
-  // ⭐ Datenbox1: Mitarbeiter-ID anzeigen (aus URL-Kürzel)
-  // -------------------------------------------------------------
-  const datenbox1 = document.createElement("div");
-  datenbox1.className = "datenbox1";
-  datenbox1.style.marginTop = "0.5rem";
-  datenbox1.style.padding = "4px 6px";
-  datenbox1.style.background = "#eef6ff";
-  datenbox1.style.borderRadius = "4px";
-  datenbox1.textContent = "Mitarbeiter-ID wird geladen…";
-  block.appendChild(datenbox1);
+// -------------------------------------------------------------
+// ⭐ WICHTIG: Diese Funktion MUSS über zeigeTermine() stehen
+// -------------------------------------------------------------
+function zeigeWocheninfo() {
+  const { montag, sonntag } = getKWZeitraum(getKwOffset());
 
-  ladeMitarbeiterId().then(mid => {
-    datenbox1.textContent = mid !== null ? `Mitarbeiter-ID: ${mid}` : "Mitarbeiter-ID: –";
+  const formatter = new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
   });
 
-  // -------------------------------------------------------------
-  // Dein bestehender Code geht hier weiter
-  // -------------------------------------------------------------
-  const datumObj = new Date(event.timestamp);
-  const tag = String(datumObj.getDate()).padStart(2, "0");
-  const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
-  const wochentag = wochentage[datumObj.getDay()];
-  const datumMitTag = `${tag}.${monat} (${wochentag})`;
+  const von = formatter.format(montag);
+  const bis = formatter.format(sonntag);
+  const kw = berechneKalenderwoche(montag);
 
-  const datum = document.createElement("div");
-  datum.textContent = `📅 ${datumMitTag}`;
-  datum.style.fontWeight = "bold";
-  datum.style.marginBottom = "0.3rem";
-
-  const titel = document.createElement("textarea");
-  titel.value = event.titel;
-  titel.rows = 2;
-  titel.style.width = "100%";
-  titel.style.marginTop = "0.5rem";
-
-  const stundenZeile = document.createElement("div");
-  stundenZeile.style.display = "flex";
-  stundenZeile.style.gap = "8px";
-  stundenZeile.style.marginTop = "0.5rem";
-
-  ["arbeit", "fahr", "über"].forEach((feld) => {
-    const input = document.createElement("input");
-    input.type = "text";
-    input.value = event[feld] || "";
-    input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
-    input.style.flex = "1";
-    input.style.width = "100%";
-    input.style.marginTop = "0.5rem";
-    input.style.fontSize = "0.8rem";
-    input.style.padding = "4px 6px";
-    input.style.border = "1px solid #ccc";
-    input.style.borderRadius = "4px";
-    stundenZeile.appendChild(input);
-  });
-
-  const beschreibung = document.createElement("textarea");
-  beschreibung.value = event.beschreibung;
-  beschreibung.rows = 3;
-  beschreibung.style.width = "100%";
-  beschreibung.style.marginTop = "0.5rem";
-
-  const materialInput = document.createElement("textarea");
-  materialInput.value = event.material || "";
-  materialInput.rows = 3;
-  materialInput.style.width = "100%";
-  materialInput.style.marginTop = "0.5rem";
-  materialInput.placeholder = "Material";
-
-  const mitarbeiterInput = document.createElement("textarea");
-  mitarbeiterInput.value = event.mitarbeiter || "";
-  mitarbeiterInput.rows = 2;
-  mitarbeiterInput.style.width = "100%";
-  mitarbeiterInput.style.marginTop = "0.5rem";
-
-  const loeschen = document.createElement("button");
-  loeschen.textContent = "❌ Löschen";
-  loeschen.style.marginLeft = "10px";
-
-  loeschen.onclick = () => {
-    localStorage.setItem("scrollPos", window.scrollY);
-
-    const termine = getTermine();
-    const indexImOriginal = termine.findIndex((t) => t.id === event.id);
-    if (indexImOriginal !== -1) {
-      termine.splice(indexImOriginal, 1);
-      setTermine(termine);
-      zeigeTermine();
-    }
-  };
-
-  block.appendChild(datum);
-  block.appendChild(titel);
-  block.appendChild(stundenZeile);
-  block.appendChild(beschreibung);
-  block.appendChild(materialInput);
-  block.appendChild(mitarbeiterInput);
-  block.appendChild(loeschen);
-  container.appendChild(block);
-});
+  const info = document.getElementById("wocheninfo");
+  if (info) {
+    info.textContent = `📆 KW ${kw}: ${von} – ${bis}${getFilterAktiv() ? "" : " (alle Termine)"}`;
+  }
+}
 // -------------------------------------------------------------
 // Tagesfarben (deine Original-Logik)
 // -------------------------------------------------------------
