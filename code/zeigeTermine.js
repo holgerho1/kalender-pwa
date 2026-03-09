@@ -444,7 +444,7 @@ function zeigeSteuerung(gefiltert) {
     Überstunden: ${ueberstunden}<br>
     Bereitschaft: ${bereitschaftCount}
   `;
-
+}
 //Ende Teil2
 //Teil3
   // -------------------------------------------------------------
