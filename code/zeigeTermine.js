@@ -360,7 +360,7 @@ export async function zeigeTermine() {
     Krank: –<br>
     Bereitschaft: –
   `;
-
+}
 //Ende Teil2
 //Teil3
 
