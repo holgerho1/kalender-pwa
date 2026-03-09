@@ -360,6 +360,12 @@ export async function zeigeTermine() {
     Krank: –<br>
     Bereitschaft: –
   `;
+  // -------------------------------------------------------------
+  // Buttons wieder aktivieren
+  // -------------------------------------------------------------
+  zeigeSteuerung(gefiltert);
+
+
 }
 //Ende Teil2
 //Teil3
