@@ -144,7 +144,7 @@ Object.keys(tage).forEach(key => {
     window.scrollTo(0, parseInt(pos));
     localStorage.removeItem("scrollPos");
   }
-}
+
 
 // -------------------------------------------------------------
 // Steuerungsbereich + Datenanzeige
