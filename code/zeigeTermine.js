@@ -1,3 +1,4 @@
+//Teil1
 import {
   getTermine,
   setTermine,
@@ -11,13 +12,16 @@ import { verarbeiteTermin } from "./verarbeiteTermin.js";
 import { neuLaden } from "./neuLaden.js";
 import { exportierePdf } from "./exportPdf.js";
 
-// ⭐ NEU: Supabase-Client importieren ⭐
-import { supa } from "../material/db.js";
+// ⭐ Supabase korrekt importieren ⭐
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
+
+export const supa = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
 // -------------------------------------------------------------
-// ⭐ HIER MUSS DIE FUNKTION HIN – DAS IST DER KORREKTE ORT ⭐
+// Benutzerkürzel aus URL
 // -------------------------------------------------------------
 function holeAktivenBenutzerKuerzel() {
   const teile = window.location.pathname.split("/");
@@ -25,7 +29,7 @@ function holeAktivenBenutzerKuerzel() {
 }
 
 // -------------------------------------------------------------
-// 🔍 Mitarbeiter-ID anhand des URL-Kürzels laden
+// ⭐ Mitarbeiter-ID aus Supabase laden ⭐
 // -------------------------------------------------------------
 async function ladeMitarbeiterId() {
   const kuerzel = holeAktivenBenutzerKuerzel();
@@ -45,7 +49,7 @@ async function ladeMitarbeiterId() {
 }
 
 // -------------------------------------------------------------
-// 🔥 Fuzzy Matching – wortbasiert, tolerant, aber ohne falsche Treffer
+// Fuzzy Matching
 // -------------------------------------------------------------
 function fuzzyMatch(text, patterns) {
   text = text.toLowerCase()
@@ -81,8 +85,30 @@ function fuzzyMatch(text, patterns) {
 }
 
 // -------------------------------------------------------------
-// ⭐ WICHTIG: Diese Funktion MUSS über zeigeTermine() stehen
+// KW-Berechnung
 // -------------------------------------------------------------
+function berechneKalenderwoche(datum = new Date()) {
+  const kopie = new Date(Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()));
+  const tag = kopie.getUTCDay() || 7;
+  kopie.setUTCDate(kopie.getUTCDate() + 4 - tag);
+  const jahrStart = new Date(Date.UTC(kopie.getUTCFullYear(), 0, 1));
+  return Math.ceil((((kopie - jahrStart) / 86400000) + 1) / 7);
+}
+
+function getKWZeitraum(offset = 0) {
+  const heute = new Date();
+  heute.setHours(0, 0, 0, 0);
+  const wochentag = heute.getDay();
+  const montag = new Date(heute);
+  montag.setDate(heute.getDate() - ((wochentag + 6) % 7) + offset * 7);
+
+  const sonntag = new Date(montag);
+  sonntag.setDate(montag.getDate() + 6);
+  sonntag.setHours(23, 59, 59, 999);
+
+  return { montag, sonntag };
+}
+
 function zeigeWocheninfo() {
   const { montag, sonntag } = getKWZeitraum(getKwOffset());
 
@@ -91,9 +117,9 @@ function zeigeWocheninfo() {
     month: "long",
     year: "numeric"
   });
-
   const von = formatter.format(montag);
   const bis = formatter.format(sonntag);
+
   const kw = berechneKalenderwoche(montag);
 
   const info = document.getElementById("wocheninfo");
@@ -101,42 +127,169 @@ function zeigeWocheninfo() {
     info.textContent = `📆 KW ${kw}: ${von} – ${bis}${getFilterAktiv() ? "" : " (alle Termine)"}`;
   }
 }
+
 // -------------------------------------------------------------
-// Tagesfarben (deine Original-Logik)
+// ⭐ Hauptfunktion – jetzt mit Mitarbeiter-ID ⭐
 // -------------------------------------------------------------
-const tage = { 1:{blocks:[]},2:{blocks:[]},3:{blocks:[]},4:{blocks:[]},5:{blocks:[]} };
+export async function zeigeTermine() {
 
-document.querySelectorAll("#termine > div[data-id]").forEach(block => {
-  const id = block.dataset.id;
-  const event = termine.find(t => t.id === id);
-  if (!event) return;
+  const mitarbeiterId = await ladeMitarbeiterId();   // ⭐ ID wird geladen
 
-  const wtag = new Date(event.timestamp).getDay();
-  if (wtag >= 1 && wtag <= 5) tage[wtag].blocks.push(block);
-});
+  zeigeWocheninfo();
 
-Object.keys(tage).forEach(key => {
-  const t = tage[key];
-  if (t.blocks.length === 0) return;
+  const container = document.getElementById("termine");
+  container.innerHTML = "";
 
-  let arbeitSum = 0, fahrSum = 0, ueberSum = 0;
+  const { montag, sonntag } = getKWZeitraum(getKwOffset());
+  const termine = getTermine();
 
-  t.blocks.forEach(block => {
-    const inputs = block.querySelectorAll("input");
-    inputs.forEach(input => {
-      const name = input.placeholder.toLowerCase();
-      const val = parseFloat(input.value.replace(",", ".")) || 0;
-      if (name === "arbeit") arbeitSum += val;
-      if (name === "fahr") fahrSum += val;
-      if (name === "über") ueberSum += val;
+  const gefiltert = getFilterAktiv()
+    ? termine.filter(e => {
+        const d = new Date(e.timestamp);
+        return d >= montag && d <= sonntag;
+      })
+    : termine;
+
+  if (gefiltert.length === 0) {
+    const leer = document.createElement("div");
+    leer.textContent = "Keine Termine im gewählten Zeitraum.";
+    leer.style.fontStyle = "italic";
+    container.appendChild(leer);
+  }
+
+  // -------------------------------------------------------------
+  // Termine rendern
+  // -------------------------------------------------------------
+  gefiltert.forEach((event) => {
+    const block = document.createElement("div");
+    block.dataset.id = event.id;
+    block.style.marginBottom = "1rem";
+    block.style.padding = "1rem";
+    block.style.background = "#fff";
+    block.style.borderLeft = "4px solid #0077cc";
+    block.style.borderRadius = "6px";
+
+    const datumObj = new Date(event.timestamp);
+    const tag = String(datumObj.getDate()).padStart(2, "0");
+    const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
+    const wochentag = wochentage[datumObj.getDay()];
+    const datumMitTag = `${tag}.${monat} (${wochentag})`;
+
+    const datum = document.createElement("div");
+    datum.textContent = `📅 ${datumMitTag}`;
+    datum.style.fontWeight = "bold";
+    datum.style.marginBottom = "0.3rem";
+
+    const titel = document.createElement("textarea");
+    titel.value = event.titel;
+    titel.rows = 2;
+    titel.style.width = "100%";
+    titel.style.marginTop = "0.5rem";
+
+    const stundenZeile = document.createElement("div");
+    stundenZeile.style.display = "flex";
+    stundenZeile.style.gap = "8px";
+    stundenZeile.style.marginTop = "0.5rem";
+
+    ["arbeit", "fahr", "über"].forEach((feld) => {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = event[feld] || "";
+      input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
+      input.style.flex = "1";
+      input.style.width = "100%";
+      input.style.marginTop = "0.5rem";
+      input.style.fontSize = "0.8rem";
+      input.style.padding = "4px 6px";
+      input.style.border = "1px solid #ccc";
+      input.style.borderRadius = "4px";
+      stundenZeile.appendChild(input);
     });
+
+    const beschreibung = document.createElement("textarea");
+    beschreibung.value = event.beschreibung;
+    beschreibung.rows = 3;
+    beschreibung.style.width = "100%";
+    beschreibung.style.marginTop = "0.5rem";
+
+    const materialInput = document.createElement("textarea");
+    materialInput.value = event.material || "";
+    materialInput.rows = 3;
+    materialInput.style.width = "100%";
+    materialInput.style.marginTop = "0.5rem";
+    materialInput.placeholder = "Material";
+
+    const mitarbeiterInput = document.createElement("textarea");
+    mitarbeiterInput.value = event.mitarbeiter || "";
+    mitarbeiterInput.rows = 2;
+    mitarbeiterInput.style.width = "100%";
+    mitarbeiterInput.style.marginTop = "0.5rem";
+
+    const loeschen = document.createElement("button");
+    loeschen.textContent = "❌ Löschen";
+    loeschen.style.marginLeft = "10px";
+
+    loeschen.onclick = () => {
+      localStorage.setItem("scrollPos", window.scrollY);
+
+      const termine = getTermine();
+      const indexImOriginal = termine.findIndex((t) => t.id === event.id);
+      if (indexImOriginal !== -1) {
+        termine.splice(indexImOriginal, 1);
+        setTermine(termine);
+        zeigeTermine();
+      }
+    };
+
+    block.appendChild(datum);
+    block.appendChild(titel);
+    block.appendChild(stundenZeile);
+    block.appendChild(beschreibung);
+    block.appendChild(materialInput);
+    block.appendChild(mitarbeiterInput);
+    block.appendChild(loeschen);
+    container.appendChild(block);
+  });
+}
+//Ende Teil1
+//Teil2
+  // -------------------------------------------------------------
+  // Tagesfarben (deine Original-Logik)
+  // -------------------------------------------------------------
+  const tage = { 1:{blocks:[]},2:{blocks:[]},3:{blocks:[]},4:{blocks:[]},5:{blocks:[]} };
+
+  document.querySelectorAll("#termine > div[data-id]").forEach(block => {
+    const id = block.dataset.id;
+    const event = termine.find(t => t.id === id);
+    if (!event) return;
+
+    const wtag = new Date(event.timestamp).getDay();
+    if (wtag >= 1 && wtag <= 5) tage[wtag].blocks.push(block);
   });
 
-  const summe = arbeitSum + fahrSum;
-  const ziel = 8 + ueberSum;
-  const farbe = (summe === ziel) ? "#e6ffe6" : "#ffe6e6";
-  t.blocks.forEach(b => b.style.backgroundColor = farbe);
-});
+  Object.keys(tage).forEach(key => {
+    const t = tage[key];
+    if (t.blocks.length === 0) return;
+
+    let arbeitSum = 0, fahrSum = 0, ueberSum = 0;
+
+    t.blocks.forEach(block => {
+      const inputs = block.querySelectorAll("input");
+      inputs.forEach(input => {
+        const name = input.placeholder.toLowerCase();
+        const val = parseFloat(input.value.replace(",", ".")) || 0;
+        if (name === "arbeit") arbeitSum += val;
+        if (name === "fahr") fahrSum += val;
+        if (name === "über") ueberSum += val;
+      });
+    });
+
+    const summe = arbeitSum + fahrSum;
+    const ziel = 8 + ueberSum;
+    const farbe = (summe === ziel) ? "#e6ffe6" : "#ffe6e6";
+    t.blocks.forEach(b => b.style.backgroundColor = farbe);
+  });
+
   zeigeSteuerung(gefiltert);
 
   const pos = localStorage.getItem("scrollPos");
@@ -144,7 +297,7 @@ Object.keys(tage).forEach(key => {
     window.scrollTo(0, parseInt(pos));
     localStorage.removeItem("scrollPos");
   }
-
+}
 
 // -------------------------------------------------------------
 // Steuerungsbereich + Datenanzeige
@@ -238,81 +391,84 @@ function zeigeSteuerung(gefiltert) {
   steuerung.appendChild(exportBtn);
 
   container.appendChild(steuerung);
-// -------------------------------------------------------------
-// 🔥 DATENANZEIGEBEREICH
-// -------------------------------------------------------------
-let datenBox = document.getElementById("datenanzeige");
-if (!datenBox) {
-  datenBox = document.createElement("div");
-  datenBox.id = "datenanzeige";
-  datenBox.style.marginTop = "1rem";
-  datenBox.style.padding = "1rem";
-  datenBox.style.background = "#fff";
-  datenBox.style.borderRadius = "6px";
-  datenBox.style.boxShadow = "0 0 4px rgba(0,0,0,0.1)";
-  container.appendChild(datenBox);
-}
 
-const { montag } = getKWZeitraum(getKwOffset());
-const jahr = montag.getFullYear();
-const kw = berechneKalenderwoche(montag);
+  // -------------------------------------------------------------
+  // 🔥 DATENANZEIGEBEREICH — MIT MITARBEITER-ID
+  // -------------------------------------------------------------
+  let datenBox = document.getElementById("datenanzeige");
+  if (!datenBox) {
+    datenBox = document.createElement("div");
+    datenBox.id = "datenanzeige";
+    datenBox.style.marginTop = "1rem";
+    datenBox.style.padding = "1rem";
+    datenBox.style.background = "#fff";
+    datenBox.style.borderRadius = "6px";
+    datenBox.style.boxShadow = "0 0 4px rgba(0,0,0,0.1)";
+    container.appendChild(datenBox);
+  }
 
-// Überstunden
-let ueberstundenSumme = 0;
-gefiltert.forEach(e => {
-  const val = parseFloat(String(e.über || "0").replace(",", ".")) || 0;
-  ueberstundenSumme += val;
-});
-const ueberstunden = ueberstundenSumme.toFixed(2).replace(".", ",");
+  const { montag } = getKWZeitraum(getKwOffset());
+  const jahr = montag.getFullYear();
+  const kw = berechneKalenderwoche(montag);
 
-// Urlaub / Krank / Bereitschaft
-let urlaubCount = 0;
-let krankCount = 0;
-let bereitschaftCount = 0;
+  // Überstunden
+  let ueberstundenSumme = 0;
+  gefiltert.forEach(e => {
+    const val = parseFloat(String(e.über || "0").replace(",", ".")) || 0;
+    ueberstundenSumme += val;
+  });
+  const ueberstunden = ueberstundenSumme.toFixed(2).replace(".", ",");
 
-gefiltert.forEach(e => {
-  const titel = String(e.titel || "");
+  // Urlaub / Krank / Bereitschaft
+  let urlaubCount = 0;
+  let krankCount = 0;
+  let bereitschaftCount = 0;
 
-  if (fuzzyMatch(titel, ["urlaub"])) urlaubCount++;
-  if (fuzzyMatch(titel, ["krank"])) krankCount++;
-  if (fuzzyMatch(titel, ["bereitschaft"])) bereitschaftCount++;
-});
+  gefiltert.forEach(e => {
+    const titel = String(e.titel || "");
 
-// ⭐ HIER kommt das Kürzel rein – exakt diese Stelle ⭐
-const kuerzel = holeAktivenBenutzerKuerzel();
+    if (fuzzyMatch(titel, ["urlaub"])) urlaubCount++;
+    if (fuzzyMatch(titel, ["krank"])) krankCount++;
+    if (fuzzyMatch(titel, ["bereitschaft"])) bereitschaftCount++;
+  });
 
-datenBox.innerHTML = `
+  // ⭐ Mitarbeiter-ID kommt hier rein ⭐
+  datenBox.innerHTML = `
     <strong>Daten dieser Woche</strong><br><br>
     Jahr: ${jahr}<br>
     KW: ${kw}<br>
-    Kürzel: ${kuerzel}<br>   <!-- Anzeige -->
+    Kürzel: ${holeAktivenBenutzerKuerzel()}<br>
+    Mitarbeiter-ID: ${mitarbeiterId}<br>   <!-- ⭐ NEU ⭐ -->
     Urlaub: ${urlaubCount}<br>
     Krank: ${krankCount}<br>
     Überstunden: ${ueberstunden}<br>
     Bereitschaft: ${bereitschaftCount}
   `;
 
-// -------------------------------------------------------------
-// 🔥 Zweite Datenbox: Platzhalter für letzten Eintrag
-// -------------------------------------------------------------
-let datenBox2 = document.getElementById("datenanzeige2");
-if (!datenBox2) {
-  datenBox2 = document.createElement("div");
-  datenBox2.id = "datenanzeige2";
-  datenBox2.style.marginTop = "1rem";
-  datenBox2.style.padding = "1rem";
-  datenBox2.style.background = "#fff";
-  datenBox2.style.borderRadius = "6px";
-  datenBox2.style.boxShadow = "0 0 4px rgba(0,0,0,0.1)";
-  container.appendChild(datenBox2);
-}
+//Ende Teil2
+//Teil3
+  // -------------------------------------------------------------
+  // 🔥 Zweite Datenbox: Platzhalter für letzten Eintrag
+  // -------------------------------------------------------------
+  let datenBox2 = document.getElementById("datenanzeige2");
+  if (!datenBox2) {
+    datenBox2 = document.createElement("div");
+    datenBox2.id = "datenanzeige2";
+    datenBox2.style.marginTop = "1rem";
+    datenBox2.style.padding = "1rem";
+    datenBox2.style.background = "#fff";
+    datenBox2.style.borderRadius = "6px";
+    datenBox2.style.boxShadow = "0 0 4px rgba(0,0,0,0.1)";
+    container.appendChild(datenBox2);
+  }
 
-datenBox2.innerHTML = `
-  <strong>Letzter Eintrag (Platzhalter)</strong><br><br>
-  Urlaub: –<br>
-  Urlaub genommen: –<br>
-  Text: –<br>
-  Krank: –<br>
-  Bereitschaft: –
-`;
+  datenBox2.innerHTML = `
+    <strong>Letzter Eintrag (Platzhalter)</strong><br><br>
+    Urlaub: –<br>
+    Urlaub genommen: –<br>
+    Text: –<br>
+    Krank: –<br>
+    Bereitschaft: –
+  `;
 }
+//Ende Teil3
