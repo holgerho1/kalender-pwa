@@ -11,6 +11,9 @@ import { verarbeiteTermin } from "./verarbeiteTermin.js";
 import { neuLaden } from "./neuLaden.js";
 import { exportierePdf } from "./exportPdf.js";
 
+// ⭐ NEU: Supabase-Client importieren ⭐
+import { supa } from "../material/db.js";
+
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
 // -------------------------------------------------------------
@@ -56,7 +59,6 @@ function fuzzyMatch(text, patterns) {
     });
   });
 }
-
 // -------------------------------------------------------------
 // KW-Berechnung
 // -------------------------------------------------------------
