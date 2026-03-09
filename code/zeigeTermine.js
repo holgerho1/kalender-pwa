@@ -297,7 +297,7 @@ export async function zeigeTermine() {
     window.scrollTo(0, parseInt(pos));
     localStorage.removeItem("scrollPos");
   }
-}
+
 
 // -------------------------------------------------------------
 // Steuerungsbereich + Datenanzeige
