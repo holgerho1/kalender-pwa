@@ -59,6 +59,25 @@ function fuzzyMatch(text, patterns) {
     });
   });
 }
+
+// -------------------------------------------------------------
+// 🔍 NEU: KWid aus Supabase laden (asynchron, blockiert die UI nicht)
+// -------------------------------------------------------------
+async function ladeKWid(terminId) {
+  const { data, error } = await supa
+    .from("tabelle1")
+    .select("KWid")
+    .eq("id", terminId)
+    .single();
+
+  if (error) {
+    console.warn("Fehler beim Laden von KWid:", error);
+    return null;
+  }
+
+  return data?.KWid ?? null;
+}
+
 // -------------------------------------------------------------
 // KW-Berechnung
 // -------------------------------------------------------------
@@ -108,27 +127,6 @@ function zeigeWocheninfo() {
 // -------------------------------------------------------------
 export function zeigeTermine() {
   zeigeWocheninfo();
-
-  const container = document.getElementById("termine");
-  container.innerHTML = "";
-
-  const { montag, sonntag } = getKWZeitraum(getKwOffset());
-  const termine = getTermine();
-
-  const gefiltert = getFilterAktiv()
-    ? termine.filter(e => {
-        const d = new Date(e.timestamp);
-        return d >= montag && d <= sonntag;
-      })
-    : termine;
-
-  if (gefiltert.length === 0) {
-    const leer = document.createElement("div");
-    leer.textContent = "Keine Termine im gewählten Zeitraum.";
-    leer.style.fontStyle = "italic";
-    container.appendChild(leer);
-  }
-
   // -------------------------------------------------------------
   // Termine rendern
   // -------------------------------------------------------------
