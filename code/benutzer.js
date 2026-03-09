@@ -1,6 +1,8 @@
 // 🔌 Supabase laden
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
-const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const supa = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 🧩 Dynamische Benutzerliste
 export let benutzerListe = [];
