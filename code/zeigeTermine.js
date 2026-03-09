@@ -25,6 +25,26 @@ function holeAktivenBenutzerKuerzel() {
 }
 
 // -------------------------------------------------------------
+// 🔍 Mitarbeiter-ID anhand des URL-Kürzels laden
+// -------------------------------------------------------------
+async function ladeMitarbeiterId() {
+  const kuerzel = holeAktivenBenutzerKuerzel();
+
+  const { data, error } = await supa
+    .from("mitarbeiter")
+    .select("id")
+    .eq("kuerzel", kuerzel)
+    .single();
+
+  if (error) {
+    console.warn("Fehler beim Laden der Mitarbeiter-ID:", error);
+    return null;
+  }
+
+  return data?.id ?? null;
+}
+
+// -------------------------------------------------------------
 // 🔥 Fuzzy Matching – wortbasiert, tolerant, aber ohne falsche Treffer
 // -------------------------------------------------------------
 function fuzzyMatch(text, patterns) {
@@ -59,69 +79,6 @@ function fuzzyMatch(text, patterns) {
     });
   });
 }
-
-// -------------------------------------------------------------
-// 🔍 NEU: KWid aus Supabase laden (asynchron, blockiert die UI nicht)
-// -------------------------------------------------------------
-async function ladeKWid(terminId) {
-  const { data, error } = await supa
-    .from("tabelle1")
-    .select("KWid")
-    .eq("id", terminId)
-    .single();
-
-  if (error) {
-    console.warn("Fehler beim Laden von KWid:", error);
-    return null;
-  }
-
-  return data?.KWid ?? null;
-}
-
-// -------------------------------------------------------------
-// KW-Berechnung
-// -------------------------------------------------------------
-function berechneKalenderwoche(datum = new Date()) {
-  const kopie = new Date(Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()));
-  const tag = kopie.getUTCDay() || 7;
-  kopie.setUTCDate(kopie.getUTCDate() + 4 - tag);
-  const jahrStart = new Date(Date.UTC(kopie.getUTCFullYear(), 0, 1));
-  return Math.ceil((((kopie - jahrStart) / 86400000) + 1) / 7);
-}
-
-function getKWZeitraum(offset = 0) {
-  const heute = new Date();
-  heute.setHours(0, 0, 0, 0);
-  const wochentag = heute.getDay();
-  const montag = new Date(heute);
-  montag.setDate(heute.getDate() - ((wochentag + 6) % 7) + offset * 7);
-
-  const sonntag = new Date(montag);
-  sonntag.setDate(montag.getDate() + 6);
-  sonntag.setHours(23, 59, 59, 999);
-
-  return { montag, sonntag };
-}
-
-function zeigeWocheninfo() {
-  const { montag, sonntag } = getKWZeitraum(getKwOffset());
-
-  const formatter = new Intl.DateTimeFormat("de-DE", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric"
-  });
-  const von = formatter.format(montag);
-  const bis = formatter.format(sonntag);
-
-  const kw = berechneKalenderwoche(montag);
-
-  const info = document.getElementById("wocheninfo");
-  if (info) {
-    info.textContent = `📆 KW ${kw}: ${von} – ${bis}${getFilterAktiv() ? "" : " (alle Termine)"}`;
-  }
-}
-
 // -------------------------------------------------------------
 // Hauptfunktion
 // -------------------------------------------------------------
@@ -140,7 +97,7 @@ gefiltert.forEach((event) => {
   block.style.borderRadius = "6px";
 
   // -------------------------------------------------------------
-  // ⭐ Datenbox1: KWid anzeigen (asynchron nachgeladen)
+  // ⭐ Datenbox1: Mitarbeiter-ID anzeigen (aus URL-Kürzel)
   // -------------------------------------------------------------
   const datenbox1 = document.createElement("div");
   datenbox1.className = "datenbox1";
@@ -148,11 +105,11 @@ gefiltert.forEach((event) => {
   datenbox1.style.padding = "4px 6px";
   datenbox1.style.background = "#eef6ff";
   datenbox1.style.borderRadius = "4px";
-  datenbox1.textContent = "KWid wird geladen…";
+  datenbox1.textContent = "Mitarbeiter-ID wird geladen…";
   block.appendChild(datenbox1);
 
-  ladeKWid(event.id).then(kwid => {
-    datenbox1.textContent = kwid !== null ? `KWid: ${kwid}` : "KWid: –";
+  ladeMitarbeiterId().then(mid => {
+    datenbox1.textContent = mid !== null ? `Mitarbeiter-ID: ${mid}` : "Mitarbeiter-ID: –";
   });
 
   // -------------------------------------------------------------
@@ -239,7 +196,6 @@ gefiltert.forEach((event) => {
   block.appendChild(loeschen);
   container.appendChild(block);
 });
-
 // -------------------------------------------------------------
 // Tagesfarben (deine Original-Logik)
 // -------------------------------------------------------------
