@@ -127,137 +127,155 @@ function zeigeWocheninfo() {
 // -------------------------------------------------------------
 export function zeigeTermine() {
   zeigeWocheninfo();
+// -------------------------------------------------------------
+// Termine rendern
+// -------------------------------------------------------------
+gefiltert.forEach((event) => {
+  const block = document.createElement("div");
+  block.dataset.id = event.id;
+  block.style.marginBottom = "1rem";
+  block.style.padding = "1rem";
+  block.style.background = "#fff";
+  block.style.borderLeft = "4px solid #0077cc";
+  block.style.borderRadius = "6px";
+
   // -------------------------------------------------------------
-  // Termine rendern
+  // ⭐ Datenbox1: KWid anzeigen (asynchron nachgeladen)
   // -------------------------------------------------------------
-  gefiltert.forEach((event) => {
-    const block = document.createElement("div");
-    block.dataset.id = event.id;
-    block.style.marginBottom = "1rem";
-    block.style.padding = "1rem";
-    block.style.background = "#fff";
-    block.style.borderLeft = "4px solid #0077cc";
-    block.style.borderRadius = "6px";
+  const datenbox1 = document.createElement("div");
+  datenbox1.className = "datenbox1";
+  datenbox1.style.marginTop = "0.5rem";
+  datenbox1.style.padding = "4px 6px";
+  datenbox1.style.background = "#eef6ff";
+  datenbox1.style.borderRadius = "4px";
+  datenbox1.textContent = "KWid wird geladen…";
+  block.appendChild(datenbox1);
 
-    const datumObj = new Date(event.timestamp);
-    const tag = String(datumObj.getDate()).padStart(2, "0");
-    const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
-    const wochentag = wochentage[datumObj.getDay()];
-    const datumMitTag = `${tag}.${monat} (${wochentag})`;
+  ladeKWid(event.id).then(kwid => {
+    datenbox1.textContent = kwid !== null ? `KWid: ${kwid}` : "KWid: –";
+  });
 
-    const datum = document.createElement("div");
-    datum.textContent = `📅 ${datumMitTag}`;
-    datum.style.fontWeight = "bold";
-    datum.style.marginBottom = "0.3rem";
+  // -------------------------------------------------------------
+  // Dein bestehender Code geht hier weiter
+  // -------------------------------------------------------------
+  const datumObj = new Date(event.timestamp);
+  const tag = String(datumObj.getDate()).padStart(2, "0");
+  const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
+  const wochentag = wochentage[datumObj.getDay()];
+  const datumMitTag = `${tag}.${monat} (${wochentag})`;
 
-    const titel = document.createElement("textarea");
-    titel.value = event.titel;
-    titel.rows = 2;
-    titel.style.width = "100%";
-    titel.style.marginTop = "0.5rem";
+  const datum = document.createElement("div");
+  datum.textContent = `📅 ${datumMitTag}`;
+  datum.style.fontWeight = "bold";
+  datum.style.marginBottom = "0.3rem";
 
-    const stundenZeile = document.createElement("div");
-    stundenZeile.style.display = "flex";
-    stundenZeile.style.gap = "8px";
-    stundenZeile.style.marginTop = "0.5rem";
+  const titel = document.createElement("textarea");
+  titel.value = event.titel;
+  titel.rows = 2;
+  titel.style.width = "100%";
+  titel.style.marginTop = "0.5rem";
 
-    ["arbeit", "fahr", "über"].forEach((feld) => {
-      const input = document.createElement("input");
-      input.type = "text";
-      input.value = event[feld] || "";
-      input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
-      input.style.flex = "1";
-      input.style.width = "100%";
-      input.style.marginTop = "0.5rem";
-      input.style.fontSize = "0.8rem";
-      input.style.padding = "4px 6px";
-      input.style.border = "1px solid #ccc";
-      input.style.borderRadius = "4px";
-      stundenZeile.appendChild(input);
+  const stundenZeile = document.createElement("div");
+  stundenZeile.style.display = "flex";
+  stundenZeile.style.gap = "8px";
+  stundenZeile.style.marginTop = "0.5rem";
+
+  ["arbeit", "fahr", "über"].forEach((feld) => {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = event[feld] || "";
+    input.placeholder = feld.charAt(0).toUpperCase() + feld.slice(1);
+    input.style.flex = "1";
+    input.style.width = "100%";
+    input.style.marginTop = "0.5rem";
+    input.style.fontSize = "0.8rem";
+    input.style.padding = "4px 6px";
+    input.style.border = "1px solid #ccc";
+    input.style.borderRadius = "4px";
+    stundenZeile.appendChild(input);
+  });
+
+  const beschreibung = document.createElement("textarea");
+  beschreibung.value = event.beschreibung;
+  beschreibung.rows = 3;
+  beschreibung.style.width = "100%";
+  beschreibung.style.marginTop = "0.5rem";
+
+  const materialInput = document.createElement("textarea");
+  materialInput.value = event.material || "";
+  materialInput.rows = 3;
+  materialInput.style.width = "100%";
+  materialInput.style.marginTop = "0.5rem";
+  materialInput.placeholder = "Material";
+
+  const mitarbeiterInput = document.createElement("textarea");
+  mitarbeiterInput.value = event.mitarbeiter || "";
+  mitarbeiterInput.rows = 2;
+  mitarbeiterInput.style.width = "100%";
+  mitarbeiterInput.style.marginTop = "0.5rem";
+
+  const loeschen = document.createElement("button");
+  loeschen.textContent = "❌ Löschen";
+  loeschen.style.marginLeft = "10px";
+
+  loeschen.onclick = () => {
+    localStorage.setItem("scrollPos", window.scrollY);
+
+    const termine = getTermine();
+    const indexImOriginal = termine.findIndex((t) => t.id === event.id);
+    if (indexImOriginal !== -1) {
+      termine.splice(indexImOriginal, 1);
+      setTermine(termine);
+      zeigeTermine();
+    }
+  };
+
+  block.appendChild(datum);
+  block.appendChild(titel);
+  block.appendChild(stundenZeile);
+  block.appendChild(beschreibung);
+  block.appendChild(materialInput);
+  block.appendChild(mitarbeiterInput);
+  block.appendChild(loeschen);
+  container.appendChild(block);
+});
+
+// -------------------------------------------------------------
+// Tagesfarben (deine Original-Logik)
+// -------------------------------------------------------------
+const tage = { 1:{blocks:[]},2:{blocks:[]},3:{blocks:[]},4:{blocks:[]},5:{blocks:[]} };
+
+document.querySelectorAll("#termine > div[data-id]").forEach(block => {
+  const id = block.dataset.id;
+  const event = termine.find(t => t.id === id);
+  if (!event) return;
+
+  const wtag = new Date(event.timestamp).getDay();
+  if (wtag >= 1 && wtag <= 5) tage[wtag].blocks.push(block);
+});
+
+Object.keys(tage).forEach(key => {
+  const t = tage[key];
+  if (t.blocks.length === 0) return;
+
+  let arbeitSum = 0, fahrSum = 0, ueberSum = 0;
+
+  t.blocks.forEach(block => {
+    const inputs = block.querySelectorAll("input");
+    inputs.forEach(input => {
+      const name = input.placeholder.toLowerCase();
+      const val = parseFloat(input.value.replace(",", ".")) || 0;
+      if (name === "arbeit") arbeitSum += val;
+      if (name === "fahr") fahrSum += val;
+      if (name === "über") ueberSum += val;
     });
-
-    const beschreibung = document.createElement("textarea");
-    beschreibung.value = event.beschreibung;
-    beschreibung.rows = 3;
-    beschreibung.style.width = "100%";
-    beschreibung.style.marginTop = "0.5rem";
-
-    const materialInput = document.createElement("textarea");
-    materialInput.value = event.material || "";
-    materialInput.rows = 3;
-    materialInput.style.width = "100%";
-    materialInput.style.marginTop = "0.5rem";
-    materialInput.placeholder = "Material";
-
-    const mitarbeiterInput = document.createElement("textarea");
-    mitarbeiterInput.value = event.mitarbeiter || "";
-    mitarbeiterInput.rows = 2;
-    mitarbeiterInput.style.width = "100%";
-    mitarbeiterInput.style.marginTop = "0.5rem";
-
-    const loeschen = document.createElement("button");
-    loeschen.textContent = "❌ Löschen";
-    loeschen.style.marginLeft = "10px";
-
-    loeschen.onclick = () => {
-      localStorage.setItem("scrollPos", window.scrollY);
-
-      const termine = getTermine();
-      const indexImOriginal = termine.findIndex((t) => t.id === event.id);
-      if (indexImOriginal !== -1) {
-        termine.splice(indexImOriginal, 1);
-        setTermine(termine);
-        zeigeTermine();
-      }
-    };
-
-    block.appendChild(datum);
-    block.appendChild(titel);
-    block.appendChild(stundenZeile);
-    block.appendChild(beschreibung);
-    block.appendChild(materialInput);
-    block.appendChild(mitarbeiterInput);
-    block.appendChild(loeschen);
-    container.appendChild(block);
   });
 
-  // -------------------------------------------------------------
-  // Tagesfarben (deine Original-Logik)
-  // -------------------------------------------------------------
-  const tage = { 1:{blocks:[]},2:{blocks:[]},3:{blocks:[]},4:{blocks:[]},5:{blocks:[]} };
-
-  document.querySelectorAll("#termine > div[data-id]").forEach(block => {
-    const id = block.dataset.id;
-    const event = termine.find(t => t.id === id);
-    if (!event) return;
-
-    const wtag = new Date(event.timestamp).getDay();
-    if (wtag >= 1 && wtag <= 5) tage[wtag].blocks.push(block);
-  });
-
-  Object.keys(tage).forEach(key => {
-    const t = tage[key];
-    if (t.blocks.length === 0) return;
-
-    let arbeitSum = 0, fahrSum = 0, ueberSum = 0;
-
-    t.blocks.forEach(block => {
-      const inputs = block.querySelectorAll("input");
-      inputs.forEach(input => {
-        const name = input.placeholder.toLowerCase();
-        const val = parseFloat(input.value.replace(",", ".")) || 0;
-        if (name === "arbeit") arbeitSum += val;
-        if (name === "fahr") fahrSum += val;
-        if (name === "über") ueberSum += val;
-      });
-    });
-
-    const summe = arbeitSum + fahrSum;
-    const ziel = 8 + ueberSum;
-    const farbe = (summe === ziel) ? "#e6ffe6" : "#ffe6e6";
-    t.blocks.forEach(b => b.style.backgroundColor = farbe);
-  });
-
+  const summe = arbeitSum + fahrSum;
+  const ziel = 8 + ueberSum;
+  const farbe = (summe === ziel) ? "#e6ffe6" : "#ffe6e6";
+  t.blocks.forEach(b => b.style.backgroundColor = farbe);
+});
   zeigeSteuerung(gefiltert);
 
   const pos = localStorage.getItem("scrollPos");
