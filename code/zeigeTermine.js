@@ -380,7 +380,7 @@ datenBox.innerHTML = `
 `;
 
 // -------------------------------------------------------------
-// DATENBOX 2 (Supabase)
+// DATENBOX 2 (Supabase, ohne await → kein Hänger)
 // -------------------------------------------------------------
 let datenBox2 = document.getElementById("datenanzeige2");
 if (!datenBox2) {
@@ -394,23 +394,30 @@ if (!datenBox2) {
   container.appendChild(datenBox2);
 }
 
-const daten2 = await ladeDatenbox2();
+// Sofort anzeigen
+datenBox2.innerHTML = `
+  <strong>Letzter Eintrag</strong><br><br>
+  Lade Daten...
+`;
 
-if (!daten2) {
-  datenBox2.innerHTML = `
-    <strong>Letzter Eintrag</strong><br><br>
-    Keine Daten gefunden.
-  `;
-} else {
-  datenBox2.innerHTML = `
-    <strong>Letzter Eintrag</strong><br><br>
-    Urlaub: ${daten2.URLAUB ?? "–"}<br>
-    Urlaub genommen: ${daten2.URLAUBgen ?? "–"}<br>
-    Text: ${daten2.feld1 ?? "–"}<br>
-    Krank: ${daten2.KRANK ?? "–"}<br>
-    Bereitschaft: ${daten2.BEREIT ?? "–"}
-  `;
-}
+// Hintergrund-Ladevorgang
+ladeDatenbox2().then(daten2 => {
+  if (!daten2) {
+    datenBox2.innerHTML = `
+      <strong>Letzter Eintrag</strong><br><br>
+      Keine Daten gefunden.
+    `;
+  } else {
+    datenBox2.innerHTML = `
+      <strong>Letzter Eintrag</strong><br><br>
+      Urlaub: ${daten2.URLAUB ?? "–"}<br>
+      Urlaub genommen: ${daten2.URLAUBgen ?? "–"}<br>
+      Text: ${daten2.feld1 ?? "–"}<br>
+      Krank: ${daten2.KRANK ?? "–"}<br>
+      Bereitschaft: ${daten2.BEREIT ?? "–"}
+    `;
+  }
+});
 
 // -------------------------------------------------------------
 // Buttons wieder aktivieren
