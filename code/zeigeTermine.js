@@ -251,42 +251,66 @@ export async function zeigeTermine() {
     container.appendChild(block);
   });
 
-  // -------------------------------------------------------------
-  // Tagesfarben
-  // -------------------------------------------------------------
-  const tage = { 1:{blocks:[]},2:{blocks:[]},3:{blocks:[]},4:{blocks:[]},5:{blocks:[]} };
+// -------------------------------------------------------------
+// Tagesfarben (mit Sonderstatus: Urlaub, Krank, Bereitschaft)
+// -------------------------------------------------------------
+const tage = { 1:{blocks:[]},2:{blocks:[]},3:{blocks:[]},4:{blocks:[]},5:{blocks:[]} };
 
-  document.querySelectorAll("#termine > div[data-id]").forEach(block => {
+document.querySelectorAll("#termine > div[data-id]").forEach(block => {
+  const id = block.dataset.id;
+  const event = termine.find(t => t.id === id);
+  if (!event) return;
+
+  const wtag = new Date(event.timestamp).getDay();
+  if (wtag >= 1 && wtag <= 5) tage[wtag].blocks.push(block);
+});
+
+Object.keys(tage).forEach(key => {
+  const t = tage[key];
+  if (t.blocks.length === 0) return;
+
+  let arbeitSum = 0, fahrSum = 0, ueberSum = 0;
+  let sonder = false; // Urlaub / Krank / Bereitschaft erkannt?
+
+  t.blocks.forEach(block => {
     const id = block.dataset.id;
     const event = termine.find(t => t.id === id);
     if (!event) return;
 
-    const wtag = new Date(event.timestamp).getDay();
-    if (wtag >= 1 && wtag <= 5) tage[wtag].blocks.push(block);
+    // Sonderstatus prüfen
+    const titel = String(event.titel || "");
+    if (
+      fuzzyMatch(titel, ["urlaub"]) ||
+      fuzzyMatch(titel, ["krank"]) ||
+      fuzzyMatch(titel, ["bereitschaft"])
+    ) {
+      sonder = true;
+    }
+
+    // Stunden summieren
+    const inputs = block.querySelectorAll("input");
+    inputs.forEach(input => {
+      const name = input.placeholder.toLowerCase();
+      const val = parseFloat(input.value.replace(",", ".")) || 0;
+      if (name === "arbeit") arbeitSum += val;
+      if (name === "fahr") fahrSum += val;
+      if (name === "über") ueberSum += val;
+    });
   });
 
-  Object.keys(tage).forEach(key => {
-    const t = tage[key];
-    if (t.blocks.length === 0) return;
+  let farbe;
 
-    let arbeitSum = 0, fahrSum = 0, ueberSum = 0;
-
-    t.blocks.forEach(block => {
-      const inputs = block.querySelectorAll("input");
-      inputs.forEach(input => {
-        const name = input.placeholder.toLowerCase();
-        const val = parseFloat(input.value.replace(",", ".")) || 0;
-        if (name === "arbeit") arbeitSum += val;
-        if (name === "fahr") fahrSum += val;
-        if (name === "über") ueberSum += val;
-      });
-    });
-
+  if (sonder) {
+    // Sonderstatus überschreibt alles → immer grün
+    farbe = "#e6ffe6";
+  } else {
     const summe = arbeitSum + fahrSum;
     const ziel = 8 + ueberSum;
-    const farbe = (summe === ziel) ? "#e6ffe6" : "#ffe6e6";
-    t.blocks.forEach(b => b.style.backgroundColor = farbe);
-  });
+    farbe = (summe === ziel) ? "#e6ffe6" : "#ffe6e6";
+  }
+
+  t.blocks.forEach(b => b.style.backgroundColor = farbe);
+});
 
   // -------------------------------------------------------------
   // DATENBOX 1 + 2 (korrekt in zeigeTermine)
