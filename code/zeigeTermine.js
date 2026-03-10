@@ -252,9 +252,17 @@ export async function zeigeTermine() {
   });
 
 // -------------------------------------------------------------
-// Tagesfarben (mit Sonderstatus: Urlaub, Krank, Bereitschaft)
+// Tagesfarben (mit Wochenende + Sonderstatus)
 // -------------------------------------------------------------
-const tage = { 1:{blocks:[]},2:{blocks:[]},3:{blocks:[]},4:{blocks:[]},5:{blocks:[]} };
+const tage = {
+  0: { blocks: [] }, // Sonntag
+  1: { blocks: [] },
+  2: { blocks: [] },
+  3: { blocks: [] },
+  4: { blocks: [] },
+  5: { blocks: [] },
+  6: { blocks: [] }  // Samstag
+};
 
 document.querySelectorAll("#termine > div[data-id]").forEach(block => {
   const id = block.dataset.id;
@@ -262,7 +270,7 @@ document.querySelectorAll("#termine > div[data-id]").forEach(block => {
   if (!event) return;
 
   const wtag = new Date(event.timestamp).getDay();
-  if (wtag >= 1 && wtag <= 5) tage[wtag].blocks.push(block);
+  tage[wtag].blocks.push(block);
 });
 
 Object.keys(tage).forEach(key => {
