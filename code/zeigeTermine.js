@@ -520,5 +520,5 @@ function zeigeSteuerung(gefiltert) {
 
   container.appendChild(steuerung);
 }
-
+}
 //Ende Teil3
