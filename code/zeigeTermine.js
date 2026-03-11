@@ -127,11 +127,15 @@ function zeigeWocheninfo() {
     info.textContent = `📆 KW ${kw}: ${von} – ${bis}${getFilterAktiv() ? "" : " (alle Termine)"}`;
   }
 }
-async function ladeDatenbox2() {
+async function ladeDatenbox2(mitarbeiterId, jahrAktuell, kwAktuell) {
   const { data, error } = await supa
     .from("tabelle1")
-    .select("id, URLAUB, URLAUBgen, feld1, KRANK, BEREIT, ÜBER")
-    .order("id", { ascending: false })
+    .select("id, URLAUB, URLAUBgen, feld1, KRANK, BEREIT, ÜBER, jahr, kw")
+    .eq("mitarbeiter_id", mitarbeiterId)
+    .lte("jahr", jahrAktuell)
+    .lte("kw", kwAktuell)
+    .order("jahr", { ascending: false })
+    .order("kw", { ascending: false })
     .limit(1);
 
   if (error) {
@@ -400,8 +404,11 @@ datenBox2.innerHTML = `
   Lade Daten...
 `;
 
-// Hintergrund-Ladevorgang
-ladeDatenbox2().then(daten2 => {
+const mitarbeiterId = daten1.mitarbeiter_id;
+const jahrAktuell = daten1.jahr;
+const kwAktuell = daten1.kw;
+
+ladeDatenbox2(mitarbeiterId, jahrAktuell, kwAktuell).then(daten2 => {
   if (!daten2) {
     datenBox2.innerHTML = `
       <strong>Letzter Eintrag</strong><br><br>
@@ -419,7 +426,6 @@ ladeDatenbox2().then(daten2 => {
     `;
   }
 });
-
 // -------------------------------------------------------------
 // Buttons wieder aktivieren
 // -------------------------------------------------------------
