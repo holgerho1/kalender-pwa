@@ -131,7 +131,7 @@ async function ladeDatenbox2(mitarbeiterId, jahrAktuell, kwAktuell) {
   const { data, error } = await supa
     .from("tabelle1")
     .select("id, URLAUB, URLAUBgen, feld1, KRANK, BEREIT, ÜBER, jahr, kw")
-    .eq("mitarbeiter_id", mitarbeiterId)
+    .eq("KZ", mitarbeiterId)
     .lte("jahr", jahrAktuell)
     .lte("kw", kwAktuell)
     .order("jahr", { ascending: false })
