@@ -171,6 +171,8 @@ export async function zeigeTermine() {
     leer.style.fontStyle = "italic";
     container.appendChild(leer);
   }
+//Ende Teil1
+//Teil2
 
 // -------------------------------------------------------------
 // Termine rendern
@@ -405,7 +407,8 @@ datenBox2.innerHTML = `
 const jahrAktuell = jahr;
 const kwAktuell = kw;
 
-ladeDatenbox2(mitarbeiterId, jahrAktuell, kwAktuell).then(daten2 => {
+// ⭐ EINZIGE ÄNDERUNG: Filter entfernt → immer neuester Eintrag
+ladeDatenbox2(mitarbeiterId).then(daten2 => {
   if (!daten2) {
     datenBox2.innerHTML = `
       <strong>Letzter Eintrag</strong><br><br>
