@@ -130,7 +130,7 @@ function zeigeWocheninfo() {
 async function ladeDatenbox2() {
   const { data, error } = await supa
     .from("tabelle1")
-    .select("id, URLAUB, URLAUBgen, feld1, KRANK, BEREIT")
+    .select("id, URLAUB, URLAUBgen, feld1, KRANK, BEREIT, ÜBER")
     .order("id", { ascending: false })
     .limit(1);
 
@@ -414,7 +414,8 @@ ladeDatenbox2().then(daten2 => {
       Urlaub genommen: ${daten2.URLAUBgen ?? "–"}<br>
       Text: ${daten2.feld1 ?? "–"}<br>
       Krank: ${daten2.KRANK ?? "–"}<br>
-      Bereitschaft: ${daten2.BEREIT ?? "–"}
+      Bereitschaft: ${daten2.BEREIT ?? "–"}<br>
+      Überstunden: ${daten2.ÜBER ?? "–"}
     `;
   }
 });
