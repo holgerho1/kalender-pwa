@@ -171,8 +171,6 @@ export async function zeigeTermine() {
     leer.style.fontStyle = "italic";
     container.appendChild(leer);
   }
-//Ende Teil1
-//Teil2
 
 // -------------------------------------------------------------
 // Termine rendern
@@ -406,7 +404,6 @@ datenBox2.innerHTML = `
 // ➜ KORREKT: Werte aus Datenbox 1 verwenden
 const jahrAktuell = jahr;
 const kwAktuell = kw;
-// mitarbeiterId ist bereits vorhanden
 
 ladeDatenbox2(mitarbeiterId, jahrAktuell, kwAktuell).then(daten2 => {
   if (!daten2) {
