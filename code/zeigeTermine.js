@@ -398,15 +398,15 @@ if (!datenBox2) {
   container.appendChild(datenBox2);
 }
 
-// Sofort anzeigen
 datenBox2.innerHTML = `
   <strong>Letzter Eintrag</strong><br><br>
   Lade Daten...
 `;
 
-const mitarbeiterId = daten1.mitarbeiter_id;
-const jahrAktuell = daten1.jahr;
-const kwAktuell = daten1.kw;
+// ➜ KORREKT: Werte aus Datenbox 1 verwenden
+const jahrAktuell = jahr;
+const kwAktuell = kw;
+// mitarbeiterId ist bereits vorhanden
 
 ladeDatenbox2(mitarbeiterId, jahrAktuell, kwAktuell).then(daten2 => {
   if (!daten2) {
@@ -426,6 +426,7 @@ ladeDatenbox2(mitarbeiterId, jahrAktuell, kwAktuell).then(daten2 => {
     `;
   }
 });
+
 // -------------------------------------------------------------
 // Buttons wieder aktivieren
 // -------------------------------------------------------------
