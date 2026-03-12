@@ -127,14 +127,11 @@ function zeigeWocheninfo() {
     info.textContent = `📆 KW ${kw}: ${von} – ${bis}${getFilterAktiv() ? "" : " (alle Termine)"}`;
   }
 }
-async function ladeDatenbox2(mitarbeiterId, aktuellesJahr, aktuelleKW) {
+async function ladeDatenbox2(mitarbeiterId) {
   const { data, error } = await supa
     .from("tabelle1")
     .select("id, URLAUB, URLAUBgen, feld1, KRANK, BEREIT, ÜBER, JAHR, KW, created_at")
     .eq("KZ", mitarbeiterId)
-    .or(
-      `JAHR.lt.${aktuellesJahr},JAHR.eq.${aktuellesJahr} AND KW.lte.${aktuelleKW}`
-    )
     .order("JAHR", { ascending: false })
     .order("KW", { ascending: false })
     .order("created_at", { ascending: false })
