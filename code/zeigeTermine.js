@@ -393,11 +393,9 @@ datenBox2.innerHTML = `
   Lade Daten...
 `;
 
-// ➜ KORREKT: Werte aus Datenbox 1 verwenden
 const aktuellesJahr = montag.getFullYear();
 const aktuelleKW = berechneKalenderwoche(montag);
 
-// ⭐ EINZIGE ÄNDERUNG: Filter entfernt → immer neuester Eintrag
 ladeDatenbox2(mitarbeiterId).then(daten2 => {
   if (!daten2 || daten2.length === 0) {
     datenBox2.innerHTML = `
@@ -406,8 +404,6 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
     `;
     return;
   }
-
-  
 
   const gefiltert = daten2.filter(e => {
     const sortKey = e.JAHR * 100 + e.KW;
@@ -436,7 +432,66 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
     Bereitschaft: ${eintrag.BEREIT ?? "–"}<br>
     Überstunden: ${eintrag["ÜBER"] ?? "–"}
   `;
+
+  // -------------------------------------------------------------
+  // ⭐ DATENBOX 3 – Vergleich alt / Woche / Summe + Textfeld
+  // -------------------------------------------------------------
+  let datenBox3 = document.getElementById("datenanzeige3");
+  if (!datenBox3) {
+    datenBox3 = document.createElement("div");
+    datenBox3.id = "datenanzeige3";
+    datenBox3.style.marginTop = "1rem";
+    datenBox3.style.padding = "1rem";
+    datenBox3.style.background = "#fff";
+    datenBox3.style.borderRadius = "6px";
+    datenBox3.style.boxShadow = "0 0 4px rgba(0,0,0,0.1)";
+    container.appendChild(datenBox3);
+  }
+
+  const wocheWerte = {
+    URLAUB: urlaubCount,
+    KRANK: krankCount,
+    BEREIT: bereitsschaftCount,
+    ÜBER: ueberstunden
+  };
+
+  const altWerte = {
+    URLAUB: eintrag.URLAUB ?? 0,
+    KRANK: eintrag.KRANK ?? 0,
+    BEREIT: eintrag.BEREIT ?? 0,
+    ÜBER: eintrag["ÜBER"] ?? 0,
+    TEXT: eintrag.feld1 ?? ""
+  };
+
+  datenBox3.innerHTML = `<strong>Vergleichswerte</strong><br><br>`;
+
+  const felder = [
+    { name: "Urlaub", alt: altWerte.URLAUB, woche: wocheWerte.URLAUB },
+    { name: "Krank", alt: altWerte.KRANK, woche: wocheWerte.KRANK },
+    { name: "Überstunden", alt: altWerte.ÜBER, woche: wocheWerte.ÜBER },
+    { name: "Bereitschaft", alt: altWerte.BEREIT, woche: wocheWerte.BEREIT }
+  ];
+
+  felder.forEach(f => {
+    const summe = (Number(f.alt) || 0) + (Number(f.woche) || 0);
+
+    datenBox3.innerHTML += `
+      <div style="margin-bottom:6px;">
+        <strong>${f.name}</strong>:
+        &nbsp; alt: ${f.alt}
+        &nbsp; Woche: ${f.woche}
+        &nbsp; Summe: <input type="number" value="${summe}">
+      </div>
+    `;
+  });
+
+  datenBox3.innerHTML += `
+    <br>
+    <strong>Text aus letztem Eintrag:</strong><br>
+    <textarea style="width:100%;height:60px;">${altWerte.TEXT}</textarea>
+  `;
 });
+
 // -------------------------------------------------------------
 // Buttons wieder aktivieren
 // -------------------------------------------------------------
@@ -444,99 +499,3 @@ zeigeSteuerung(gefiltert);
 
 //Ende Teil2
 //Teil3
-
-// -------------------------------------------------------------
-// Steuerungsbereich (nur Buttons, keine Datenboxen!)
-// -------------------------------------------------------------
-function zeigeSteuerung(gefiltert) {
-  const container = document.getElementById("termine");
-
-  const steuerung = document.createElement("div");
-  steuerung.style.marginTop = "1rem";
-
-  const reloadBtn = document.createElement("button");
-  reloadBtn.textContent = "🧹 Neu laden";
-  reloadBtn.onclick = () => neuLaden();
-
-  const prevBtn = document.createElement("button");
-  prevBtn.textContent = "◀️ Vorige Woche";
-  prevBtn.style.marginLeft = "10px";
-  prevBtn.onclick = () => {
-    setKwOffset(getKwOffset() - 1);
-    zeigeTermine();
-  };
-
-  const nextBtn = document.createElement("button");
-  nextBtn.textContent = "▶️ Nächste Woche";
-  nextBtn.style.marginLeft = "10px";
-  nextBtn.onclick = () => {
-    setKwOffset(getKwOffset() + 1);
-    zeigeTermine();
-  };
-
-  const toggleBtn = document.createElement("button");
-  toggleBtn.textContent = getFilterAktiv() ? "🔄 Filter aus" : "🔄 Filter an";
-  toggleBtn.style.marginLeft = "10px";
-  toggleBtn.onclick = () => {
-    setFilterAktiv(!getFilterAktiv());
-    zeigeTermine();
-  };
-
-  const exportBtn = document.createElement("button");
-  exportBtn.textContent = "📄 PDF Export";
-  exportBtn.style.marginLeft = "10px";
-  exportBtn.onclick = () => {
-    const blocks = document.querySelectorAll("#termine > div");
-    const termine = getTermine();
-
-    const { montag, sonntag } = getKWZeitraum(getKwOffset());
-
-    blocks.forEach((block) => {
-      const id = block.dataset.id;
-      const event = termine.find(t => t.id === id);
-      if (!event) return;
-
-      const titel = block.querySelector("textarea:nth-of-type(1)");
-      const beschreibung = block.querySelector("textarea:nth-of-type(2)");
-      const material = block.querySelector("textarea[placeholder='Material']");
-      const mitarbeiter = block.querySelector("textarea:nth-of-type(4)");
-
-      event.titel = titel?.value || "";
-      event.beschreibung = beschreibung?.value || "";
-      event.material = material?.value || "";
-      event.mitarbeiter = mitarbeiter?.value || "";
-
-      const feldInputs = block.querySelectorAll("input");
-      feldInputs.forEach((input) => {
-        const name = input.placeholder?.toLowerCase();
-        if (name === "arbeit") event.arbeit = input.value;
-        else if (name === "fahr") event.fahr = input.value;
-        else if (name === "über") event.über = input.value;
-      });
-
-      const neuVerarbeitet = verarbeiteTermin(event);
-      if (neuVerarbeitet) Object.assign(event, neuVerarbeitet);
-    });
-
-    setTermine(termine);
-
-    const gefiltert = getFilterAktiv()
-      ? termine.filter(e => {
-          const d = new Date(e.timestamp);
-          return d >= montag && d <= sonntag;
-        })
-      : termine;
-
-    exportierePdf(gefiltert);
-  };
-
-  steuerung.appendChild(reloadBtn);
-  steuerung.appendChild(prevBtn);
-  steuerung.appendChild(nextBtn);
-  steuerung.appendChild(toggleBtn);
-  steuerung.appendChild(exportBtn);
-
-  container.appendChild(steuerung);
-}
-}
-//Ende Teil3
