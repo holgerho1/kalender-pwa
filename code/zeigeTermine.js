@@ -127,28 +127,13 @@ function zeigeWocheninfo() {
     info.textContent = `📆 KW ${kw}: ${von} – ${bis}${getFilterAktiv() ? "" : " (alle Termine)"}`;
   }
 }
-async function ladeDatenbox2(mitarbeiterId, aktuellesJahr, aktuelleKW) {
+async function ladeDatenbox2(mitarbeiterId) {
   const { data, error } = await supa
     .from("tabelle1")
     .select("*")
     .eq('"KZ"', mitarbeiterId);
 
-  if (error || !data) return null;
-
-  const aktuellerSortKey = aktuellesJahr * 100 + aktuelleKW;
-
-  const gefiltert = data.filter(row => {
-    const rowSortKey = row.JAHR * 100 + row.KW;
-    return rowSortKey <= aktuellerSortKey;
-  });
-
-  gefiltert.sort((a, b) => {
-    if (a.JAHR !== b.JAHR) return b.JAHR - a.JAHR;
-    if (a.KW !== b.KW) return b.KW - a.KW;
-    return new Date(b.created_at) - new Date(a.created_at);
-  });
-
-  return gefiltert[0] ?? null;
+  return data;
 }
 // ⭐ Hauptfunktion
 export async function zeigeTermine() {
