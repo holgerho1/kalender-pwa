@@ -128,16 +128,16 @@ function zeigeWocheninfo() {
   }
 }
 async function ladeDatenbox2(mitarbeiterId, aktuellesJahr, aktuelleKW) {
+  const aktuellerSortKey = aktuellesJahr * 100 + aktuelleKW;
+
   const { data, error } = await supa
     .from("tabelle1")
-    .select("*")
+    .select('*')
     .eq('"KZ"', mitarbeiterId)
-    .or(
-      `"JAHR".lt.${aktuellesJahr},and("JAHR".eq.${aktuellesJahr},"KW".lte.${aktuelleKW})`
-    )
+    .lte('("JAHR" * 100 + "KW")', aktuellerSortKey)
     .order('"JAHR"', { ascending: false })
     .order('"KW"', { ascending: false })
-    .order("created_at", { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(1);
 
   return data?.[0] ?? null;
