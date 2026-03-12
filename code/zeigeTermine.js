@@ -140,11 +140,6 @@ async function ladeDatenbox2(mitarbeiterId, aktuellesJahr, aktuelleKW) {
     .order("created_at", { ascending: false })
     .limit(1);
 
-  if (error) {
-    console.warn("Fehler beim Laden für Datenbox2:", error);
-    return null;
-  }
-
   return data?.[0] ?? null;
 }
 // ⭐ Hauptfunktion
