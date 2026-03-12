@@ -394,8 +394,8 @@ datenBox2.innerHTML = `
 `;
 
 // ➜ KORREKT: Werte aus Datenbox 1 verwenden
-const jahrAktuell = jahr;
-const kwAktuell = kw;
+const aktuellesJahr = montag.getFullYear();
+const aktuelleKW = berechneKalenderwoche(montag);
 
 // ⭐ EINZIGE ÄNDERUNG: Filter entfernt → immer neuester Eintrag
 ladeDatenbox2(mitarbeiterId).then(daten2 => {
