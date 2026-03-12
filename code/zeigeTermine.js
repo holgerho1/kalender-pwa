@@ -399,24 +399,37 @@ const kwAktuell = kw;
 
 // ⭐ EINZIGE ÄNDERUNG: Filter entfernt → immer neuester Eintrag
 ladeDatenbox2(mitarbeiterId).then(daten2 => {
-  const eintrag = daten2?.[0];
-
-  if (!eintrag) {
+  if (!daten2 || daten2.length === 0) {
     datenBox2.innerHTML = `
       <strong>Letzter Eintrag</strong><br><br>
       Keine Daten gefunden.
     `;
-  } else {
-    datenBox2.innerHTML = `
-      <strong>Letzter Eintrag</strong><br><br>
-      Urlaub: ${eintrag.URLAUB ?? "–"}<br>
-      Urlaub genommen: ${eintrag.URLAUBgen ?? "–"}<br>
-      Text: ${eintrag.feld1 ?? "–"}<br>
-      Krank: ${eintrag.KRANK ?? "–"}<br>
-      Bereitschaft: ${eintrag.BEREIT ?? "–"}<br>
-      Überstunden: ${eintrag["ÜBER"] ?? "–"}
-    `;
+    return;
   }
+
+  // Anzahl anzeigen
+  const anzahl = daten2.length;
+
+  // Sortieren: neuester Eintrag zuerst
+  daten2.sort((a, b) => {
+    if (a.JAHR !== b.JAHR) return b.JAHR - a.JAHR;
+    if (a.KW !== b.KW) return b.KW - a.KW;
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+
+  const eintrag = daten2[0];
+
+  datenBox2.innerHTML = `
+    <strong>Letzter Eintrag</strong><br><br>
+    <em>Gefundene Datensätze: ${anzahl}</em><br><br>
+
+    Urlaub: ${eintrag.URLAUB ?? "–"}<br>
+    Urlaub genommen: ${eintrag.URLAUBgen ?? "–"}<br>
+    Text: ${eintrag.feld1 ?? "–"}<br>
+    Krank: ${eintrag.KRANK ?? "–"}<br>
+    Bereitschaft: ${eintrag.BEREIT ?? "–"}<br>
+    Überstunden: ${eintrag["ÜBER"] ?? "–"}
+  `;
 });
 // -------------------------------------------------------------
 // Buttons wieder aktivieren
