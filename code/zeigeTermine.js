@@ -399,7 +399,9 @@ const kwAktuell = kw;
 
 // ⭐ EINZIGE ÄNDERUNG: Filter entfernt → immer neuester Eintrag
 ladeDatenbox2(mitarbeiterId).then(daten2 => {
-  if (!daten2) {
+  const eintrag = daten2?.[0];
+
+  if (!eintrag) {
     datenBox2.innerHTML = `
       <strong>Letzter Eintrag</strong><br><br>
       Keine Daten gefunden.
@@ -407,16 +409,15 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
   } else {
     datenBox2.innerHTML = `
       <strong>Letzter Eintrag</strong><br><br>
-      Urlaub: ${daten2.URLAUB ?? "–"}<br>
-      Urlaub genommen: ${daten2.URLAUBgen ?? "–"}<br>
-      Text: ${daten2.feld1 ?? "–"}<br>
-      Krank: ${daten2.KRANK ?? "–"}<br>
-      Bereitschaft: ${daten2.BEREIT ?? "–"}<br>
-      Überstunden: ${daten2.ÜBER ?? "–"}
+      Urlaub: ${eintrag.URLAUB ?? "–"}<br>
+      Urlaub genommen: ${eintrag.URLAUBgen ?? "–"}<br>
+      Text: ${eintrag.feld1 ?? "–"}<br>
+      Krank: ${eintrag.KRANK ?? "–"}<br>
+      Bereitschaft: ${eintrag.BEREIT ?? "–"}<br>
+      Überstunden: ${eintrag["ÜBER"] ?? "–"}
     `;
   }
 });
-
 // -------------------------------------------------------------
 // Buttons wieder aktivieren
 // -------------------------------------------------------------
