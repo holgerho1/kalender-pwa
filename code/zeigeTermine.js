@@ -131,12 +131,12 @@ async function ladeDatenbox2(mitarbeiterId, aktuellesJahr, aktuelleKW) {
   const { data, error } = await supa
     .from("tabelle1")
     .select("*")
-    .eq("KZ", mitarbeiterId)
+    .eq('"KZ"', mitarbeiterId)
     .or(
-      `JAHR.lt.${aktuellesJahr},and(JAHR.eq.${aktuellesJahr},KW.lte.${aktuelleKW})`
+      `"JAHR".lt.${aktuellesJahr},and("JAHR".eq.${aktuellesJahr},"KW".lte.${aktuelleKW})`
     )
-    .order("JAHR", { ascending: false })
-    .order("KW", { ascending: false })
+    .order('"JAHR"', { ascending: false })
+    .order('"KW"', { ascending: false })
     .order("created_at", { ascending: false })
     .limit(1);
 
