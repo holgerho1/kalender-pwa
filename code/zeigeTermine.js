@@ -130,10 +130,11 @@ function zeigeWocheninfo() {
 async function ladeDatenbox2(mitarbeiterId) {
   const { data, error } = await supa
     .from("tabelle1")
-    .select("id, URLAUB, URLAUBgen, feld1, KRANK, BEREIT, ÜBER, JAHR, KW")
+    .select("id, URLAUB, URLAUBgen, feld1, KRANK, BEREIT, ÜBER, JAHR, KW, created_at")
     .eq("KZ", mitarbeiterId)
     .order("JAHR", { ascending: false })
     .order("KW", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(1);
 
   if (error) {
