@@ -407,8 +407,7 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
     return;
   }
 
-  const aktuellesJahr = 2026;
-  const aktuelleKW = 11;
+  
 
   const gefiltert = daten2.filter(e => {
     const sortKey = e.JAHR * 100 + e.KW;
