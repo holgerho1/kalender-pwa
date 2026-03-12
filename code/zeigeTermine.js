@@ -536,3 +536,4 @@ function zeigeSteuerung(gefiltert) {
 
   container.appendChild(steuerung);
 }
+}
