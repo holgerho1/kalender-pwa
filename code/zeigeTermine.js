@@ -407,17 +407,24 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
     return;
   }
 
-  // Anzahl anzeigen
-  const anzahl = daten2.length;
+  const aktuellesJahr = 2026;
+  const aktuelleKW = 11;
 
-  // Sortieren: neuester Eintrag zuerst
-  daten2.sort((a, b) => {
+  const gefiltert = daten2.filter(e => {
+    const sortKey = e.JAHR * 100 + e.KW;
+    const aktuellerSortKey = aktuellesJahr * 100 + aktuelleKW;
+    return sortKey <= aktuellerSortKey;
+  });
+
+  const anzahl = gefiltert.length;
+
+  gefiltert.sort((a, b) => {
     if (a.JAHR !== b.JAHR) return b.JAHR - a.JAHR;
     if (a.KW !== b.KW) return b.KW - a.KW;
     return new Date(b.created_at) - new Date(a.created_at);
   });
 
-  const eintrag = daten2[0];
+  const eintrag = gefiltert[0];
 
   datenBox2.innerHTML = `
     <strong>Letzter Eintrag</strong><br><br>
