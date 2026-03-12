@@ -135,6 +135,10 @@ async function ladeDatenbox2(mitarbeiterId) {
 
   return data;
 }
+
+//Ende Teil1
+//Anfang Teil2
+
 // ⭐ Hauptfunktion
 export async function zeigeTermine() {
 
@@ -161,8 +165,6 @@ export async function zeigeTermine() {
     leer.style.fontStyle = "italic";
     container.appendChild(leer);
   }
-//Ende Teil1
-//Teil2
 
 // -------------------------------------------------------------
 // Termine rendern
@@ -258,6 +260,7 @@ gefiltert.forEach((event) => {
   container.appendChild(block);
 });
 
+//Ende Teil2
 // -------------------------------------------------------------
 // Tagesfarben (mit Wochenende + Sonderstatus)
 // -------------------------------------------------------------
@@ -407,8 +410,6 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
     return;
   }
 
-  
-
   const gefiltert = daten2.filter(e => {
     const sortKey = e.JAHR * 100 + e.KW;
     const aktuellerSortKey = aktuellesJahr * 100 + aktuelleKW;
@@ -437,14 +438,11 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
     Überstunden: ${eintrag["ÜBER"] ?? "–"}
   `;
 });
+
 // -------------------------------------------------------------
 // Buttons wieder aktivieren
 // -------------------------------------------------------------
 zeigeSteuerung(gefiltert);
-
-//Ende Teil2
-//Teil3
-
 // -------------------------------------------------------------
 // Steuerungsbereich (nur Buttons, keine Datenboxen!)
 // -------------------------------------------------------------
@@ -538,5 +536,3 @@ function zeigeSteuerung(gefiltert) {
 
   container.appendChild(steuerung);
 }
-}
-//Ende Teil3
