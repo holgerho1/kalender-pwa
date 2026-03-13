@@ -428,9 +428,6 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
   const eintrag = gefiltert[0];
 
 datenBox2.innerHTML = `
-  <strong>Letzter Eintrag</strong><br><br>
-  <em>Gefundene Datensätze: ${anzahl}</em><br><br>
-
   Urlaub:
     ${eintrag.URLAUB ?? 0}
     = <input id="urlaubWert" type="number"
@@ -471,7 +468,7 @@ datenBox2.innerHTML = `
                (parseFloat(ueberstunden.replace(",", ".")) || 0)
              ).toFixed(2)}"
              style="width:70px;">
-    <br><br>
+    <br>
 
   Text:<br>
   <textarea id="textBearbeiten" style="width:100%;height:60px;">${eintrag.feld1 ?? ""}</textarea>
