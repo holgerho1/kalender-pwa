@@ -427,24 +427,46 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
 
   const eintrag = gefiltert[0];
 
-  datenBox2.innerHTML = `
+datenBox2.innerHTML = `
   <strong>Letzter Eintrag</strong><br><br>
   <em>Gefundene Datensätze: ${anzahl}</em><br><br>
 
   Urlaub: ${eintrag.URLAUB ?? "–"}<br>
 
-  Urlaub genommen: 
-    ${eintrag.URLAUBgen ?? 0} 
-    + ${urlaubCount} 
-    = <input id="urlaubErgebnis" type="number" 
-             value="${(eintrag.URLAUBgen ?? 0) + urlaubCount}" 
+  Urlaub genommen:
+    ${eintrag.URLAUBgen ?? 0}
+    + ${urlaubCount}
+    = <input id="urlaubErgebnis" type="number"
+             value="${(eintrag.URLAUBgen ?? 0) + urlaubCount}"
              style="width:60px;">
     <br>
 
-  Text: ${eintrag.feld1 ?? "–"}<br>
-  Krank: ${eintrag.KRANK ?? "–"}<br>
-  Bereitschaft: ${eintrag.BEREIT ?? "–"}<br>
-  Überstunden: ${eintrag["ÜBER"] ?? "–"}
+  Krank:
+    ${eintrag.KRANK ?? 0}
+    + ${krankCount}
+    = <input id="krankErgebnis" type="number"
+             value="${(eintrag.KRANK ?? 0) + krankCount}"
+             style="width:60px;">
+    <br>
+
+  Bereitschaft:
+    ${eintrag.BEREIT ?? 0}
+    + ${bereitschaftCount}
+    = <input id="bereitErgebnis" type="number"
+             value="${(eintrag.BEREIT ?? 0) + bereitschaftCount}"
+             style="width:60px;">
+    <br>
+
+  Überstunden:
+    ${eintrag["ÜBER"] ?? 0}
+    + ${ueberstunden.replace(",", ".")}
+    = <input id="ueberErgebnis" type="number" step="0.01"
+             value="${(
+               (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
+               (parseFloat(ueberstunden.replace(",", ".")) || 0)
+             ).toFixed(2)}"
+             style="width:70px;">
+    <br>
 `;
 });
 
