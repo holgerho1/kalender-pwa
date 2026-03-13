@@ -501,6 +501,23 @@ datenBox2.innerHTML = `
 
   Text:<br>
   <textarea id="textBearbeiten" style="height:60px;">${eintrag.feld1 ?? ""}</textarea>
+
+  <br><br>
+  <strong>Zusammenfassung:</strong><br>
+  Urlaub: ${eintrag.URLAUB ?? 0}<br>
+  Urlaub genommen: ${gleicheKW ? (eintrag.URLAUBgen ?? 0) : (eintrag.URLAUBgen ?? 0) + urlaubCount}<br>
+  Krank: ${gleicheKW ? (eintrag.KRANK ?? 0) : (eintrag.KRANK ?? 0) + krankCount}<br>
+  Überstunden: ${
+    gleicheKW
+      ? (parseFloat(eintrag["ÜBER"] ?? 0) || 0).toFixed(2)
+      : (
+          (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
+          (parseFloat(ueberstunden.replace(",", ".")) || 0)
+        ).toFixed(2)
+  }<br>
+  Bereitschaft: ${gleicheKW ? (eintrag.BEREIT ?? 0) : (eintrag.BEREIT ?? 0) + bereitschaftCount}<br><br>
+
+  ${eintrag.feld1 ?? ""}
 `;
 });
 
