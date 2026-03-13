@@ -426,6 +426,9 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
   });
 
   const eintrag = gefiltert[0];
+//ab hier
+
+const darfRechnen = (kw !== eintrag.KW);
 
 datenBox2.innerHTML = `
   <style>
@@ -452,7 +455,6 @@ datenBox2.innerHTML = `
     }
   </style>
 
-  <!-- ⭐ NEU: KW‑Anzeige -->
   <div class="row2">
     <span>KW Datenbox2:</span>
     <span>${eintrag.KW}</span>
@@ -478,33 +480,36 @@ datenBox2.innerHTML = `
 
   <div class="row">
     <span>Urlaub genommen:</span>
-    <span>${eintrag.URLAUBgen ?? 0} + ${urlaubCount} =</span>
+    <span>${eintrag.URLAUBgen ?? 0} ${darfRechnen ? `+ ${urlaubCount}` : ""} =</span>
     <input id="urlaubErgebnis" type="number"
-           value="${(eintrag.URLAUBgen ?? 0) + urlaubCount}">
+           value="${darfRechnen ? (eintrag.URLAUBgen ?? 0) + urlaubCount : (eintrag.URLAUBgen ?? 0)}">
   </div>
 
   <div class="row">
     <span>Krank:</span>
-    <span>${eintrag.KRANK ?? 0} + ${krankCount} =</span>
+    <span>${eintrag.KRANK ?? 0} ${darfRechnen ? `+ ${krankCount}` : ""} =</span>
     <input id="krankErgebnis" type="number"
-           value="${(eintrag.KRANK ?? 0) + krankCount}">
+           value="${darfRechnen ? (eintrag.KRANK ?? 0) + krankCount : (eintrag.KRANK ?? 0)}">
   </div>
 
   <div class="row">
     <span>Bereitschaft:</span>
-    <span>${eintrag.BEREIT ?? 0} + ${bereitschaftCount} =</span>
+    <span>${eintrag.BEREIT ?? 0} ${darfRechnen ? `+ ${bereitschaftCount}` : ""} =</span>
     <input id="bereitErgebnis" type="number"
-           value="${(eintrag.BEREIT ?? 0) + bereitschaftCount}">
+           value="${darfRechnen ? (eintrag.BEREIT ?? 0) + bereitschaftCount : (eintrag.BEREIT ?? 0)}">
   </div>
 
   <div class="row">
     <span>Überstunden:</span>
-    <span>${eintrag["ÜBER"] ?? 0} + ${ueberstunden.replace(",", ".")} =</span>
+    <span>${eintrag["ÜBER"] ?? 0} ${darfRechnen ? `+ ${ueberstunden.replace(",", ".")}` : ""} =</span>
     <input id="ueberErgebnis" type="number" step="0.01"
-           value="${(
-             (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
-             (parseFloat(ueberstunden.replace(",", ".")) || 0)
-           ).toFixed(2)}">
+           value="${darfRechnen
+             ? (
+                 (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
+                 (parseFloat(ueberstunden.replace(",", ".")) || 0)
+               ).toFixed(2)
+             : (parseFloat(eintrag["ÜBER"] ?? 0) || 0).toFixed(2)
+           }">
   </div>
 
   Text:<br>
