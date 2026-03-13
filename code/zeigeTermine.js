@@ -459,33 +459,30 @@ datenBox2.innerHTML = `
 
   <div class="row">
     <span>Urlaub genommen:</span>
-    <span>${eintrag.URLAUBgen ?? 0} + ${urlaubCount} =</span>
+    <span>${eintrag.URLAUBgen ?? 0} ${darfRechnen ? `+ ${urlaubCount}` : ""} =</span>
     <input id="urlaubErgebnis" type="number"
-           value="${(eintrag.URLAUBgen ?? 0) + urlaubCount}">
+           value="${urlaubGenBerechnet}">
   </div>
 
   <div class="row">
     <span>Krank:</span>
-    <span>${eintrag.KRANK ?? 0} + ${krankCount} =</span>
+    <span>${eintrag.KRANK ?? 0} ${darfRechnen ? `+ ${krankCount}` : ""} =</span>
     <input id="krankErgebnis" type="number"
-           value="${(eintrag.KRANK ?? 0) + krankCount}">
+           value="${krankBerechnet}">
   </div>
 
   <div class="row">
     <span>Bereitschaft:</span>
-    <span>${eintrag.BEREIT ?? 0} + ${bereitschaftCount} =</span>
+    <span>${eintrag.BEREIT ?? 0} ${darfRechnen ? `+ ${bereitschaftCount}` : ""} =</span>
     <input id="bereitErgebnis" type="number"
-           value="${(eintrag.BEREIT ?? 0) + bereitschaftCount}">
+           value="${bereitBerechnet}">
   </div>
 
   <div class="row">
     <span>Überstunden:</span>
-    <span>${eintrag["ÜBER"] ?? 0} + ${ueberstunden.replace(",", ".")} =</span>
+    <span>${eintrag["ÜBER"] ?? 0} ${darfRechnen ? `+ ${ueberstunden.replace(",", ".")}` : ""} =</span>
     <input id="ueberErgebnis" type="number" step="0.01"
-           value="${(
-             (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
-             (parseFloat(ueberstunden.replace(",", ".")) || 0)
-           ).toFixed(2)}">
+           value="${ueberBerechnet}">
   </div>
 
   Text:<br>
