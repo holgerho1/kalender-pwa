@@ -427,46 +427,6 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
 
   const eintrag = gefiltert[0];
 
-// Markierung ab hier
-// Wenn keine Daten → abbrechen
-if (!gefiltert || gefiltert.length === 0) {
-  datenBox2.innerHTML = `
-    <strong>Letzter Eintrag</strong><br><br>
-    Keine Daten gefunden.
-  `;
-  return;
-}
-
-// Sicherer Zugriff
-const eintrag = gefiltert[0];
-
-// Sicher parsen
-const altUeber = parseFloat(String(eintrag["ÜBER"] ?? "0").replace(",", ".")) || 0;
-const neuUeber = parseFloat(String(ueberstunden ?? "0").replace(",", ".")) || 0;
-
-// KW‑Vergleich sicher
-const darfRechnen =
-  jahr > (eintrag.JAHR ?? 0) ||
-  (jahr === (eintrag.JAHR ?? 0) && kw > (eintrag.KW ?? 0));
-
-// Berechnungen sicher
-const urlaubGenBerechnet = darfRechnen
-  ? (eintrag.URLAUBgen ?? 0) + urlaubCount
-  : (eintrag.URLAUBgen ?? 0);
-
-const krankBerechnet = darfRechnen
-  ? (eintrag.KRANK ?? 0) + krankCount
-  : (eintrag.KRANK ?? 0);
-
-const bereitBerechnet = darfRechnen
-  ? (eintrag.BEREIT ?? 0) + bereitschaftCount
-  : (eintrag.BEREIT ?? 0);
-
-const ueberBerechnet = darfRechnen
-  ? (altUeber + neuUeber).toFixed(2)
-  : altUeber.toFixed(2);
-
-// Ausgabe
 datenBox2.innerHTML = `
   <style>
     .row {
@@ -499,30 +459,33 @@ datenBox2.innerHTML = `
 
   <div class="row">
     <span>Urlaub genommen:</span>
-    <span>${eintrag.URLAUBgen ?? 0} ${darfRechnen ? `+ ${urlaubCount}` : ""} =</span>
+    <span>${eintrag.URLAUBgen ?? 0} + ${urlaubCount} =</span>
     <input id="urlaubErgebnis" type="number"
-           value="${urlaubGenBerechnet}">
+           value="${(eintrag.URLAUBgen ?? 0) + urlaubCount}">
   </div>
 
   <div class="row">
     <span>Krank:</span>
-    <span>${eintrag.KRANK ?? 0} ${darfRechnen ? `+ ${krankCount}` : ""} =</span>
+    <span>${eintrag.KRANK ?? 0} + ${krankCount} =</span>
     <input id="krankErgebnis" type="number"
-           value="${krankBerechnet}">
+           value="${(eintrag.KRANK ?? 0) + krankCount}">
   </div>
 
   <div class="row">
     <span>Bereitschaft:</span>
-    <span>${eintrag.BEREIT ?? 0} ${darfRechnen ? `+ ${bereitschaftCount}` : ""} =</span>
+    <span>${eintrag.BEREIT ?? 0} + ${bereitschaftCount} =</span>
     <input id="bereitErgebnis" type="number"
-           value="${bereitBerechnet}">
+           value="${(eintrag.BEREIT ?? 0) + bereitschaftCount}">
   </div>
 
   <div class="row">
     <span>Überstunden:</span>
-    <span>${altUeber.toFixed(2)} ${darfRechnen ? `+ ${neuUeber.toFixed(2)}` : ""} =</span>
+    <span>${eintrag["ÜBER"] ?? 0} + ${ueberstunden.replace(",", ".")} =</span>
     <input id="ueberErgebnis" type="number" step="0.01"
-           value="${ueberBerechnet}">
+           value="${(
+             (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
+             (parseFloat(ueberstunden.replace(",", ".")) || 0)
+           ).toFixed(2)}">
   </div>
 
   Text:<br>
