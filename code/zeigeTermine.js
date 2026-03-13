@@ -430,10 +430,11 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
 datenBox2.innerHTML = `
   <style>
     .row {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr auto 80px;
       align-items: center;
       margin-bottom: 6px;
+      gap: 10px;
     }
     .row input {
       width: 80px;
@@ -447,30 +448,35 @@ datenBox2.innerHTML = `
 
   <div class="row">
     <span>Urlaub:</span>
+    <span>${eintrag.URLAUB ?? 0} =</span>
     <input id="urlaubWert" type="number"
            value="${eintrag.URLAUB ?? 0}">
   </div>
 
   <div class="row">
     <span>Urlaub genommen:</span>
+    <span>${eintrag.URLAUBgen ?? 0} + ${urlaubCount} =</span>
     <input id="urlaubErgebnis" type="number"
            value="${(eintrag.URLAUBgen ?? 0) + urlaubCount}">
   </div>
 
   <div class="row">
     <span>Krank:</span>
+    <span>${eintrag.KRANK ?? 0} + ${krankCount} =</span>
     <input id="krankErgebnis" type="number"
            value="${(eintrag.KRANK ?? 0) + krankCount}">
   </div>
 
   <div class="row">
     <span>Bereitschaft:</span>
+    <span>${eintrag.BEREIT ?? 0} + ${bereitschaftCount} =</span>
     <input id="bereitErgebnis" type="number"
            value="${(eintrag.BEREIT ?? 0) + bereitschaftCount}">
   </div>
 
   <div class="row">
     <span>Überstunden:</span>
+    <span>${eintrag["ÜBER"] ?? 0} + ${ueberstunden.replace(",", ".")} =</span>
     <input id="ueberErgebnis" type="number" step="0.01"
            value="${(
              (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
