@@ -446,6 +446,10 @@ datenBox2.innerHTML = `
     }
   </style>
 
+  <strong>Daten aus KW ${eintrag.KW}/${eintrag.JAHR} 
+  + Daten aus KW ${kw}/${jahr} 
+  = Vorschlag</strong><br><br>
+
   <div class="row">
     <span>Urlaub:</span>
     <span>${eintrag.URLAUB ?? 0} =</span>
