@@ -428,50 +428,58 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
   const eintrag = gefiltert[0];
 
 datenBox2.innerHTML = `
-  Urlaub:
-    ${eintrag.URLAUB ?? 0}
-    = <input id="urlaubWert" type="number"
-             value="${eintrag.URLAUB ?? 0}"
-             style="width:60px;">
-    <br>
+  <style>
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .row input {
+      width: 80px;
+      text-align: right;
+    }
+    #textBearbeiten {
+      width: 100%;
+      margin-top: 10px;
+    }
+  </style>
 
-  Urlaub genommen:
-    ${eintrag.URLAUBgen ?? 0}
-    + ${urlaubCount}
-    = <input id="urlaubErgebnis" type="number"
-             value="${(eintrag.URLAUBgen ?? 0) + urlaubCount}"
-             style="width:60px;">
-    <br>
+  <div class="row">
+    <span>Urlaub:</span>
+    <input id="urlaubWert" type="number"
+           value="${eintrag.URLAUB ?? 0}">
+  </div>
 
-  Krank:
-    ${eintrag.KRANK ?? 0}
-    + ${krankCount}
-    = <input id="krankErgebnis" type="number"
-             value="${(eintrag.KRANK ?? 0) + krankCount}"
-             style="width:60px;">
-    <br>
+  <div class="row">
+    <span>Urlaub genommen:</span>
+    <input id="urlaubErgebnis" type="number"
+           value="${(eintrag.URLAUBgen ?? 0) + urlaubCount}">
+  </div>
 
-  Bereitschaft:
-    ${eintrag.BEREIT ?? 0}
-    + ${bereitschaftCount}
-    = <input id="bereitErgebnis" type="number"
-             value="${(eintrag.BEREIT ?? 0) + bereitschaftCount}"
-             style="width:60px;">
-    <br>
+  <div class="row">
+    <span>Krank:</span>
+    <input id="krankErgebnis" type="number"
+           value="${(eintrag.KRANK ?? 0) + krankCount}">
+  </div>
 
-  Überstunden:
-    ${eintrag["ÜBER"] ?? 0}
-    + ${ueberstunden.replace(",", ".")}
-    = <input id="ueberErgebnis" type="number" step="0.01"
-             value="${(
-               (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
-               (parseFloat(ueberstunden.replace(",", ".")) || 0)
-             ).toFixed(2)}"
-             style="width:70px;">
-    <br>
+  <div class="row">
+    <span>Bereitschaft:</span>
+    <input id="bereitErgebnis" type="number"
+           value="${(eintrag.BEREIT ?? 0) + bereitschaftCount}">
+  </div>
+
+  <div class="row">
+    <span>Überstunden:</span>
+    <input id="ueberErgebnis" type="number" step="0.01"
+           value="${(
+             (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
+             (parseFloat(ueberstunden.replace(",", ".")) || 0)
+           ).toFixed(2)}">
+  </div>
 
   Text:<br>
-  <textarea id="textBearbeiten" style="width:100%;height:60px;">${eintrag.feld1 ?? ""}</textarea>
+  <textarea id="textBearbeiten" style="height:60px;">${eintrag.feld1 ?? ""}</textarea>
 `;
 });
 
