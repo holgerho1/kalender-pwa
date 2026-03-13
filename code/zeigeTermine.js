@@ -443,11 +443,11 @@ const ueberFinal = gleicheKW
     ).toFixed(2);
 
 const textZeile =
-  "Urlaub: " + urlaubFinal + " " +
-  "Urlaub genommen: " + urlaubGenFinal + " " +
-  "Krank: " + krankFinal + " " +
-  "Überstunden: " + ueberFinal + " " +
-  "Bereitschaft: " + bereitFinal + " " +
+  "Urlaub: " + urlaubFinal + "    " +
+  "Urlaub genommen: " + urlaubGenFinal + "    " +
+  "Krank: " + krankFinal + "    " +
+  "Überstunden: " + ueberFinal + "    " +
+  "Bereitschaft: " + bereitFinal + "    " +
   (eintrag.feld1 ?? "");
 
 datenBox2.innerHTML = `
