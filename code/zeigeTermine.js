@@ -427,6 +427,37 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
 
   const eintrag = gefiltert[0];
 
+// Markierung ab hier
+
+// ➜ Eintrag existiert
+const eintrag = gefiltert[0];
+
+// ➜ Berechnung nur wenn KW1 > KW2
+const darfRechnen =
+  jahr > eintrag.JAHR ||
+  (jahr === eintrag.JAHR && kw > eintrag.KW);
+
+// ➜ Berechnete Werte
+const urlaubGenBerechnet = darfRechnen
+  ? (eintrag.URLAUBgen ?? 0) + urlaubCount
+  : (eintrag.URLAUBgen ?? 0);
+
+const krankBerechnet = darfRechnen
+  ? (eintrag.KRANK ?? 0) + krankCount
+  : (eintrag.KRANK ?? 0);
+
+const bereitBerechnet = darfRechnen
+  ? (eintrag.BEREIT ?? 0) + bereitschaftCount
+  : (eintrag.BEREIT ?? 0);
+
+const ueberBerechnet = darfRechnen
+  ? (
+      (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
+      (parseFloat(ueberstunden.replace(",", ".")) || 0)
+    ).toFixed(2)
+  : (parseFloat(eintrag["ÜBER"] ?? 0) || 0).toFixed(2);
+
+// ➜ Ausgabe
 datenBox2.innerHTML = `
   <style>
     .row {
