@@ -428,16 +428,24 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
   const eintrag = gefiltert[0];
 
   datenBox2.innerHTML = `
-    <strong>Letzter Eintrag</strong><br><br>
-    <em>Gefundene Datensätze: ${anzahl}</em><br><br>
+  <strong>Letzter Eintrag</strong><br><br>
+  <em>Gefundene Datensätze: ${anzahl}</em><br><br>
 
-    Urlaub: ${eintrag.URLAUB ?? "–"}<br>
-    Urlaub genommen: ${eintrag.URLAUBgen ?? "–"}<br>
-    Text: ${eintrag.feld1 ?? "–"}<br>
-    Krank: ${eintrag.KRANK ?? "–"}<br>
-    Bereitschaft: ${eintrag.BEREIT ?? "–"}<br>
-    Überstunden: ${eintrag["ÜBER"] ?? "–"}
-  `;
+  Urlaub: ${eintrag.URLAUB ?? "–"}<br>
+
+  Urlaub genommen: 
+    ${eintrag.URLAUBgen ?? 0} 
+    + ${urlaubCount} 
+    = <input id="urlaubErgebnis" type="number" 
+             value="${(eintrag.URLAUBgen ?? 0) + urlaubCount}" 
+             style="width:60px;">
+    <br>
+
+  Text: ${eintrag.feld1 ?? "–"}<br>
+  Krank: ${eintrag.KRANK ?? "–"}<br>
+  Bereitschaft: ${eintrag.BEREIT ?? "–"}<br>
+  Überstunden: ${eintrag["ÜBER"] ?? "–"}
+`;
 });
 
 // -------------------------------------------------------------
