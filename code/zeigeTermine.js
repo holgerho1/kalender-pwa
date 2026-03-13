@@ -428,16 +428,28 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
   const eintrag = gefiltert[0];
 
 // Markierung ab hier
+// Wenn keine Daten → abbrechen
+if (!gefiltert || gefiltert.length === 0) {
+  datenBox2.innerHTML = `
+    <strong>Letzter Eintrag</strong><br><br>
+    Keine Daten gefunden.
+  `;
+  return;
+}
 
-// ➜ Eintrag existiert
+// Sicherer Zugriff
 const eintrag = gefiltert[0];
 
-// ➜ Berechnung nur wenn KW1 > KW2
-const darfRechnen =
-  jahr > eintrag.JAHR ||
-  (jahr === eintrag.JAHR && kw > eintrag.KW);
+// Sicher parsen
+const altUeber = parseFloat(String(eintrag["ÜBER"] ?? "0").replace(",", ".")) || 0;
+const neuUeber = parseFloat(String(ueberstunden ?? "0").replace(",", ".")) || 0;
 
-// ➜ Berechnete Werte
+// KW‑Vergleich sicher
+const darfRechnen =
+  jahr > (eintrag.JAHR ?? 0) ||
+  (jahr === (eintrag.JAHR ?? 0) && kw > (eintrag.KW ?? 0));
+
+// Berechnungen sicher
 const urlaubGenBerechnet = darfRechnen
   ? (eintrag.URLAUBgen ?? 0) + urlaubCount
   : (eintrag.URLAUBgen ?? 0);
@@ -451,13 +463,10 @@ const bereitBerechnet = darfRechnen
   : (eintrag.BEREIT ?? 0);
 
 const ueberBerechnet = darfRechnen
-  ? (
-      (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
-      (parseFloat(ueberstunden.replace(",", ".")) || 0)
-    ).toFixed(2)
-  : (parseFloat(eintrag["ÜBER"] ?? 0) || 0).toFixed(2);
+  ? (altUeber + neuUeber).toFixed(2)
+  : altUeber.toFixed(2);
 
-// ➜ Ausgabe
+// Ausgabe
 datenBox2.innerHTML = `
   <style>
     .row {
@@ -511,7 +520,7 @@ datenBox2.innerHTML = `
 
   <div class="row">
     <span>Überstunden:</span>
-    <span>${eintrag["ÜBER"] ?? 0} ${darfRechnen ? `+ ${ueberstunden.replace(",", ".")}` : ""} =</span>
+    <span>${altUeber.toFixed(2)} ${darfRechnen ? `+ ${neuUeber.toFixed(2)}` : ""} =</span>
     <input id="ueberErgebnis" type="number" step="0.01"
            value="${ueberBerechnet}">
   </div>
