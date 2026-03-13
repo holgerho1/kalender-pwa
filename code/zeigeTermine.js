@@ -516,7 +516,7 @@ datenBox2.innerHTML = `
   <textarea id="textBearbeiten" style="height:60px;">${eintrag.feld1 ?? ""}</textarea>
 
   <br><br>
-  <div style="white-space: pre;">${textZeile}</div>
+  <div style="white-space: pre-wrap;">${textZeile}</div>
 `;
 });
 
