@@ -428,7 +428,7 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
   const eintrag = gefiltert[0];
 //ab hier
 
-const darfRechnen = (kw !== eintrag.KW);
+const gleicheKW = (kw === eintrag.KW);
 
 datenBox2.innerHTML = `
   <style>
@@ -447,29 +447,15 @@ datenBox2.innerHTML = `
       width: 100%;
       margin-top: 10px;
     }
-    .row2 {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center;
-      margin-bottom: 4px;
-    }
   </style>
 
-  <div class="row2">
-    <span>KW Datenbox2:</span>
-    <span>${eintrag.KW}</span>
-  </div>
-
-  <div class="row2">
-    <span>KW Datenbox1:</span>
-    <span>${kw}</span>
-  </div>
-
-  <br>
-
-  <strong>Daten aus KW ${eintrag.KW}/${eintrag.JAHR} 
-  + Daten aus KW ${kw}/${jahr} 
-  = Vorschlag</strong><br><br>
+  <strong>
+    ${
+      gleicheKW
+        ? `Daten aus KW ${eintrag.KW}/${eintrag.JAHR} weil schon mal berechnet`
+        : `Daten aus KW ${eintrag.KW}/${eintrag.JAHR} + Daten aus KW ${kw}/${jahr} = Vorschlag`
+    }
+  </strong><br><br>
 
   <div class="row">
     <span>Urlaub:</span>
@@ -480,35 +466,36 @@ datenBox2.innerHTML = `
 
   <div class="row">
     <span>Urlaub genommen:</span>
-    <span>${eintrag.URLAUBgen ?? 0} ${darfRechnen ? `+ ${urlaubCount}` : ""} =</span>
+    <span>${eintrag.URLAUBgen ?? 0} ${!gleicheKW ? `+ ${urlaubCount}` : ""} =</span>
     <input id="urlaubErgebnis" type="number"
-           value="${darfRechnen ? (eintrag.URLAUBgen ?? 0) + urlaubCount : (eintrag.URLAUBgen ?? 0)}">
+           value="${gleicheKW ? (eintrag.URLAUBgen ?? 0) : (eintrag.URLAUBgen ?? 0) + urlaubCount}">
   </div>
 
   <div class="row">
     <span>Krank:</span>
-    <span>${eintrag.KRANK ?? 0} ${darfRechnen ? `+ ${krankCount}` : ""} =</span>
+    <span>${eintrag.KRANK ?? 0} ${!gleicheKW ? `+ ${krankCount}` : ""} =</span>
     <input id="krankErgebnis" type="number"
-           value="${darfRechnen ? (eintrag.KRANK ?? 0) + krankCount : (eintrag.KRANK ?? 0)}">
+           value="${gleicheKW ? (eintrag.KRANK ?? 0) : (eintrag.KRANK ?? 0) + krankCount}">
   </div>
 
   <div class="row">
     <span>Bereitschaft:</span>
-    <span>${eintrag.BEREIT ?? 0} ${darfRechnen ? `+ ${bereitschaftCount}` : ""} =</span>
+    <span>${eintrag.BEREIT ?? 0} ${!gleicheKW ? `+ ${bereitschaftCount}` : ""} =</span>
     <input id="bereitErgebnis" type="number"
-           value="${darfRechnen ? (eintrag.BEREIT ?? 0) + bereitschaftCount : (eintrag.BEREIT ?? 0)}">
+           value="${gleicheKW ? (eintrag.BEREIT ?? 0) : (eintrag.BEREIT ?? 0) + bereitschaftCount}">
   </div>
 
   <div class="row">
     <span>Überstunden:</span>
-    <span>${eintrag["ÜBER"] ?? 0} ${darfRechnen ? `+ ${ueberstunden.replace(",", ".")}` : ""} =</span>
+    <span>${eintrag["ÜBER"] ?? 0} ${!gleicheKW ? `+ ${ueberstunden.replace(",", ".")}` : ""} =</span>
     <input id="ueberErgebnis" type="number" step="0.01"
-           value="${darfRechnen
-             ? (
-                 (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
-                 (parseFloat(ueberstunden.replace(",", ".")) || 0)
-               ).toFixed(2)
-             : (parseFloat(eintrag["ÜBER"] ?? 0) || 0).toFixed(2)
+           value="${
+             gleicheKW
+               ? (parseFloat(eintrag["ÜBER"] ?? 0) || 0).toFixed(2)
+               : (
+                   (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
+                   (parseFloat(ueberstunden.replace(",", ".")) || 0)
+                 ).toFixed(2)
            }">
   </div>
 
