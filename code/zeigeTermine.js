@@ -431,7 +431,12 @@ datenBox2.innerHTML = `
   <strong>Letzter Eintrag</strong><br><br>
   <em>Gefundene Datensätze: ${anzahl}</em><br><br>
 
-  Urlaub: ${eintrag.URLAUB ?? "–"}<br>
+  Urlaub:
+    ${eintrag.URLAUB ?? 0}
+    = <input id="urlaubWert" type="number"
+             value="${eintrag.URLAUB ?? 0}"
+             style="width:60px;">
+    <br>
 
   Urlaub genommen:
     ${eintrag.URLAUBgen ?? 0}
