@@ -466,7 +466,10 @@ datenBox2.innerHTML = `
                (parseFloat(ueberstunden.replace(",", ".")) || 0)
              ).toFixed(2)}"
              style="width:70px;">
-    <br>
+    <br><br>
+
+  Text:<br>
+  <textarea id="textBearbeiten" style="width:100%;height:60px;">${eintrag.feld1 ?? ""}</textarea>
 `;
 });
 
