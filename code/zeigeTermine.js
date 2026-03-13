@@ -430,6 +430,7 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
 
 const gleicheKW = (kw === eintrag.KW);
 
+// ⭐ Zusatz für die Einzeilige Ausgabe
 const urlaubFinal = (eintrag.URLAUB ?? 0);
 const urlaubGenFinal = gleicheKW ? (eintrag.URLAUBgen ?? 0) : (eintrag.URLAUBgen ?? 0) + urlaubCount;
 const krankFinal = gleicheKW ? (eintrag.KRANK ?? 0) : (eintrag.KRANK ?? 0) + krankCount;
@@ -471,51 +472,58 @@ datenBox2.innerHTML = `
   <strong>
     ${
       gleicheKW
-        ? \`Daten aus KW \${eintrag.KW}/\${eintrag.JAHR} weil schon mal berechnet\`
-        : \`Daten aus KW \${eintrag.KW}/\${eintrag.JAHR} + Daten aus KW \${kw}/\${jahr} = Vorschlag\`
+        ? `Daten aus KW ${eintrag.KW}/${eintrag.JAHR} weil schon mal berechnet`
+        : `Daten aus KW ${eintrag.KW}/${eintrag.JAHR} + Daten aus KW ${kw}/${jahr} = Vorschlag`
     }
   </strong><br><br>
 
   <div class="row">
     <span>Urlaub:</span>
-    <span>\${eintrag.URLAUB ?? 0} =</span>
+    <span>${eintrag.URLAUB ?? 0} =</span>
     <input id="urlaubWert" type="number"
-           value="\${eintrag.URLAUB ?? 0}">
+           value="${eintrag.URLAUB ?? 0}">
   </div>
 
   <div class="row">
     <span>Urlaub genommen:</span>
-    <span>\${eintrag.URLAUBgen ?? 0} \${!gleicheKW ? \`+ \${urlaubCount}\` : ""} =</span>
+    <span>${eintrag.URLAUBgen ?? 0} ${!gleicheKW ? `+ ${urlaubCount}` : ""} =</span>
     <input id="urlaubErgebnis" type="number"
-           value="\${urlaubGenFinal}">
+           value="${gleicheKW ? (eintrag.URLAUBgen ?? 0) : (eintrag.URLAUBgen ?? 0) + urlaubCount}">
   </div>
 
   <div class="row">
     <span>Krank:</span>
-    <span>\${eintrag.KRANK ?? 0} \${!gleicheKW ? \`+ \${krankCount}\` : ""} =</span>
+    <span>${eintrag.KRANK ?? 0} ${!gleicheKW ? `+ ${krankCount}` : ""} =</span>
     <input id="krankErgebnis" type="number"
-           value="\${krankFinal}">
+           value="${gleicheKW ? (eintrag.KRANK ?? 0) : (eintrag.KRANK ?? 0) + krankCount}">
   </div>
 
   <div class="row">
     <span>Bereitschaft:</span>
-    <span>\${eintrag.BEREIT ?? 0} \${!gleicheKW ? \`+ \${bereitschaftCount}\` : ""} =</span>
+    <span>${eintrag.BEREIT ?? 0} ${!gleicheKW ? `+ ${bereitschaftCount}` : ""} =</span>
     <input id="bereitErgebnis" type="number"
-           value="\${bereitFinal}">
+           value="${gleicheKW ? (eintrag.BEREIT ?? 0) : (eintrag.BEREIT ?? 0) + bereitschaftCount}">
   </div>
 
   <div class="row">
     <span>Überstunden:</span>
-    <span>\${eintrag["ÜBER"] ?? 0} \${!gleicheKW ? \`+ \${ueberstunden.replace(",", ".")}\` : ""} =</span>
+    <span>${eintrag["ÜBER"] ?? 0} ${!gleicheKW ? `+ ${ueberstunden.replace(",", ".")}` : ""} =</span>
     <input id="ueberErgebnis" type="number" step="0.01"
-           value="\${ueberFinal}">
+           value="${
+             gleicheKW
+               ? (parseFloat(eintrag["ÜBER"] ?? 0) || 0).toFixed(2)
+               : (
+                   (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
+                   (parseFloat(ueberstunden.replace(",", ".")) || 0)
+                 ).toFixed(2)
+           }">
   </div>
 
   Text:<br>
-  <textarea id="textBearbeiten" style="height:60px;">\${eintrag.feld1 ?? ""}</textarea>
+  <textarea id="textBearbeiten" style="height:60px;">${eintrag.feld1 ?? ""}</textarea>
 
   <br><br>
-  \${textZeile}
+  ${textZeile}
 `;
 });
 
