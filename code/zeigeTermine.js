@@ -444,7 +444,26 @@ datenBox2.innerHTML = `
       width: 100%;
       margin-top: 10px;
     }
+    .row2 {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      margin-bottom: 4px;
+    }
   </style>
+
+  <!-- ⭐ NEU: KW‑Anzeige -->
+  <div class="row2">
+    <span>KW Datenbox2:</span>
+    <span>${eintrag.KW}</span>
+  </div>
+
+  <div class="row2">
+    <span>KW Datenbox1:</span>
+    <span>${kw}</span>
+  </div>
+
+  <br>
 
   <strong>Daten aus KW ${eintrag.KW}/${eintrag.JAHR} 
   + Daten aus KW ${kw}/${jahr} 
