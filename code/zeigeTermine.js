@@ -131,11 +131,12 @@ async function ladeDatenbox2(mitarbeiterId) {
   const { data, error } = await supa
     .from("tabelle1")
     .select("*")
-    .eq('"KZ"', mitarbeiterId);
+    .eq('"KZ"', mitarbeiterId)
+    .order("created_at", { ascending: false })
+    .limit(30);
 
   return data;
 }
-
 //Ende Teil1
 //Anfang Teil2
 
