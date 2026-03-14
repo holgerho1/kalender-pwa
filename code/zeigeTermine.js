@@ -601,7 +601,7 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
 });
 //Ende Teil3
 //Anfang Teil4
-});
+
 
 // -------------------------------------------------------------
 // Buttons wieder aktivieren
