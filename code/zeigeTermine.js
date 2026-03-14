@@ -11,27 +11,35 @@ import { verarbeiteTermin } from "./verarbeiteTermin.js";
 import { neuLaden } from "./neuLaden.js";
 import { exportierePdf } from "./exportPdf.js";
 
-// 🔌 Supabase
+// 🔌 Supabase korrekt laden
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 
 const supa = createClient(SUPABASE_URL, SUPABASE_KEY);
-const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+
+const wochentage = [
+  "Sonntag",
+  "Montag",
+  "Dienstag",
+  "Mittwoch",
+  "Donnerstag",
+  "Freitag",
+  "Samstag"
+];
 
 /* ==========================================================================
    CONFIG & STYLES (Zentrale Design-Steuerung)
    ========================================================================== */
 const UI_STYLES = {
-  card: "margin-bottom: 1rem; padding: 1rem; background: #fff; border-left: 4px solid #0077cc; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);",
-  input: "flex: 1; font-size: 0.8rem; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px;",
-  textarea: "width: 100%; margin-top: 0.5rem; padding: 8px; border: 1px solid #eee; border-radius: 4px; font-family: sans-serif; resize: vertical;",
+  card: "margin-bottom: 1rem; padding: 1rem; background: #fff; border-left: 4px solid #0077cc; border-radius: 6px; box-shadow: 0 0 4px rgba(0,0,0,0.1);",
+  input: "flex: 1; font-size: 0.8rem; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; width: 100%; margin-top: 0.5rem;",
+  textarea: "width: 100%; margin-top: 0.5rem; border: 1px solid #ccc; border-radius: 4px; padding: 4px 6px; font-family: sans-serif;",
   box: "margin-top: 1rem; padding: 1rem; background: #fff; border-radius: 6px; box-shadow: 0 0 4px rgba(0,0,0,0.1);",
-  row: "display: grid; grid-template-columns: 1fr auto 80px; align-items: center; margin-bottom: 6px; gap: 10px;",
-  btnDelete: "margin-top: 10px; background: #fff; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;"
+  row: "display: grid; grid-template-columns: 1fr auto 80px; align-items: center; margin-bottom: 6px; gap: 10px;"
 };
 
 /* ==========================================================================
-   HILFSFUNKTIONEN (LOGIK)
+   1. HILFSFUNKTIONEN (LOGIK)
    ========================================================================== */
 function holeAktivenBenutzerKuerzel() {
   const teile = window.location.pathname.split("/");
@@ -41,22 +49,23 @@ function holeAktivenBenutzerKuerzel() {
 async function ladeMitarbeiterId() {
   const kuerzel = holeAktivenBenutzerKuerzel();
   const { data, error } = await supa.from("mitarbeiter").select("id").eq("kuerzel", kuerzel).single();
-  return error ? null : data?.id;
+  if (error) { console.warn("Fehler beim Laden der Mitarbeiter-ID:", error); return null; }
+  return data?.id ?? null;
 }
 
 function fuzzyMatch(text, patterns) {
-  const clean = (str) => str.toLowerCase().replace(/[äöü]/g, m => ({'ä':'a','ö':'o','ü':'u'}[m])).replace(/[^a-z0-9]/g, "");
-  const woerter = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+  text = text.toLowerCase().replace("ä", "a").replace("ö", "o").replace("ü", "u").replace(/[^a-z0-9\s]/g, " ");
+  const woerter = text.split(/\s+/).filter(w => w.length > 0);
   return woerter.some(wort => patterns.some(p => {
-    const pClean = clean(p);
-    const wClean = clean(wort);
-    if (wClean === pClean) return true;
-    if (Math.abs(wClean.length - pClean.length) <= 1) {
+    p = p.toLowerCase().replace("ä", "a").replace("ö", "o").replace("ü", "u").replace(/[^a-z0-9]/g, "");
+    if (wort === p) return true;
+    if (Math.abs(wort.length - p.length) <= 1) {
       let fehler = 0;
-      for (let i = 0; i < Math.min(wClean.length, pClean.length); i++) {
-        if (wClean[i] !== pClean[i]) fehler++;
+      for (let i = 0; i < Math.min(wort.length, p.length); i++) {
+        if (wort[i] !== p[i]) fehler++;
+        if (fehler > 1) return false;
       }
-      return fehler <= 1;
+      return true;
     }
     return false;
   }));
@@ -73,148 +82,159 @@ function berechneKalenderwoche(datum = new Date()) {
 function getKWZeitraum(offset = 0) {
   const heute = new Date();
   heute.setHours(0, 0, 0, 0);
+  const wochentag = heute.getDay();
   const montag = new Date(heute);
-  montag.setDate(heute.getDate() - ((heute.getDay() + 6) % 7) + offset * 7);
+  montag.setDate(heute.getDate() - ((wochentag + 6) % 7) + offset * 7);
   const sonntag = new Date(montag);
   sonntag.setDate(montag.getDate() + 6);
   sonntag.setHours(23, 59, 59, 999);
   return { montag, sonntag };
 }
 
+async function ladeDatenbox2(mitarbeiterId) {
+  const { data } = await supa.from("tabelle1").select("*").eq('"KZ"', mitarbeiterId).order("created_at", { ascending: false }).limit(30);
+  return data;
+}
+
 /* ==========================================================================
-   UI-KOMPONENTEN (RENDERING)
+   2. UI-KOMPONENTEN (RENDERING)
    ========================================================================== */
 function erstelleTerminKarte(event) {
   const block = document.createElement("div");
   block.dataset.id = event.id;
   block.setAttribute("style", UI_STYLES.card);
 
-  const d = new Date(event.timestamp);
-  const datumText = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")} (${wochentage[d.getDay()]})`;
+  const datumObj = new Date(event.timestamp);
+  const tag = String(datumObj.getDate()).padStart(2, "0");
+  const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
+  const wochentag = wochentage[datumObj.getDay()];
+  const datumMitTag = `${tag}.${monat} (${wochentag})`;
 
   block.innerHTML = `
-    <div style="font-weight:bold; color:#333;">📅 ${datumText}</div>
+    <div style="font-weight: bold; margin-bottom: 0.3rem;">📅 ${datumMitTag}</div>
     <textarea class="titel-input" rows="2" style="${UI_STYLES.textarea}">${event.titel}</textarea>
-    <div style="display:flex; gap:8px; margin-top:0.5rem;">
+    <div style="display: flex; gap: 8px; margin-top: 0.5rem;">
       <input type="text" class="stunden-input" data-field="arbeit" value="${event.arbeit || ""}" placeholder="Arbeit" style="${UI_STYLES.input}">
       <input type="text" class="stunden-input" data-field="fahr" value="${event.fahr || ""}" placeholder="Fahr" style="${UI_STYLES.input}">
       <input type="text" class="stunden-input" data-field="über" value="${event.über || ""}" placeholder="Über" style="${UI_STYLES.input}">
     </div>
     <textarea class="desc-input" rows="3" style="${UI_STYLES.textarea}">${event.beschreibung}</textarea>
-    <textarea class="mat-input" rows="3" style="${UI_STYLES.textarea}" placeholder="Material">${event.material || ""}</textarea>
+    <textarea class="mat-input" rows="3" placeholder="Material" style="${UI_STYLES.textarea}">${event.material || ""}</textarea>
     <textarea class="mit-input" rows="2" style="${UI_STYLES.textarea}">${event.mitarbeiter || ""}</textarea>
   `;
 
-  const del = document.createElement("button");
-  del.innerHTML = "❌ Löschen";
-  del.setAttribute("style", UI_STYLES.btnDelete);
-  del.onclick = () => {
-    setTermine(getTermine().filter(t => t.id !== event.id));
-    zeigeTermine();
+  const loeschen = document.createElement("button");
+  loeschen.textContent = "❌ Löschen";
+  loeschen.style.marginLeft = "10px";
+  loeschen.onclick = () => {
+    localStorage.setItem("scrollPos", window.scrollY);
+    const termine = getTermine();
+    const index = termine.findIndex((t) => t.id === event.id);
+    if (index !== -1) { termine.splice(index, 1); setTermine(termine); zeigeTermine(); }
   };
-  block.appendChild(del);
+  block.appendChild(loeschen);
   return block;
 }
 
-function wochenFarbenLogik(gefiltert) {
-  const tageMap = {};
-  gefiltert.forEach(e => {
-    const wtag = new Date(e.timestamp).getDay();
-    if(!tageMap[wtag]) tageMap[wtag] = [];
-    tageMap[wtag].push(e);
-  });
-
-  Object.values(tageMap).forEach(tagTermine => {
-    let sum = 0, ueber = 0, sonder = false;
-    tagTermine.forEach(e => {
-      if (fuzzyMatch(e.titel, ["urlaub", "krank", "bereitschaft"])) sonder = true;
-      sum += (parseFloat(String(e.arbeit || 0).replace(",", ".")) || 0) + (parseFloat(String(e.fahr || 0).replace(",", ".")) || 0);
-      ueber += (parseFloat(String(e.über || 0).replace(",", ".")) || 0);
-    });
-    const farbe = sonder || (Math.abs(sum - (8 + ueber)) < 0.01) ? "#e6ffe6" : "#ffe6e6";
-    tagTermine.forEach(e => {
-      const el = document.querySelector(`div[data-id="${e.id}"]`);
-      if(el) el.style.backgroundColor = farbe;
-    });
-  });
-}
-
 /* ==========================================================================
-   HAUPTFUNKTION (ORCHESTRIERUNG)
+   3. HAUPTFUNKTION (ORCHESTRIERUNG)
    ========================================================================== */
 export async function zeigeTermine() {
   const mitarbeiterId = await ladeMitarbeiterId();
-  if (!mitarbeiterId) return;
-
-  // Wocheninfo
+  
+  // Wocheninfo Header
   const { montag, sonntag } = getKWZeitraum(getKwOffset());
   const kw = berechneKalenderwoche(montag);
   const jahr = montag.getFullYear();
   const info = document.getElementById("wocheninfo");
-  const formatter = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "long", year: "numeric" });
-  if (info) info.textContent = `📆 KW ${kw}: ${formatter.format(montag)} – ${formatter.format(sonntag)}${getFilterAktiv() ? "" : " (alle Termine)"}`;
+  if (info) {
+    const f = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+    info.textContent = `📆 KW ${kw}: ${f.format(montag)} – ${f.format(sonntag)}${getFilterAktiv() ? "" : " (alle Termine)"}`;
+  }
 
   const container = document.getElementById("termine");
   container.innerHTML = "";
 
-  const gefiltert = getFilterAktiv() 
-    ? getTermine().filter(e => { const d = new Date(e.timestamp); return d >= montag && d <= sonntag; }) 
-    : getTermine();
+  const termine = getTermine();
+  const gefiltert = getFilterAktiv() ? termine.filter(e => { const d = new Date(e.timestamp); return d >= montag && d <= sonntag; }) : termine;
 
   if (gefiltert.length === 0) {
-    container.innerHTML = '<div style="font-style:italic">Keine Termine im gewählten Zeitraum.</div>';
+    const leer = document.createElement("div");
+    leer.textContent = "Keine Termine im gewählten Zeitraum.";
+    leer.style.fontStyle = "italic";
+    container.appendChild(leer);
   } else {
-    gefiltert.forEach(e => container.appendChild(erstelleTerminKarte(e)));
-    wochenFarbenLogik(gefiltert);
+    gefiltert.forEach(event => container.appendChild(erstelleTerminKarte(event)));
+    
+    // Tagesfarben Logik
+    const tage = { 0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[] };
+    gefiltert.forEach(e => tage[new Date(e.timestamp).getDay()].push(e));
+
+    Object.keys(tage).forEach(key => {
+      if (tage[key].length === 0) return;
+      let arbeitSum = 0, fahrSum = 0, ueberSum = 0, sonder = false;
+      tage[key].forEach(e => {
+        if (fuzzyMatch(e.titel || "", ["urlaub", "krank", "bereitschaft"])) sonder = true;
+        arbeitSum += parseFloat(String(e.arbeit || 0).replace(",", ".")) || 0;
+        fahrSum += parseFloat(String(e.fahr || 0).replace(",", ".")) || 0;
+        ueberSum += parseFloat(String(e.über || 0).replace(",", ".")) || 0;
+      });
+      const farbe = sonder || (Math.abs((arbeitSum + fahrSum) - (8 + ueberSum)) < 0.01) ? "#e6ffe6" : "#ffe6e6";
+      tage[key].forEach(e => {
+        const el = document.querySelector(`div[data-id="${e.id}"]`);
+        if (el) el.style.backgroundColor = farbe;
+      });
+    });
   }
 
-  // Wochen-Stats
-  const stats = gefiltert.reduce((acc, e) => {
-    acc.ueber += parseFloat(String(e.über || 0).replace(",", ".")) || 0;
-    if (fuzzyMatch(e.titel, ["urlaub"])) acc.urlaub++;
-    if (fuzzyMatch(e.titel, ["krank"])) acc.krank++;
-    if (fuzzyMatch(e.titel, ["bereitschaft"])) acc.bereit++;
-    return acc;
-  }, { ueber: 0, urlaub: 0, krank: 0, bereit: 0 });
+  // Wochen-Statistik berechnen
+  let ueberSumme = 0, urlaubC = 0, krankC = 0, bereitC = 0;
+  gefiltert.forEach(e => {
+    ueberSumme += parseFloat(String(e.über || "0").replace(",", ".")) || 0;
+    if (fuzzyMatch(e.titel || "", ["urlaub"])) urlaubC++;
+    if (fuzzyMatch(e.titel || "", ["krank"])) krankC++;
+    if (fuzzyMatch(e.titel || "", ["bereitschaft"])) bereitC++;
+  });
 
-  // Datenbox 1 (Vorschau)
+  // Datenbox 1
   const box1 = document.createElement("div");
   box1.setAttribute("style", UI_STYLES.box);
-  box1.innerHTML = `<strong>Daten dieser Woche</strong><br><br>Jahr: ${jahr} | KW: ${kw}<br>Urlaub: ${stats.urlaub} | Krank: ${stats.krank}<br>Überstunden: ${stats.ueber.toFixed(2).replace(".", ",")} h`;
+  box1.innerHTML = `<strong>Daten dieser Woche</strong><br><br>Jahr: ${jahr}<br>KW: ${kw}<br>Kürzel: ${holeAktivenBenutzerKuerzel()}<br>Mitarbeiter-ID: ${mitarbeiterId}<br>Urlaub: ${urlaubC}<br>Krank: ${krankC}<br>Überstunden: ${ueberSumme.toFixed(2).replace(".", ",")}<br>Bereitschaft: ${bereitC}`;
   container.appendChild(box1);
 
-  // Datenbox 2 (Historie & Speichern)
+  // Datenbox 2
   const box2 = document.createElement("div");
+  box2.id = "datenanzeige2";
   box2.setAttribute("style", UI_STYLES.box);
-  box2.innerHTML = "Lade Historie...";
+  box2.innerHTML = `<strong>Letzter Eintrag</strong><br><br>Lade Daten...`;
   container.appendChild(box2);
 
-  const { data: daten2 } = await supa.from("tabelle1").select("*").eq('"KZ"', mitarbeiterId).order("created_at", { ascending: false }).limit(30);
-  
+  const daten2 = await ladeDatenbox2(mitarbeiterId);
   if (!daten2 || daten2.length === 0) {
-    box2.innerHTML = `<strong>Keine Historie</strong><br><button id="speichernBtn" style="width:100%; margin-top:10px;">Initial Speichern</button>`;
+    box2.innerHTML = `<strong>Letzter Eintrag</strong><br><br>Keine Daten gefunden.<br><br><button id="speichernBtn">Speichern</button>`;
   } else {
-    const eintrag = daten2.filter(e => (e.JAHR * 100 + e.KW) <= (jahr * 100 + kw))
-      .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : 1)[0];
-
+    const gefiltertH = daten2.filter(e => (e.JAHR * 100 + e.KW) <= (jahr * 100 + kw))
+      .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.created_at));
+    const eintrag = gefiltertH[0];
     const gleicheKW = (kw === eintrag.KW);
     const v = {
-      urlaubGen: gleicheKW ? (eintrag.URLAUBgen ?? 0) : (eintrag.URLAUBgen ?? 0) + stats.urlaub,
-      krank: gleicheKW ? (eintrag.KRANK ?? 0) : (eintrag.KRANK ?? 0) + stats.krank,
-      bereit: gleicheKW ? (eintrag.BEREIT ?? 0) : (eintrag.BEREIT ?? 0) + stats.bereit,
-      ueber: (parseFloat(eintrag["ÜBER"] ?? 0) + (gleicheKW ? 0 : stats.ueber)).toFixed(2)
+      uGen: gleicheKW ? (eintrag.URLAUBgen ?? 0) : (eintrag.URLAUBgen ?? 0) + urlaubC,
+      k: gleicheKW ? (eintrag.KRANK ?? 0) : (eintrag.KRANK ?? 0) + krankC,
+      b: gleicheKW ? (eintrag.BEREIT ?? 0) : (eintrag.BEREIT ?? 0) + bereitC,
+      u: (parseFloat(eintrag["ÜBER"] ?? 0) + (gleicheKW ? 0 : ueberSumme)).toFixed(2)
     };
 
     box2.innerHTML = `
-      <style>.row { ${UI_STYLES.row} } .row input { width: 80px; text-align: right; }</style>
-      <strong>${gleicheKW ? `✅ KW ${kw} bereits erfasst` : `💡 Vorschlag: Historie + Aktuelle KW`}</strong>
-      <div class="row" style="margin-top:10px;"><span>Urlaub (Anspruch):</span><span></span><input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}"></div>
-      <div class="row"><span>Urlaub genommen:</span><span>+ ${stats.urlaub}</span><input id="urlaubErgebnis" type="number" value="${v.urlaubGen}"></div>
-      <div class="row"><span>Krank Tage:</span><span>+ ${stats.krank}</span><input id="krankErgebnis" type="number" value="${v.krank}"></div>
-      <div class="row"><span>Bereitschaft:</span><span>+ ${stats.bereit}</span><input id="bereitErgebnis" type="number" value="${v.bereit}"></div>
-      <div class="row"><span>Überstunden:</span><span>+ ${stats.ueber.toFixed(2)}</span><input id="ueberErgebnis" type="number" step="0.01" value="${v.ueber}"></div>
-      <textarea id="textBearbeiten" style="${UI_STYLES.textarea}; height:60px;">${eintrag.feld1 ?? ""}</textarea>
-      <button id="speichernBtn" style="width:100%; margin-top:10px; padding:8px; background:#0077cc; color:#fff; border:none; border-radius:4px; cursor:pointer;">Werte Speichern</button>
+      <style>.row{${UI_STYLES.row}} .row input{width:80px; text-align:right;}</style>
+      <strong>${gleicheKW ? `Daten aus KW ${eintrag.KW}/${eintrag.JAHR} weil schon mal berechnet` : `Daten aus KW ${eintrag.KW}/${eintrag.JAHR} + Daten aus KW ${kw}/${jahr} = Vorschlag`}</strong><br><br>
+      <div class="row"><span>Urlaub:</span><span>${eintrag.URLAUB ?? 0} =</span><input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}"></div>
+      <div class="row"><span>Urlaub genommen:</span><span>${eintrag.URLAUBgen ?? 0} ${!gleicheKW ? `+ ${urlaubC}` : ""} =</span><input id="urlaubErgebnis" type="number" value="${v.uGen}"></div>
+      <div class="row"><span>Krank:</span><span>${eintrag.KRANK ?? 0} ${!gleicheKW ? `+ ${krankC}` : ""} =</span><input id="krankErgebnis" type="number" value="${v.k}"></div>
+      <div class="row"><span>Bereitschaft:</span><span>${eintrag.BEREIT ?? 0} ${!gleicheKW ? `+ ${bereitC}` : ""} =</span><input id="bereitErgebnis" type="number" value="${v.b}"></div>
+      <div class="row"><span>Überstunden:</span><span>${eintrag["ÜBER"] ?? 0} ${!gleicheKW ? `+ ${ueberSumme}` : ""} =</span><input id="ueberErgebnis" type="number" step="0.01" value="${v.u}"></div>
+      Text:<br><textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:10px;">${eintrag.feld1 ?? ""}</textarea>
+      <br><br><div style="white-space: pre-wrap;">Urlaub: ${eintrag.URLAUB ?? 0} Tage    Urlaub genommen: ${v.uGen} Tage    Krank: ${v.k} Tage    Überstunden: ${v.u} Stunden    Bereitschaft: ${v.b} Tage    ${eintrag.feld1 ?? ""}</div>
+      <br><small style="opacity:0.6;">ID: ${eintrag.id}</small><br><br><button id="speichernBtn">Speichern</button>
     `;
   }
 
@@ -228,39 +248,39 @@ export async function zeigeTermine() {
       ÜBER: Number(document.getElementById("ueberErgebnis").value),
       feld1: document.getElementById("textBearbeiten").value
     });
-    if (error) alert(error.message); else location.reload();
+    if (error) alert("Fehler: " + error.message); else location.reload();
   };
 
-  // Steuerung (Buttons)
-  renderSteuerung(container);
-}
-
-function renderSteuerung(container) {
-  const s = document.createElement("div");
-  s.style.marginTop = "1rem";
-  const btn = (txt, fn) => {
-    const b = document.createElement("button");
-    b.textContent = txt; b.style.marginLeft = "10px"; b.onclick = fn; return b;
+  // Steuerungsbereich
+  const steuerung = document.createElement("div");
+  steuerung.style.marginTop = "1rem";
+  const btn = (txt, fn, ml = "10px") => {
+    const b = document.createElement("button"); b.textContent = txt; b.style.marginLeft = ml; b.onclick = fn; return b;
   };
-  s.appendChild(btn("🧹 Neu laden", () => neuLaden()));
-  s.appendChild(btn("◀️ Vorige", () => { setKwOffset(getKwOffset() - 1); zeigeTermine(); }));
-  s.appendChild(btn("▶️ Nächste", () => { setKwOffset(getKwOffset() + 1); zeigeTermine(); }));
-  s.appendChild(btn(getFilterAktiv() ? "🔄 Filter aus" : "🔄 Filter an", () => { setFilterAktiv(!getFilterAktiv()); zeigeTermine(); }));
-  s.appendChild(btn("📄 PDF Export", () => {
-    const aktuelle = getTermine();
-    document.querySelectorAll("#termine > div[data-id]").forEach(block => {
-      const event = aktuelle.find(t => t.id === block.dataset.id);
-      if (!event) return;
-      event.titel = block.querySelector(".titel-input").value;
-      event.beschreibung = block.querySelector(".desc-input").value;
-      event.material = block.querySelector(".mat-input").value;
-      event.mitarbeiter = block.querySelector(".mit-input").value;
-      block.querySelectorAll(".stunden-input").forEach(i => event[i.dataset.field] = i.value);
-      Object.assign(event, verarbeiteTermin(event));
+  steuerung.appendChild(btn("🧹 Neu laden", () => neuLaden(), "0"));
+  steuerung.appendChild(btn("◀️ Vorige Woche", () => { setKwOffset(getKwOffset() - 1); zeigeTermine(); }));
+  steuerung.appendChild(btn("▶️ Nächste Woche", () => { setKwOffset(getKwOffset() + 1); zeigeTermine(); }));
+  steuerung.appendChild(btn(getFilterAktiv() ? "🔄 Filter aus" : "🔄 Filter an", () => { setFilterAktiv(!getFilterAktiv()); zeigeTermine(); }));
+  
+  // PDF Export
+  steuerung.appendChild(btn("📄 PDF Export", () => {
+    const blocks = document.querySelectorAll("#termine > div[data-id]");
+    const tOriginal = getTermine();
+    blocks.forEach((block) => {
+      const ev = tOriginal.find(t => t.id === block.dataset.id);
+      if (!ev) return;
+      ev.titel = block.querySelector(".titel-input").value;
+      ev.beschreibung = block.querySelector(".desc-input").value;
+      ev.material = block.querySelector(".mat-input").value;
+      ev.mitarbeiter = block.querySelector(".mit-input").value;
+      block.querySelectorAll(".stunden-input").forEach(i => ev[i.dataset.field] = i.value);
+      const neu = verarbeiteTermin(ev);
+      if (neu) Object.assign(ev, neu);
     });
-    setTermine(aktuelle);
-    const { montag, sonntag } = getKWZeitraum(getKwOffset());
-    exportierePdf(getFilterAktiv() ? aktuelle.filter(e => { const d = new Date(e.timestamp); return d >= montag && d <= sonntag; }) : aktuelle);
+    setTermine(tOriginal);
+    const { montag: m, sonntag: s } = getKWZeitraum(getKwOffset());
+    exportierePdf(getFilterAktiv() ? tOriginal.filter(e => { const d = new Date(e.timestamp); return d >= m && d <= s; }) : tOriginal);
   }));
-  container.appendChild(s);
+
+  container.appendChild(steuerung);
 }
