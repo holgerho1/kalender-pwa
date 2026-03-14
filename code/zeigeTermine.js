@@ -508,12 +508,17 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
       <br><br>
       <div style="white-space: pre-wrap;">${textZeile}</div>
 
+      <br>
+      <small style="opacity:0.6;">ID: ${eintrag.id}</small>
       <br><br>
+
       <button id="speichernBtn">Speichern</button>
     `;
   }
 
-  // ⭐ SPEICHERN-FUNKTION
+  // -------------------------------------------------------------
+  // SPEICHERN-FUNKTION
+  // -------------------------------------------------------------
   document.getElementById("speichernBtn").onclick = async function () {
 
     const { data, error } = await supa
