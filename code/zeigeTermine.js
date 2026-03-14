@@ -517,7 +517,7 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
   }
 
   // -------------------------------------------------------------
-  // SPEICHERN-FUNKTION
+  // SPEICHERN-FUNKTION (mit sofortiger ID-Anzeige)
   // -------------------------------------------------------------
   document.getElementById("speichernBtn").onclick = async function () {
 
@@ -533,17 +533,20 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
         BEREIT: Number(document.getElementById("bereitErgebnis").value),
         ÜBER: Number(document.getElementById("ueberErgebnis").value),
         feld1: document.getElementById("textBearbeiten").value
-      });
+      })
+      .select();   // ⭐ neue ID sofort zurückbekommen
 
     if (error) {
       alert("Fehler beim Speichern: " + error.message);
       return;
     }
 
-    alert("Gespeichert!");
+    const neuerEintrag = data[0];
 
-    // ⭐ Datenbox2 neu laden
-    ladeDatenbox2(mitarbeiterId);
+    datenBox2.innerHTML = `
+      <strong>Gespeichert!</strong><br><br>
+      <small style="opacity:0.6;">Neue ID: ${neuerEintrag.id}</small>
+    `;
   };
 
 });
