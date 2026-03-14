@@ -266,12 +266,6 @@ gefiltert.forEach((event) => {
 // -------------------------------------------------------------
 // Tagesfarben (mit Wochenende + Sonderstatus)
 // -------------------------------------------------------------
-// -------------------------------------------------------------
-// Tagesfarben (mit Wochenende + Sonderstatus)
-// -------------------------------------------------------------
-// -------------------------------------------------------------
-// Tagesfarben (mit Wochenende + Sonderstatus)
-// -------------------------------------------------------------
 const tage = {
   0: { blocks: [] }, // Sonntag
   1: { blocks: [] },
@@ -385,7 +379,7 @@ datenBox.innerHTML = `
 `;
 
 // -------------------------------------------------------------
-// DATENBOX 2 (Supabase, ohne await → kein Hänger)
+// DATENBOX 2
 // -------------------------------------------------------------
 let datenBox2 = document.getElementById("datenanzeige2");
 if (!datenBox2) {
@@ -407,33 +401,18 @@ datenBox2.innerHTML = `
 const aktuellesJahr = montag.getFullYear();
 const aktuelleKW = berechneKalenderwoche(montag);
 
-ladeDatenbox2(mitarbeiterId).then(daten2 => {
+// -------------------------------------------------------------
+// DATENBOX2 RENDER-FUNKTION
+// -------------------------------------------------------------
+function renderDatenbox2(daten2) {
+
   if (!daten2 || daten2.length === 0) {
     datenBox2.innerHTML = `
       <strong>Letzter Eintrag</strong><br><br>
       Keine Daten vorhanden.<br><br>
       <button id="speichernBtn">Speichern</button>
     `;
-
-    document.getElementById("speichernBtn").onclick = async function () {
-      const { data, error } = await supa
-        .from("tabelle1")
-        .insert({
-          KZ: mitarbeiterId,
-          JAHR: jahr,
-          KW: kw,
-          URLAUB: 0,
-          URLAUBgen: 0,
-          KRANK: 0,
-          BEREIT: 0,
-          ÜBER: 0,
-          feld1: ""
-        });
-
-      if (error) alert("Fehler: " + error.message);
-      else alert("Gespeichert!");
-    };
-
+    document.getElementById("speichernBtn").onclick = speichernUndReload;
     return;
   }
 
@@ -451,33 +430,13 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
 
   const eintrag = gefiltert[0];
 
-  // ⭐ WICHTIG: Falls kein Eintrag → kein Freeze
   if (!eintrag) {
     datenBox2.innerHTML = `
       <strong>Letzter Eintrag</strong><br><br>
       Keine Daten vorhanden.<br><br>
       <button id="speichernBtn">Speichern</button>
     `;
-
-    document.getElementById("speichernBtn").onclick = async function () {
-      const { data, error } = await supa
-        .from("tabelle1")
-        .insert({
-          KZ: mitarbeiterId,
-          JAHR: jahr,
-          KW: kw,
-          URLAUB: 0,
-          URLAUBgen: 0,
-          KRANK: 0,
-          BEREIT: 0,
-          ÜBER: 0,
-          feld1: ""
-        });
-
-      if (error) alert("Fehler: " + error.message);
-      else alert("Gespeichert!");
-    };
-
+    document.getElementById("speichernBtn").onclick = speichernUndReload;
     return;
   }
 
@@ -494,33 +453,7 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
         (parseFloat(ueberstunden.replace(",", ".")) || 0)
       ).toFixed(2);
 
-  const textZeile =
-    "Urlaub: " + urlaubFinal + " Tage    " +
-    "Urlaub genommen: " + urlaubGenFinal + " Tage    " +
-    "Krank: " + krankFinal + " Tage    " +
-    "Überstunden: " + ueberFinal + " Stunden    " +
-    "Bereitschaft: " + bereitFinal + " Tage    " +
-    (eintrag.feld1 ?? "");
-
   datenBox2.innerHTML = `
-    <style>
-      .row {
-        display: grid;
-        grid-template-columns: 1fr auto 80px;
-        align-items: center;
-        margin-bottom: 6px;
-        gap: 10px;
-      }
-      .row input {
-        width: 80px;
-        text-align: right;
-      }
-      #textBearbeiten {
-        width: 100%;
-        margin-top: 10px;
-      }
-    </style>
-
     <strong>
       ${
         gleicheKW
@@ -532,71 +465,77 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
     <div class="row">
       <span>Urlaub:</span>
       <span>${eintrag.URLAUB ?? 0} =</span>
-      <input id="urlaubWert" type="number"
-             value="${eintrag.URLAUB ?? 0}">
+      <input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}">
     </div>
 
     <div class="row">
       <span>Urlaub genommen:</span>
       <span>${eintrag.URLAUBgen ?? 0} ${!gleicheKW ? `+ ${urlaubCount}` : ""} =</span>
-      <input id="urlaubErgebnis" type="number"
-             value="${urlaubGenFinal}">
+      <input id="urlaubErgebnis" type="number" value="${urlaubGenFinal}">
     </div>
 
     <div class="row">
       <span>Krank:</span>
       <span>${eintrag.KRANK ?? 0} ${!gleicheKW ? `+ ${krankCount}` : ""} =</span>
-      <input id="krankErgebnis" type="number"
-             value="${krankFinal}">
+      <input id="krankErgebnis" type="number" value="${krankFinal}">
     </div>
 
     <div class="row">
       <span>Bereitschaft:</span>
       <span>${eintrag.BEREIT ?? 0} ${!gleicheKW ? `+ ${bereitschaftCount}` : ""} =</span>
-      <input id="bereitErgebnis" type="number"
-             value="${bereitFinal}">
+      <input id="bereitErgebnis" type="number" value="${bereitFinal}">
     </div>
 
     <div class="row">
       <span>Überstunden:</span>
       <span>${eintrag["ÜBER"] ?? 0} ${!gleicheKW ? `+ ${ueberstunden.replace(",", ".")}` : ""} =</span>
-      <input id="ueberErgebnis" type="number" step="0.01"
-             value="${ueberFinal}">
+      <input id="ueberErgebnis" type="number" step="0.01" value="${ueberFinal}">
     </div>
 
     Text:<br>
-    <textarea id="textBearbeiten" style="height:60px;">${eintrag.feld1 ?? ""}</textarea>
-
-    <br><br>
-    <div style="white-space: pre-wrap;">${textZeile}</div>
+    <textarea id="textBearbeiten" style="width:100%;height:60px;">${eintrag.feld1 ?? ""}</textarea>
 
     <br><br>
     <button id="speichernBtn">Speichern</button>
   `;
 
-  // ⭐ SPEICHERN-BUTTON FUNKTION
-  document.getElementById("speichernBtn").onclick = async function () {
+  document.getElementById("speichernBtn").onclick = speichernUndReload;
+}
 
-    const { data, error } = await supa
-      .from("tabelle1")
-      .insert({
-        KZ: mitarbeiterId,
-        JAHR: jahr,
-        KW: kw,
-        URLAUB: Number(document.getElementById("urlaubWert").value),
-        URLAUBgen: Number(document.getElementById("urlaubErgebnis").value),
-        KRANK: Number(document.getElementById("krankErgebnis").value),
-        BEREIT: Number(document.getElementById("bereitErgebnis").value),
-        ÜBER: Number(document.getElementById("ueberErgebnis").value),
-        feld1: document.getElementById("textBearbeiten").value
-      });
+// -------------------------------------------------------------
+// SPEICHERN + RELOAD
+// -------------------------------------------------------------
+async function speichernUndReload() {
 
-    if (error) {
-      alert("Fehler beim Speichern: " + error.message);
-    } else {
-      alert("Gespeichert!");
-    }
-  };
+  const { data, error } = await supa
+    .from("tabelle1")
+    .insert({
+      KZ: mitarbeiterId,
+      JAHR: jahr,
+      KW: kw,
+      URLAUB: Number(document.getElementById("urlaubWert").value),
+      URLAUBgen: Number(document.getElementById("urlaubErgebnis").value),
+      KRANK: Number(document.getElementById("krankErgebnis").value),
+      BEREIT: Number(document.getElementById("bereitErgebnis").value),
+      ÜBER: Number(document.getElementById("ueberErgebnis").value),
+      feld1: document.getElementById("textBearbeiten").value
+    });
+
+  if (error) {
+    alert("Fehler beim Speichern: " + error.message);
+    return;
+  }
+
+  alert("Gespeichert!");
+
+  // ⭐ Seite neu laden → Datenbox holt neuen Datensatz
+  window.location.reload();
+}
+
+// -------------------------------------------------------------
+// ERSTER AUFRUF
+// -------------------------------------------------------------
+ladeDatenbox2(mitarbeiterId).then(renderDatenbox2);
 
 });
 //Ende Teil3
