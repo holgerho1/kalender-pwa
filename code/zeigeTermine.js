@@ -517,11 +517,11 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
   }
 
   // -------------------------------------------------------------
-  // SPEICHERN-FUNKTION (ID zählt sofort hoch)
+  // SPEICHERN-FUNKTION (mit Reload)
   // -------------------------------------------------------------
   document.getElementById("speichernBtn").onclick = async function () {
 
-    const { data, error } = await supa
+    const { error } = await supa
       .from("tabelle1")
       .insert({
         KZ: mitarbeiterId,
@@ -533,107 +533,15 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
         BEREIT: Number(document.getElementById("bereitErgebnis").value),
         ÜBER: Number(document.getElementById("ueberErgebnis").value),
         feld1: document.getElementById("textBearbeiten").value
-      })
-      .select();   // ⭐ neue ID sofort zurückbekommen
+      });
 
     if (error) {
       alert("Fehler beim Speichern: " + error.message);
       return;
     }
 
-    // ⭐ NEUER Datensatz – direkt rendern
-    const eintrag = data[0];
-    const gleicheKW = (kw === eintrag.KW);
-
-    const urlaubFinal = (eintrag.URLAUB ?? 0);
-    const urlaubGenFinal = gleicheKW ? (eintrag.URLAUBgen ?? 0) : (eintrag.URLAUBgen ?? 0) + urlaubCount;
-    const krankFinal = gleicheKW ? (eintrag.KRANK ?? 0) : (eintrag.KRANK ?? 0) + krankCount;
-    const bereitFinal = gleicheKW ? (eintrag.BEREIT ?? 0) : (eintrag.BEREIT ?? 0) + bereitschaftCount;
-    const ueberFinal = gleicheKW
-      ? (parseFloat(eintrag["ÜBER"] ?? 0) || 0).toFixed(2)
-      : (
-          (parseFloat(eintrag["ÜBER"] ?? 0) || 0) +
-          (parseFloat(ueberstunden.replace(",", ".")) || 0)
-        ).toFixed(2);
-
-    const textZeile =
-      "Urlaub: " + urlaubFinal + " Tage    " +
-      "Urlaub genommen: " + urlaubGenFinal + " Tage    " +
-      "Krank: " + krankFinal + " Tage    " +
-      "Überstunden: " + ueberFinal + " Stunden    " +
-      "Bereitschaft: " + bereitFinal + " Tage    " +
-      (eintrag.feld1 ?? "");
-
-    // ⭐ komplette Datenbox2 neu rendern – MIT neuer ID
-    datenBox2.innerHTML = `
-      <style>
-        .row {
-          display: grid;
-          grid-template-columns: 1fr auto 80px;
-          align-items: center;
-          margin-bottom: 6px;
-          gap: 10px;
-        }
-        .row input {
-          width: 80px;
-          text-align: right;
-        }
-        #textBearbeiten {
-          width: 100%;
-          margin-top: 10px;
-        }
-      </style>
-
-      <strong>
-        ${
-          gleicheKW
-            ? "Daten aus KW " + eintrag.KW + "/" + eintrag.JAHR + " weil schon mal berechnet"
-            : "Daten aus KW " + eintrag.KW + "/" + eintrag.JAHR + " + Daten aus KW " + kw + "/" + jahr + " = Vorschlag"
-        }
-      </strong><br><br>
-
-      <div class="row">
-        <span>Urlaub:</span>
-        <span>${eintrag.URLAUB ?? 0} =</span>
-        <input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}">
-      </div>
-
-      <div class="row">
-        <span>Urlaub genommen:</span>
-        <span>${eintrag.URLAUBgen ?? 0} ${!gleicheKW ? `+ ${urlaubCount}` : ""} =</span>
-        <input id="urlaubErgebnis" type="number" value="${urlaubGenFinal}">
-      </div>
-
-      <div class="row">
-        <span>Krank:</span>
-        <span>${eintrag.KRANK ?? 0} ${!gleicheKW ? `+ ${krankCount}` : ""} =</span>
-        <input id="krankErgebnis" type="number" value="${krankFinal}">
-      </div>
-
-      <div class="row">
-        <span>Bereitschaft:</span>
-        <span>${eintrag.BEREIT ?? 0} ${!gleicheKW ? `+ ${bereitschaftCount}` : ""} =</span>
-        <input id="bereitErgebnis" type="number" value="${bereitFinal}">
-      </div>
-
-      <div class="row">
-        <span>Überstunden:</span>
-        <span>${eintrag["ÜBER"] ?? 0} ${!gleicheKW ? `+ ${ueberstunden.replace(",", ".")}` : ""} =</span>
-        <input id="ueberErgebnis" type="number" step="0.01" value="${ueberFinal}">
-      </div>
-
-      Text:<br>
-      <textarea id="textBearbeiten" style="height:60px;">${eintrag.feld1 ?? ""}</textarea>
-
-      <br><br>
-      <div style="white-space: pre-wrap;">${textZeile}</div>
-
-      <br>
-      <small style="opacity:0.6;">ID: ${eintrag.id}</small>
-      <br><br>
-
-      <button id="speichernBtn">Speichern</button>
-    `;
+    // ⭐ Seite neu laden → neue ID sofort sichtbar
+    location.reload();
   };
 
 });
