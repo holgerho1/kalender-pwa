@@ -269,6 +269,9 @@ gefiltert.forEach((event) => {
 // -------------------------------------------------------------
 // Tagesfarben (mit Wochenende + Sonderstatus)
 // -------------------------------------------------------------
+// -------------------------------------------------------------
+// Tagesfarben (mit Wochenende + Sonderstatus)
+// -------------------------------------------------------------
 const tage = {
   0: { blocks: [] }, // Sonntag
   1: { blocks: [] },
@@ -408,8 +411,29 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
   if (!daten2 || daten2.length === 0) {
     datenBox2.innerHTML = `
       <strong>Letzter Eintrag</strong><br><br>
-      Keine Daten gefunden.
+      Keine Daten vorhanden.<br><br>
+      <button id="speichernBtn">Speichern</button>
     `;
+
+    document.getElementById("speichernBtn").onclick = async function () {
+      const { data, error } = await supa
+        .from("tabelle1")
+        .insert({
+          KZ: mitarbeiterId,
+          JAHR: jahr,
+          KW: kw,
+          URLAUB: 0,
+          URLAUBgen: 0,
+          KRANK: 0,
+          BEREIT: 0,
+          ÜBER: 0,
+          feld1: ""
+        });
+
+      if (error) alert("Fehler: " + error.message);
+      else alert("Gespeichert!");
+    };
+
     return;
   }
 
@@ -419,8 +443,6 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
     return sortKey <= aktuellerSortKey;
   });
 
-  const anzahl = gefiltert.length;
-
   gefiltert.sort((a, b) => {
     if (a.JAHR !== b.JAHR) return b.JAHR - a.JAHR;
     if (a.KW !== b.KW) return b.KW - a.KW;
@@ -428,6 +450,36 @@ ladeDatenbox2(mitarbeiterId).then(daten2 => {
   });
 
   const eintrag = gefiltert[0];
+
+  // ⭐ WICHTIG: Falls kein Eintrag → kein Freeze
+  if (!eintrag) {
+    datenBox2.innerHTML = `
+      <strong>Letzter Eintrag</strong><br><br>
+      Keine Daten vorhanden.<br><br>
+      <button id="speichernBtn">Speichern</button>
+    `;
+
+    document.getElementById("speichernBtn").onclick = async function () {
+      const { data, error } = await supa
+        .from("tabelle1")
+        .insert({
+          KZ: mitarbeiterId,
+          JAHR: jahr,
+          KW: kw,
+          URLAUB: 0,
+          URLAUBgen: 0,
+          KRANK: 0,
+          BEREIT: 0,
+          ÜBER: 0,
+          feld1: ""
+        });
+
+      if (error) alert("Fehler: " + error.message);
+      else alert("Gespeichert!");
+    };
+
+    return;
+  }
 
   const gleicheKW = (kw === eintrag.KW);
 
