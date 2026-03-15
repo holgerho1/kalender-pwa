@@ -15,10 +15,6 @@ const PRIMARY = "#6200ee";
 const SECONDARY = "#03dac6";
 const CARD_SHADOW = "0 2px 10px rgba(0,0,0,0.1)";
 
-/* ==========================================================================
-   1. HAUPTFUNKTION
-   ========================================================================== */
-
 export async function zeigeTermine(targetId = null) {
   const mitarbeiterDaten = await ladeMitarbeiterId();
   if (!mitarbeiterDaten) return;
@@ -50,7 +46,7 @@ export async function zeigeTermine(targetId = null) {
     await renderDatenbox2(container, stats, zeitraum, mitarbeiterId, mitarbeiterDaten);
   }
 
-  renderSteuerung(container);
+  renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum);
 
   if (targetId) {
     setTimeout(() => {
@@ -61,7 +57,7 @@ export async function zeigeTermine(targetId = null) {
 }
 
 /* ==========================================================================
-   2. UI-KOMPONENTEN
+   KOMPONENTEN
    ========================================================================== */
 
 function erstelleTerminKarte(event) {
@@ -104,7 +100,7 @@ function erstelleTerminKarte(event) {
   return block;
 }
 
-function renderDatenbox1(container, stats, { montag }, mitarbeiterId) {
+function renderDatenbox1(container, stats, { montag }) {
   const box = document.createElement("div");
   box.style = `background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; box-sizing:border-box; width:100%; border-top:3px solid ${SECONDARY};`;
   box.innerHTML = `
@@ -120,11 +116,11 @@ function renderDatenbox1(container, stats, { montag }, mitarbeiterId) {
   container.appendChild(box);
 }
 
-async function renderDatenbox2(container, stats, { montag }, mitarbeiterId, mitarbeiterDaten) {
+async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
   const box = document.createElement("div");
   box.id = "datenanzeige2";
   box.style = `background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; box-sizing:border-box; width:100%;`;
-  box.innerHTML = `<div style="text-align:center; padding:10px;">Lade Daten...</div>`;
+  box.innerHTML = `<div style="text-align:center; padding:10px;">Lade...</div>`;
   container.appendChild(box);
 
   const { data: daten } = await supa.from("tabelle1").select("*").eq('"KZ"', mitarbeiterId).order("created_at", { ascending: false }).limit(30);
@@ -132,7 +128,7 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId, mita
   const jahr = montag.getFullYear();
 
   if (!daten || daten.length === 0) {
-    box.innerHTML = `<button id="speichernBtn" style="width:100%; padding:12px; background:${PRIMARY}; color:white; border:none; border-radius:4px;">Ersten Eintrag speichern</button>`;
+    box.innerHTML = `<div style="text-align:center; color:#777; font-size:13px;">Keine Basisdaten gefunden.</div>`;
   } else {
     const gefiltertH = daten.filter(e => (e.JAHR * 100 + e.KW) <= (jahr * 100 + kw))
       .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.created_at));
@@ -140,75 +136,39 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId, mita
     const eintrag = gefiltertH[0];
     const gleicheKW = (kw === eintrag.KW && jahr === eintrag.JAHR);
 
-    let v;
-    if (gleicheKW) {
-      v = {
-        uG: eintrag.URLAUBgen ?? 0,
-        k: eintrag.KRANK ?? 0,
-        b: eintrag.BEREIT ?? 0,
-        ue: parseFloat(eintrag["ÜBER"] ?? 0).toFixed(2)
-      };
-    } else {
-      v = {
-        uG: (eintrag.URLAUBgen ?? 0) + stats.urlaub,
-        k: (eintrag.KRANK ?? 0) + stats.krank,
-        b: (eintrag.BEREIT ?? 0) + stats.bereit,
-        ue: (parseFloat(eintrag["ÜBER"] ?? 0) + stats.ueber).toFixed(2)
-      };
-    }
-
-    const vorschauSatz = `Urlaub: ${eintrag.URLAUB ?? 0} Tage    Urlaub genommen: ${v.uG} Tage    Krank: ${v.k} Tage    Überstunden: ${v.ue.replace(".", ",")} Stunden    Bereitschaft: ${v.b} Tage    ${eintrag.feld1 ?? ""}`;
+    let v = gleicheKW ? {
+      uG: eintrag.URLAUBgen ?? 0, k: eintrag.KRANK ?? 0, b: eintrag.BEREIT ?? 0, ue: parseFloat(eintrag["ÜBER"] ?? 0).toFixed(2)
+    } : {
+      uG: (eintrag.URLAUBgen ?? 0) + stats.urlaub, k: (eintrag.KRANK ?? 0) + stats.krank, b: (eintrag.BEREIT ?? 0) + stats.bereit, ue: (parseFloat(eintrag["ÜBER"] ?? 0) + stats.ueber).toFixed(2)
+    };
 
     box.innerHTML = `
       <style>.row-stat { display: grid; grid-template-columns: 1fr auto 80px; align-items: center; margin-bottom: 8px; gap: 10px; border-bottom: 1px solid #eee; padding-bottom: 4px; } .row-stat input { width: 80px; text-align: right; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; } .calc-info { font-size: 11px; color: #888; text-align: right; }</style>
-      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">
-        ${gleicheKW ? `Daten KW ${kw} (Gespeichert)` : `Vorschlag (Stand KW ${eintrag.KW} + aktuell)`}
-      </div>
-      
+      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">Wochenstand Kalkulation</div>
       <div class="row-stat"><span>Urlaub Gesamt</span><span class="calc-info">Basis:</span><input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}"></div>
       <div class="row-stat"><span>Urlaub genommen</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.urlaub}`} =</span><input id="urlaubErgebnis" type="number" value="${v.uG}"></div>
       <div class="row-stat"><span>Krank Tage</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.krank}`} =</span><input id="krankErgebnis" type="number" value="${v.k}"></div>
       <div class="row-stat"><span>Bereitschaft</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.bereit}`} =</span><input id="bereitErgebnis" type="number" value="${v.b}"></div>
       <div class="row-stat"><span>Überstunden</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.ueber.toFixed(2)}`} =</span><input id="ueberErgebnis" type="number" step="0.01" value="${v.ue}"></div>
-      
       <div style="margin-top:15px; font-weight:500; font-size:13px;">Zusatztext:</div>
       <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:5px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box; font-family:inherit;">${eintrag.feld1 ?? ""}</textarea>
-      
-      <div style="margin-top:15px; padding:10px; background:#f9f9f9; border-radius:4px; font-size:12px; color:#444; white-space: pre-wrap; border:1px solid #eee; line-height:1.4;"><strong>Infozeile:</strong>\n${vorschauSatz}</div>
-      
-      <button id="speichernBtn" style="width:100%; margin-top:15px; padding:12px; background:${PRIMARY}; color:white; border:none; border-radius:4px; font-weight:500; cursor:pointer;">Speichern</button>
     `;
-
-    document.getElementById("speichernBtn").onclick = async () => {
-      const { error } = await supa.from("tabelle1").insert({
-        KZ: mitarbeiterId, JAHR: jahr, KW: kw,
-        URLAUB: Number(document.getElementById("urlaubWert").value),
-        URLAUBgen: Number(document.getElementById("urlaubErgebnis").value),
-        KRANK: Number(document.getElementById("krankErgebnis").value),
-        BEREIT: Number(document.getElementById("bereitErgebnis").value),
-        ÜBER: Number(document.getElementById("ueberErgebnis").value),
-        feld1: document.getElementById("textBearbeiten").value
-      });
-      if (error) alert("Fehler: " + error.message); else location.reload();
-    };
   }
 }
 
 /* ==========================================================================
-   3. STEUERUNG
+   STEUERUNG & PDF-LOGIK
    ========================================================================== */
 
-function renderSteuerung(container) {
+function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
   const sDiv = document.createElement("div");
   sDiv.style = "margin: 20px 0 40px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;";
   
   const btn = (t, icon, id, f, bg = "#fff", col = "#333") => {
-    const b = document.createElement("button"); 
-    b.id = id;
+    const b = document.createElement("button"); b.id = id;
     b.innerHTML = `<span class="material-icons" style="font-size:18px;">${icon}</span> ${t}`; 
     b.style = `padding:12px; border-radius:6px; border:none; background:${bg}; color:${col}; font-weight:500; box-shadow:0 1px 3px rgba(0,0,0,0.2); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;`;
-    b.onclick = f; 
-    return b;
+    b.onclick = f; return b;
   };
   
   sDiv.appendChild(btn("Vorige", "chevron_left", "nav-prev", () => { setKwOffset(getKwOffset() - 1); zeigeTermine("nav-prev"); }));
@@ -216,19 +176,38 @@ function renderSteuerung(container) {
   sDiv.appendChild(btn(getFilterAktiv() ? "Alle" : "Filter", "filter_list", "nav-filter", () => { setFilterAktiv(!getFilterAktiv()); zeigeTermine("nav-filter"); }));
   sDiv.appendChild(btn("Laden", "refresh", "nav-load", neuLaden));
   
-  const pdfBtn = btn("PDF Export", "picture_as_pdf", "nav-pdf", async () => {
+  const pdfBtn = btn("PDF Export & Speichern", "picture_as_pdf", "nav-pdf", async () => {
     const mitarbeiter = await ladeMitarbeiterId();
     if (!mitarbeiter) return;
 
-    const textFeld = document.getElementById("textBearbeiten")?.value || "";
-    const uGen = document.getElementById("urlaubErgebnis")?.value || 0;
-    const krank = document.getElementById("krankErgebnis")?.value || 0;
-    const ueber = document.getElementById("ueberErgebnis")?.value || 0;
-    const bereit = document.getElementById("bereitErgebnis")?.value || 0;
-    const uGes = document.getElementById("urlaubWert")?.value || 0;
+    if (hatZ1) {
+      const kw = berechneKalenderwoche(zeitraum.montag);
+      const jahr = zeitraum.montag.getFullYear();
+      
+      const uGes = document.getElementById("urlaubWert")?.value || 0;
+      const uGen = document.getElementById("urlaubErgebnis")?.value || 0;
+      const krank = document.getElementById("krankErgebnis")?.value || 0;
+      const ueber = document.getElementById("ueberErgebnis")?.value || 0;
+      const bereit = document.getElementById("bereitErgebnis")?.value || 0;
+      const textFeld = document.getElementById("textBearbeiten")?.value || "";
 
-    mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${String(ueber).replace(".", ",")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
+      // 1. ZUERST IN SUPABASE SPEICHERN (Upsert basierend auf KZ, JAHR, KW)
+      const { error } = await supa.from("tabelle1").upsert({
+        KZ: mitarbeiterId, JAHR: jahr, KW: kw,
+        URLAUB: Number(uGes), URLAUBgen: Number(uGen), KRANK: Number(krank),
+        BEREIT: Number(bereit), ÜBER: Number(ueber), feld1: textFeld
+      }, { onConflict: 'KZ, JAHR, KW' });
 
+      if (error) {
+        alert("Fehler beim Speichern der Daten: " + error.message);
+        return; 
+      }
+
+      // 2. TEXT FÜR PDF VORBEREITEN
+      mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${String(ueber).replace(".", ",")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
+    }
+
+    // Termine im State aktualisieren vor PDF
     const tOriginal = getTermine();
     document.querySelectorAll("#termine > div[data-id]").forEach(block => {
       const ev = tOriginal.find(t => t.id === block.dataset.id);
@@ -241,16 +220,16 @@ function renderSteuerung(container) {
       }
     });
     setTermine(tOriginal);
-    exportierePdf(holeGefilterteTermine(getKWZeitraum(getKwOffset())), mitarbeiter);
+    exportierePdf(holeGefilterteTermine(zeitraum), mitarbeiter);
   }, SECONDARY, "#000");
+  
   pdfBtn.style.gridColumn = "span 2";
   sDiv.appendChild(pdfBtn);
-
   container.appendChild(sDiv);
 }
 
 /* ==========================================================================
-   4. HELPER
+   HELPER
    ========================================================================== */
 
 function aktualisiereWochenHeader({ montag, sonntag }) {
