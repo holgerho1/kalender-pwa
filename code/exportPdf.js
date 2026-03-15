@@ -70,18 +70,22 @@ export function exportierePdf(termine, mitarbeiter = {}) {
   const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}                         KW: ${kw}                          Name: ${name}`;
   doc.text(infoText, centerX, 29, { align: "center" });
 
-  // 3. ZENTRIERTER TEXT (Z1 oder Z2) - Kompakt ohne Leerzeilen
-  let tableStartY = 32; // Standard-Start ohne Zusatztext
+  // 3. ZENTRIERTER TEXT (Z1 oder Z2) - Justierte Abstände
+  let tableStartY = 33; 
   const zusatzText = (mitarbeiter.Z1 ? mitarbeiter.z1Textbox : "") || (mitarbeiter.Z2 ? mitarbeiter.Text : "") || "";
 
   if (zusatzText) {
     doc.setFontSize(11);
     doc.setFont("helvetica", "italic");
     const splitText = doc.splitTextToSize(zusatzText, pageWidth - 40);
-    // Startet direkt 4mm unter der Infozeile
-    doc.text(splitText, centerX, 33, { align: "center" });
-    // Tabelle startet direkt nach der letzten Textzeile (5mm pro Zeile + kleiner Puffer)
-    tableStartY = 33 + (splitText.length * 5) + 1; 
+    
+    // Y-Position auf 35 erhöht (mehr Luft nach oben zur Infozeile)
+    const textStartY = 35;
+    doc.text(splitText, centerX, textStartY, { align: "center" });
+    
+    // tableStartY eng kalkuliert: Text-Start + (Anzahl Zeilen * Zeilenhöhe)
+    // Wir verzichten hier auf den zusätzlichen Puffer (+1), da autoTable oft selbst etwas Abstand lässt
+    tableStartY = textStartY + (splitText.length * 5); 
   }
 
   // 4. Tabelle
@@ -99,6 +103,7 @@ export function exportierePdf(termine, mitarbeiter = {}) {
     head: [["Datum", "Arbeit- zeit", "Fahr- zeit", "Über- zeit", "Kom. Nr.", "Kunde", "Durchgeführte Arbeiten", "Materialeinsatz", "Mit- arbeiter"]],
     body: rows,
     startY: tableStartY,
+    margin: { top: 10, left: 10, right: 10 }, // margin top verhindert, dass Folgeseiten ganz oben kleben
     styles: { font: "helvetica", fontSize: 11, cellPadding: 2, lineColor: [200, 200, 200], lineWidth: 0.2 },
     headStyles: { font: "helvetica", fontStyle: "bold", fontSize: 12, fillColor: [220, 220, 220], textColor: 0 },
     alternateRowStyles: { fillColor: [245, 245, 245] },
@@ -111,8 +116,7 @@ export function exportierePdf(termine, mitarbeiter = {}) {
     columnStyles: {
       0: { cellWidth: 19 }, 1: { cellWidth: 19 }, 2: { cellWidth: 19 }, 3: { cellWidth: 19 },
       4: { cellWidth: 19 }, 5: { cellWidth: 50 }, 6: { cellWidth: 58 }, 7: { cellWidth: 50 }, 8: { cellWidth: 25 }
-    },
-    margin: { left: 10, right: 10 }
+    }
   });
 
   const kwText = `KW${kw}`;
