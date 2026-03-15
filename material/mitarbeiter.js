@@ -25,7 +25,6 @@ async function ladeListe() {
     const li = document.createElement("li");
     li.textContent = `${row.kuerzel} – ${row.name ?? ""}`;
     
-    // Falls dieser Mitarbeiter gerade bearbeitet wird, markiere ihn wieder
     if (row.id === aktuellerId) {
       li.classList.add("selected-worker");
     }
@@ -40,9 +39,6 @@ async function ladeListe() {
   });
 }
 
-// ---------------------------------------------------------
-// AUSWAHL MARKIEREN (Nutzt jetzt CSS-Klassen)
-// ---------------------------------------------------------
 function markiereAuswahl(li) {
   document.querySelectorAll("#liste li").forEach(el => {
     el.classList.remove("selected-worker");
@@ -51,7 +47,7 @@ function markiereAuswahl(li) {
 }
 
 // ---------------------------------------------------------
-// AUSWAHL GEÄNDERT
+// AUSWAHL GEÄNDERT (Laden der Z-Felder und Text)
 // ---------------------------------------------------------
 window.auswahlGeaendert = async function () {
   if (!aktuellerId) return;
@@ -67,13 +63,25 @@ window.auswahlGeaendert = async function () {
     return;
   }
 
+  // Standardfelder
   document.getElementById("eingabe_kuerzel").value = data.kuerzel ?? "";
   document.getElementById("eingabe_name").value = data.name ?? "";
+  document.getElementById("eingabe_text").value = data.Text ?? "";
+
+  // Radio-Buttons setzen
+  if (data.Z1 === true) {
+    document.getElementById("radio_z1").checked = true;
+  } else if (data.Z2 === true) {
+    document.getElementById("radio_z2").checked = true;
+  } else {
+    document.getElementById("radio_none").checked = true;
+  }
+
   log(`Bearbeite: ${data.kuerzel}`);
 };
 
 // ---------------------------------------------------------
-// NEU
+// NEU (Felder leeren)
 // ---------------------------------------------------------
 window.neu = function () {
   aktuellerId = null;
@@ -81,35 +89,43 @@ window.neu = function () {
 
   document.getElementById("eingabe_kuerzel").value = "";
   document.getElementById("eingabe_name").value = "";
+  document.getElementById("eingabe_text").value = "";
+  document.getElementById("radio_none").checked = true;
 
   log("Neuer Mitarbeiter – bitte Daten eingeben.");
 };
 
 // ---------------------------------------------------------
-// SPEICHERN
+// SPEICHERN (Inklusive Z1, Z2 und Text)
 // ---------------------------------------------------------
 window.speichern = async function () {
   const kuerzel = document.getElementById("eingabe_kuerzel").value.trim();
   const name = document.getElementById("eingabe_name").value.trim();
+  const infoText = document.getElementById("eingabe_text").value.trim();
+  
+  // Logik für Radio-Buttons: Nur eine Spalte kann true sein
+  const istZ1 = document.getElementById("radio_z1").checked;
+  const istZ2 = document.getElementById("radio_z2").checked;
 
   if (kuerzel === "") {
     log("Kürzel darf nicht leer sein.");
     return;
   }
 
+  const daten = { 
+    kuerzel: kuerzel, 
+    name: name, 
+    Z1: istZ1, 
+    Z2: istZ2, 
+    Text: infoText 
+  };
+
   let result;
 
   if (aktuellerId === null) {
-    // NEU
-    result = await supa
-      .from("mitarbeiter")
-      .insert({ kuerzel, name });
+    result = await supa.from("mitarbeiter").insert(daten);
   } else {
-    // UPDATE
-    result = await supa
-      .from("mitarbeiter")
-      .update({ kuerzel, name })
-      .eq("id", aktuellerId);
+    result = await supa.from("mitarbeiter").update(daten).eq("id", aktuellerId);
   }
 
   if (result.error) {
@@ -118,7 +134,6 @@ window.speichern = async function () {
   }
 
   log("Gespeichert.");
-  // Wir laden die Liste neu, behalten aber die ID im Kopf
   ladeListe();
 };
 
@@ -133,10 +148,7 @@ window.loeschen = async function () {
 
   if (!confirm("Diesen Mitarbeiter wirklich löschen?")) return;
 
-  const { error } = await supa
-    .from("mitarbeiter")
-    .delete()
-    .eq("id", aktuellerId);
+  const { error } = await supa.from("mitarbeiter").delete().eq("id", aktuellerId);
 
   if (error) {
     log("Fehler beim Löschen:\n" + error.message);
@@ -144,21 +156,14 @@ window.loeschen = async function () {
   }
 
   aktuellerId = null;
-  document.getElementById("eingabe_kuerzel").value = "";
-  document.getElementById("eingabe_name").value = "";
+  window.neu(); // Felder leeren
   log("Mitarbeiter gelöscht.");
   ladeListe();
 };
 
-// ---------------------------------------------------------
-// LOG
-// ---------------------------------------------------------
 function log(text) {
-  const logElem = document.getElementById("log");
-  logElem.textContent = text;
+  document.getElementById("log").textContent = text;
 }
 
-// ---------------------------------------------------------
 // START
-// ---------------------------------------------------------
 ladeListe();

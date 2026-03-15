@@ -65,7 +65,7 @@
       color: var(--primary-color);
     }
 
-    input {
+    input[type="text"], input[type="number"] {
       font-size: 1rem;
       padding: 10px;
       width: 100%;
@@ -76,18 +76,12 @@
       background: #fafafa;
     }
 
-    input:focus {
-      border-color: var(--primary-color);
-      outline: none;
-      background: #fff;
-    }
-
     /* Mitarbeiter Liste Styling */
     #liste {
       list-style: none;
       padding: 0;
       margin: 0;
-      max-height: 250px;
+      max-height: 200px;
       overflow-y: auto;
       border: 1px solid #eee;
       border-radius: 4px;
@@ -97,24 +91,41 @@
       padding: 14px;
       border-bottom: 1px solid #f0f0f0;
       cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       transition: background 0.2s;
     }
 
-    #liste li:last-child {
-      border-bottom: none;
-    }
+    #liste li:active { background-color: #e0e0e0; }
 
-    #liste li:active {
-      background-color: #e0e0e0;
-    }
-
-    /* Markierung für ausgewählten Mitarbeiter (wird meist via JS gesteuert) */
     .selected-worker {
       background-color: #f0ebff !important;
       border-left: 4px solid var(--primary-color);
+      font-weight: 500;
+    }
+
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 10px;
+      background: #fafafa;
+      padding: 12px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: normal;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .radio-option input {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
     }
 
     .button-group {
@@ -136,7 +147,6 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: opacity 0.2s;
     }
 
     .btn-primary { background-color: var(--primary-color); color: white; }
@@ -174,10 +184,7 @@
 
     <div class="card">
       <div class="section-title"><span class="material-icons">people</span> Mitarbeiter auswählen</div>
-      
-      <ul id="liste">
-        </ul>
-
+      <ul id="liste"></ul>
       <div class="button-group">
         <button class="btn-secondary" onclick="neu()">
           <span class="material-icons">person_add</span> Neu
@@ -196,6 +203,24 @@
 
       <label for="eingabe_name">Vollständiger Name</label>
       <input id="eingabe_name" type="text" placeholder="Vorname Nachname" />
+
+      <label style="margin-top: 20px; color: var(--primary-color);">Zusatz-Status</label>
+      <div class="radio-group">
+        <label class="radio-option">
+          <input type="radio" name="zusatz" value="none" id="radio_none" checked>
+          Keine Auswahl (Standard)
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="zusatz" value="Z1" id="radio_z1">
+          Status Z1
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="zusatz" value="Z2" id="radio_z2">
+        </label>
+      </div>
+
+      <label for="eingabe_text">Anmerkungen (Text)</label>
+      <input id="eingabe_text" type="text" placeholder="Hier Info-Text eingeben..." />
 
       <button class="btn-primary" style="width: 100%; margin-top: 25px;" onclick="speichern()">
         <span class="material-icons">save</span> Mitarbeiter speichern
