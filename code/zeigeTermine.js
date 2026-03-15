@@ -134,26 +134,36 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId, mita
   if (!daten || daten.length === 0) {
     box.innerHTML = `<button id="speichernBtn" style="width:100%; padding:12px; background:${PRIMARY}; color:white; border:none; border-radius:4px;">Ersten Eintrag speichern</button>`;
   } else {
-    // Letzten relevanten Eintrag finden
     const gefiltertH = daten.filter(e => (e.JAHR * 100 + e.KW) <= (jahr * 100 + kw))
       .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.created_at));
     
     const eintrag = gefiltertH[0];
     const gleicheKW = (kw === eintrag.KW && jahr === eintrag.JAHR);
 
-    // BERECHNUNG: Vorwoche + Aktuelle Woche
-    const v = {
-      uG: gleicheKW ? (eintrag.URLAUBgen ?? 0) : (eintrag.URLAUBgen ?? 0) + stats.urlaub,
-      k: gleicheKW ? (eintrag.KRANK ?? 0) : (eintrag.KRANK ?? 0) + stats.krank,
-      b: gleicheKW ? (eintrag.BEREIT ?? 0) : (eintrag.BEREIT ?? 0) + stats.bereit,
-      ue: (parseFloat(eintrag["ÜBER"] ?? 0) + (gleicheKW ? 0 : stats.ueber)).toFixed(2)
-    };
+    let v;
+    if (gleicheKW) {
+      v = {
+        uG: eintrag.URLAUBgen ?? 0,
+        k: eintrag.KRANK ?? 0,
+        b: eintrag.BEREIT ?? 0,
+        ue: parseFloat(eintrag["ÜBER"] ?? 0).toFixed(2)
+      };
+    } else {
+      v = {
+        uG: (eintrag.URLAUBgen ?? 0) + stats.urlaub,
+        k: (eintrag.KRANK ?? 0) + stats.krank,
+        b: (eintrag.BEREIT ?? 0) + stats.bereit,
+        ue: (parseFloat(eintrag["ÜBER"] ?? 0) + stats.ueber).toFixed(2)
+      };
+    }
 
     const vorschauSatz = `Urlaub: ${eintrag.URLAUB ?? 0} Tage    Urlaub genommen: ${v.uG} Tage    Krank: ${v.k} Tage    Überstunden: ${v.ue.replace(".", ",")} Stunden    Bereitschaft: ${v.b} Tage    ${eintrag.feld1 ?? ""}`;
 
     box.innerHTML = `
       <style>.row-stat { display: grid; grid-template-columns: 1fr auto 80px; align-items: center; margin-bottom: 8px; gap: 10px; border-bottom: 1px solid #eee; padding-bottom: 4px; } .row-stat input { width: 80px; text-align: right; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; } .calc-info { font-size: 11px; color: #888; text-align: right; }</style>
-      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">Wochenstand Kalkulation</div>
+      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">
+        ${gleicheKW ? `Daten KW ${kw} (Gespeichert)` : `Vorschlag (Stand KW ${eintrag.KW} + aktuell)`}
+      </div>
       
       <div class="row-stat"><span>Urlaub Gesamt</span><span class="calc-info">Basis:</span><input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}"></div>
       <div class="row-stat"><span>Urlaub genommen</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.urlaub}`} =</span><input id="urlaubErgebnis" type="number" value="${v.uG}"></div>
@@ -164,7 +174,7 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId, mita
       <div style="margin-top:15px; font-weight:500; font-size:13px;">Zusatztext:</div>
       <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:5px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box; font-family:inherit;">${eintrag.feld1 ?? ""}</textarea>
       
-      <div style="margin-top:15px; padding:10px; background:#f9f9f9; border-radius:4px; font-size:12px; color:#444; white-space: pre-wrap; border:1px solid #eee; line-height:1.4;"><strong>Vorschau (wie im PDF):</strong>\n${vorschauSatz}</div>
+      <div style="margin-top:15px; padding:10px; background:#f9f9f9; border-radius:4px; font-size:12px; color:#444; white-space: pre-wrap; border:1px solid #eee; line-height:1.4;"><strong>Infozeile:</strong>\n${vorschauSatz}</div>
       
       <button id="speichernBtn" style="width:100%; margin-top:15px; padding:12px; background:${PRIMARY}; color:white; border:none; border-radius:4px; font-weight:500; cursor:pointer;">Speichern</button>
     `;
@@ -210,7 +220,6 @@ function renderSteuerung(container) {
     const mitarbeiter = await ladeMitarbeiterId();
     if (!mitarbeiter) return;
 
-    // Werte für PDF aus den aktuellen Inputs holen
     const textFeld = document.getElementById("textBearbeiten")?.value || "";
     const uGen = document.getElementById("urlaubErgebnis")?.value || 0;
     const krank = document.getElementById("krankErgebnis")?.value || 0;
