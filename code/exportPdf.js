@@ -60,31 +60,34 @@ export function exportierePdf(termine, mitarbeiter = {}) {
   // 1. Titel
   doc.setFontSize(18);
   const title = "Arbeitsnachweis";
-  const textWidth = doc.getTextWidth(title);
+  const titleWidth = doc.getTextWidth(title);
   doc.text(title, centerX, 20, { align: "center" });
   doc.setLineWidth(0.5);
-  doc.line(centerX - textWidth / 2, 21.5, centerX + textWidth / 2, 21.5);
+  doc.line(centerX - titleWidth / 2, 21.5, centerX + titleWidth / 2, 21.5);
 
   // 2. Infozeile
   doc.setFontSize(14);
   const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}                         KW: ${kw}                          Name: ${name}`;
+  const infoWidth = doc.getTextWidth(infoText);
   doc.text(infoText, centerX, 29, { align: "center" });
 
-  // 3. ZENTRIERTER TEXT (Z1 oder Z2) - Justierte Abstände
+  // 3. ZUSATZTEXT MIT TRENNLINIE
   let tableStartY = 33; 
   const zusatzText = (mitarbeiter.Z1 ? mitarbeiter.z1Textbox : "") || (mitarbeiter.Z2 ? mitarbeiter.Text : "") || "";
 
   if (zusatzText) {
+    // Trennlinie zeichnen (gleiche Breite wie Infozeile)
+    doc.setLineWidth(0.2);
+    doc.line(centerX - infoWidth / 2, 31, centerX + infoWidth / 2, 31);
+
     doc.setFontSize(11);
     doc.setFont("helvetica", "italic");
     const splitText = doc.splitTextToSize(zusatzText, pageWidth - 40);
     
-    // Y-Position auf 35 erhöht (mehr Luft nach oben zur Infozeile)
-    const textStartY = 35;
+    const textStartY = 36; // Startpunkt für den Text unter der Linie
     doc.text(splitText, centerX, textStartY, { align: "center" });
     
-    // tableStartY eng kalkuliert: Text-Start + (Anzahl Zeilen * Zeilenhöhe)
-    // Wir verzichten hier auf den zusätzlichen Puffer (+1), da autoTable oft selbst etwas Abstand lässt
+    // tableStartY direkt nach dem Text
     tableStartY = textStartY + (splitText.length * 5); 
   }
 
@@ -103,7 +106,7 @@ export function exportierePdf(termine, mitarbeiter = {}) {
     head: [["Datum", "Arbeit- zeit", "Fahr- zeit", "Über- zeit", "Kom. Nr.", "Kunde", "Durchgeführte Arbeiten", "Materialeinsatz", "Mit- arbeiter"]],
     body: rows,
     startY: tableStartY,
-    margin: { top: 10, left: 10, right: 10 }, // margin top verhindert, dass Folgeseiten ganz oben kleben
+    margin: { top: 10, left: 10, right: 10 },
     styles: { font: "helvetica", fontSize: 11, cellPadding: 2, lineColor: [200, 200, 200], lineWidth: 0.2 },
     headStyles: { font: "helvetica", fontStyle: "bold", fontSize: 12, fillColor: [220, 220, 220], textColor: 0 },
     alternateRowStyles: { fillColor: [245, 245, 245] },
