@@ -210,7 +210,11 @@ function renderSteuerung(container) {
 
   sDiv.appendChild(btn("Laden", "refresh", "nav-load", neuLaden));
   
-  const pdfBtn = btn("PDF Export", "picture_as_pdf", "nav-pdf", () => {
+  const pdfBtn = btn("PDF Export", "picture_as_pdf", "nav-pdf", async () => {
+    // 1. Mitarbeiterdaten laden (für Z1/Z2 Flags)
+    const mitarbeiter = await ladeMitarbeiterId();
+    
+    // 2. Aktuelle Eingaben aus den Textareas im State speichern
     const tOriginal = getTermine();
     document.querySelectorAll("#termine > div[data-id]").forEach(block => {
       const ev = tOriginal.find(t => t.id === block.dataset.id);
@@ -223,7 +227,9 @@ function renderSteuerung(container) {
       }
     });
     setTermine(tOriginal);
-    exportierePdf(holeGefilterteTermine(getKWZeitraum(getKwOffset())));
+
+    // 3. PDF mit Mitarbeiter-Kontext exportieren
+    exportierePdf(holeGefilterteTermine(getKWZeitraum(getKwOffset())), mitarbeiter);
   }, SECONDARY, "#000");
   pdfBtn.style.gridColumn = "span 2";
   sDiv.appendChild(pdfBtn);
@@ -245,7 +251,8 @@ function aktualisiereWochenHeader({ montag, sonntag }) {
 async function ladeMitarbeiterId() {
   const pathParts = window.location.pathname.split("/");
   const kuerzel = pathParts.pop() || pathParts.pop();
-  const { data, error } = await supa.from("mitarbeiter").select("id, Z1").eq("kuerzel", kuerzel).single();
+  // Z2 zur Abfrage hinzugefügt
+  const { data, error } = await supa.from("mitarbeiter").select("id, name, Z1, Z2").eq("kuerzel", kuerzel).single();
   return error ? null : data;
 }
 

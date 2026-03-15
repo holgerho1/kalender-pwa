@@ -1,24 +1,14 @@
 import { benutzerListe } from "./benutzer.js";
 import { notoSubset } from "./fonts.js";
 
-// Prüft, ob ein Text Brüche enthält
 function hatBruch(text) {
   if (!text) return false;
   return /[¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]/.test(text);
 }
 
-// Prüft, ob im gesamten Dokument Brüche vorkommen
 function dokumentHatBrueche(termine) {
   return termine.some(e =>
-    [
-      e.arbeit,
-      e.fahr,
-      e.über,
-      e.titel,
-      e.beschreibung,
-      e.material,
-      e.mitarbeiter
-    ].some(z => hatBruch(z))
+    [e.arbeit, e.fahr, e.über, e.titel, e.beschreibung, e.material, e.mitarbeiter].some(z => hatBruch(z))
   );
 }
 
@@ -30,14 +20,13 @@ function berechneIsoKW(datum) {
   return 1 + Math.round(((temp - ersteJanuar) / 86400000 - 3 + ((ersteJanuar.getDay() + 6) % 7)) / 7);
 }
 
-export function exportierePdf(termine) {
+// mitarbeiter-Objekt wird mitgegeben, aber noch nicht zur Layout-Änderung genutzt
+export function exportierePdf(termine, mitarbeiter = {}) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
 
-  // Standard bleibt Helvetica
   doc.setFont("helvetica");
 
-  // Nur wenn Brüche existieren → Font einbinden
   let fontAktiv = false;
   if (dokumentHatBrueche(termine)) {
     doc.addFileToVFS("NotoSans-Regular.ttf", notoSubset);
@@ -65,9 +54,9 @@ export function exportierePdf(termine) {
   const bis = formatter.format(sunday);
 
   const kuerzel = window.location.pathname.replace("/", "").toUpperCase();
-  const name = benutzerListe.find(b => b.kuerzel === kuerzel)?.name || kuerzel;
+  const name = mitarbeiter.name || benutzerListe.find(b => b.kuerzel === kuerzel)?.name || kuerzel;
 
-  // Titel
+  // Titel (Original)
   doc.setFontSize(18);
   const title = "Arbeitsnachweis";
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -77,23 +66,21 @@ export function exportierePdf(termine) {
   doc.setLineWidth(0.5);
   doc.line(centerX - textWidth / 2, 22, centerX + textWidth / 2, 22);
 
-  // Infozeile
+  // Infozeile (Original)
   doc.setFontSize(14);
   const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}                         KW: ${kw}                          Name: ${name}`;
   doc.text(infoText, centerX, 30, { align: "center" });
 
-  // Tabelle vorbereiten
   const rows = [];
   let lastDatum = "";
 
   termine.forEach(e => {
     const datumObj = new Date(e.timestamp);
-    const tag = String(datumObj.getDate()).padStart(2, "0");
-    const monat = String(datumObj.getMonth() + 1).padStart(2, "0");
-    const datumKurz = `${tag}.${monat}`;
+    const datumKurz = `${String(datumObj.getDate()).padStart(2, "0")}.${String(datumObj.getMonth() + 1).padStart(2, "0")}`;
     const datumZelle = datumKurz !== lastDatum ? datumKurz : "";
     lastDatum = datumKurz;
 
+    // Alle 9 Spalten bleiben exakt wie vorher
     rows.push([
       datumZelle,
       e.arbeit || "",
@@ -109,19 +96,10 @@ export function exportierePdf(termine) {
 
   doc.autoTable({
     head: [[
-      "Datum",
-      "Arbeit- zeit",
-      "Fahr- zeit",
-      "Über- zeit",
-      "Kom. Nr.",
-      "Kunde",
-      "Durchgeführte Arbeiten",
-      "Materialeinsatz",
-      "Mit- arbeiter"
+      "Datum", "Arbeit- zeit", "Fahr- zeit", "Über- zeit", "Kom. Nr.", "Kunde", "Durchgeführte Arbeiten", "Materialeinsatz", "Mit- arbeiter"
     ]],
     body: rows,
     startY: 32,
-
     styles: {
       font: "helvetica",
       fontSize: 11,
@@ -139,20 +117,12 @@ export function exportierePdf(termine) {
     alternateRowStyles: {
       fillColor: [245, 245, 245]
     },
-
-    // ZELLENWEISE Font-Umschaltung
     didParseCell: function (data) {
       if (data.section === "body") {
         const cellText = data.cell.raw || "";
-
-        if (fontAktiv && hatBruch(cellText)) {
-          data.cell.styles.font = "NotoFull";   // nur diese Zelle
-        } else {
-          data.cell.styles.font = "helvetica";  // Standard
-        }
+        data.cell.styles.font = (fontAktiv && hatBruch(cellText)) ? "NotoFull" : "helvetica";
       }
     },
-
     columnStyles: {
       0: { cellWidth: 19 },
       1: { cellWidth: 19 },
@@ -170,13 +140,9 @@ export function exportierePdf(termine) {
   const kwText = `KW${kw}`;
   const basisName = `Stundenschein_${name}_${jahr}_${kwText}`;
   const versionKey = `pdfVersion_${basisName}`;
-  let version = parseInt(localStorage.getItem(versionKey) || "0", 10);
-  version++;
+  let version = parseInt(localStorage.getItem(versionKey) || "0", 10) + 1;
   localStorage.setItem(versionKey, version);
 
-  const dateiname = version === 1
-    ? `${basisName}.pdf`
-    : `${basisName}v${version}.pdf`;
-
+  const dateiname = version === 1 ? `${basisName}.pdf` : `${basisName}v${version}.pdf`;
   doc.save(dateiname);
 }
