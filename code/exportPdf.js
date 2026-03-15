@@ -7,14 +7,12 @@ function hatBruch(text) {
   return /[¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]/.test(text);
 }
 
-// Prüft, ob im gesamten Dokument Brüche vorkommen
 function dokumentHatBrueche(termine) {
   return termine.some(e =>
     [e.arbeit, e.fahr, e.über, e.titel, e.beschreibung, e.material, e.mitarbeiter].some(z => hatBruch(z))
   );
 }
 
-// Berechnet die ISO-Kalenderwoche
 function berechneIsoKW(datum) {
   const temp = new Date(datum);
   temp.setHours(0, 0, 0, 0);
@@ -43,7 +41,6 @@ export function exportierePdf(termine, mitarbeiter = {}) {
     return;
   }
 
-  // Zeitraum und Kopfdaten ermitteln
   const firstTimestamp = Math.min(...termine.map(t => t.timestamp));
   const firstDate = new Date(firstTimestamp);
   const kw = berechneIsoKW(firstDate);
@@ -64,69 +61,47 @@ export function exportierePdf(termine, mitarbeiter = {}) {
   // 1. Titel
   doc.setFontSize(18);
   const title = "Arbeitsnachweis";
-  doc.text(title, centerX, 15, { align: "center" });
+  const textWidth = doc.getTextWidth(title);
+  doc.text(title, centerX, 20, { align: "center" });
+  doc.setLineWidth(0.5);
+  doc.line(centerX - textWidth / 2, 22, centerX + textWidth / 2, 22);
 
-  // 2. Infozeile
-  doc.setFontSize(12);
-  const infoText = `Jahr ${jahr}           Von: ${von}       Bis: ${bis}           KW: ${kw}            Name: ${name}`;
-  doc.text(infoText, centerX, 22, { align: "center" });
+  // 2. Infozeile (Original-Formatierung wiederhergestellt)
+  doc.setFontSize(14);
+  const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}                         KW: ${kw}                          Name: ${name}`;
+  doc.text(infoText, centerX, 30, { align: "center" });
 
-  // 3. ZENTRIERTER TEXT ÜBER DER TABELLE
-  let tableStartY = 30;
-  // Priorität: Erst Text aus Datenbox 2 (Z1), dann Text aus Mitarbeiter-Tabelle (Z2)
+  // 3. ZENTRIERTER TEXT DIREKT ÜBER DER TABELLE
+  let tableStartY = 32;
   const zusatzText = (mitarbeiter.Z1 ? mitarbeiter.z1Textbox : "") || (mitarbeiter.Z2 ? mitarbeiter.Text : "") || "";
 
   if (zusatzText) {
     doc.setFontSize(11);
     doc.setFont("helvetica", "italic");
     const splitText = doc.splitTextToSize(zusatzText, pageWidth - 40);
-    doc.text(splitText, centerX, 28, { align: "center" });
-    
-    // Abstand für Tabelle anpassen
-    tableStartY = 28 + (splitText.length * 5) + 5;
+    // Erscheint kurz unter der Infozeile
+    doc.text(splitText, centerX, 38, { align: "center" });
+    tableStartY = 38 + (splitText.length * 5) + 2; 
   }
 
-  // 4. Tabellen-Daten aufbereiten
+  // 4. Tabelle
   const rows = [];
   let lastDatum = "";
-
   termine.forEach(e => {
     const datumObj = new Date(e.timestamp);
     const datumKurz = `${String(datumObj.getDate()).padStart(2, "0")}.${String(datumObj.getMonth() + 1).padStart(2, "0")}`;
     const datumZelle = datumKurz !== lastDatum ? datumKurz : "";
     lastDatum = datumKurz;
-
-    rows.push([
-      datumZelle,
-      e.arbeit || "",
-      e.fahr || "",
-      e.über || "",
-      "",
-      e.titel || "",
-      e.beschreibung || "",
-      e.material || "",
-      e.mitarbeiter || ""
-    ]);
+    rows.push([datumZelle, e.arbeit || "", e.fahr || "", e.über || "", "", e.titel || "", e.beschreibung || "", e.material || "", e.mitarbeiter || ""]);
   });
 
-  // 5. Tabelle generieren
   doc.autoTable({
     head: [["Datum", "Arbeit- zeit", "Fahr- zeit", "Über- zeit", "Kom. Nr.", "Kunde", "Durchgeführte Arbeiten", "Materialeinsatz", "Mit- arbeiter"]],
     body: rows,
     startY: tableStartY,
-    styles: {
-      font: "helvetica",
-      fontSize: 10,
-      cellPadding: 2,
-      lineColor: [200, 200, 200],
-      lineWidth: 0.1
-    },
-    headStyles: {
-      font: "helvetica",
-      fontStyle: "bold",
-      fillColor: [235, 235, 235],
-      textColor: 0
-    },
+    styles: { font: "helvetica", fontSize: 11, cellPadding: 2, lineColor: [200, 200, 200], lineWidth: 0.2 },
+    headStyles: { font: "helvetica", fontStyle: "bold", fontSize: 12, fillColor: [220, 220, 220], textColor: 0 },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
     didParseCell: function (data) {
       if (data.section === "body") {
         const cellText = data.cell.raw || "";
@@ -134,26 +109,16 @@ export function exportierePdf(termine, mitarbeiter = {}) {
       }
     },
     columnStyles: {
-      0: { cellWidth: 15 },
-      1: { cellWidth: 15 },
-      2: { cellWidth: 15 },
-      3: { cellWidth: 15 },
-      4: { cellWidth: 15 },
-      5: { cellWidth: 55 },
-      6: { cellWidth: 70 },
-      7: { cellWidth: 55 },
-      8: { cellWidth: 22 }
+      0: { cellWidth: 19 }, 1: { cellWidth: 19 }, 2: { cellWidth: 19 }, 3: { cellWidth: 19 },
+      4: { cellWidth: 19 }, 5: { cellWidth: 50 }, 6: { cellWidth: 58 }, 7: { cellWidth: 50 }, 8: { cellWidth: 25 }
     },
     margin: { left: 10, right: 10 }
   });
 
-  // 6. Dateiname & Versionierung
   const kwText = `KW${kw}`;
   const basisName = `Stundenschein_${name}_${jahr}_${kwText}`;
   const versionKey = `pdfVersion_${basisName}`;
   let version = parseInt(localStorage.getItem(versionKey) || "0", 10) + 1;
   localStorage.setItem(versionKey, version);
-
-  const dateiname = version === 1 ? `${basisName}.pdf` : `${basisName}v${version}.pdf`;
-  doc.save(dateiname);
+  doc.save(version === 1 ? `${basisName}.pdf` : `${basisName}v${version}.pdf`);
 }
