@@ -78,36 +78,20 @@
   </div>
 
   <script type="module" src="material/db.js"></script>
-  <script type="module" src="code/zeigeTermine.js"></script>
   <script type="module" src="app.js"></script>
 
   <script>
-    function checkUrlContext() {
-      const pathParts = window.location.pathname.split("/");
-      const lastPart = pathParts.pop();
-
-      // Wenn ein Kürzel in der URL ist, blenden wir den Schnellzugriff aus
-      if (lastPart && lastPart !== "index.html" && lastPart !== "") {
-        const links = document.getElementById("links-bereich");
-        if(links) links.classList.add("hidden");
-        
-        const debug = document.getElementById("debug-log");
-        if(debug) debug.classList.add("hidden");
-      }
-    }
-
     window.addEventListener('load', () => {
-      checkUrlContext();
-      
+      // Scroll-Position wiederherstellen falls vorhanden
       const scrollPos = localStorage.getItem("scrollPos");
       if (scrollPos) {
         window.scrollTo(0, parseInt(scrollPos));
         localStorage.removeItem("scrollPos");
       }
+      
+      const log = document.getElementById("debug-log");
+      if (log) log.innerText = `${window.innerWidth}x${window.innerHeight}px`;
     });
-
-    const log = document.getElementById("debug-log");
-    if (log) log.innerText = `${window.innerWidth}x${window.innerHeight}px`;
   </script>
 </body>
 </html>
