@@ -50,7 +50,7 @@ export async function zeigeTermine(targetId = null) {
     await renderDatenbox2(container, stats, zeitraum, mitarbeiterId);
   }
 
-  renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum);
+  renderSteuerung(container, mitarbeiterDaten, zeitraum);
 
   if (targetId) {
     setTimeout(() => {
@@ -61,7 +61,7 @@ export async function zeigeTermine(targetId = null) {
 }
 
 /* ==========================================================================
-   2. UI-KOMPONENTEN (Karte & Datenboxen)
+   2. UI-KOMPONENTEN
    ========================================================================== */
 
 function erstelleTerminKarte(event) {
@@ -185,10 +185,10 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
 }
 
 /* ==========================================================================
-   3. STEUERUNG & PDF/SPEICHER-LOGIK
+   3. STEUERUNG & PDF-LOGIK
    ========================================================================== */
 
-function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
+function renderSteuerung(container, mDaten, zeitraum) {
   const sDiv = document.createElement("div");
   sDiv.style = "margin: 20px 0 40px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;";
   
@@ -204,11 +204,15 @@ function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
   sDiv.appendChild(btn(getFilterAktiv() ? "Alle" : "Filter", "filter_list", "nav-filter", () => { setFilterAktiv(!getFilterAktiv()); zeigeTermine("nav-filter"); }));
   sDiv.appendChild(btn("Laden", "refresh", "nav-load", neuLaden));
   
-  const pdfBtn = btn("PDF Export & Speichern", "picture_as_pdf", "nav-pdf", async () => {
+  // PDF Button Text & Logik
+  const brauchtSpeichern = (mDaten.Z1 === true || mDaten.Z2 === true);
+  const pdfBtnText = brauchtSpeichern ? "PDF Export & Speichern" : "PDF Export";
+
+  const pdfBtn = btn(pdfBtnText, "picture_as_pdf", "nav-pdf", async () => {
     const mitarbeiter = await ladeMitarbeiterId();
     if (!mitarbeiter) return;
 
-    if (hatZ1) {
+    if (mitarbeiter.Z1 === true) {
       const kw = berechneKalenderwoche(zeitraum.montag);
       const jahr = zeitraum.montag.getFullYear();
       
@@ -219,8 +223,9 @@ function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
       const bereit = document.getElementById("bereitErgebnis")?.value || 0;
       const textFeld = document.getElementById("textBearbeiten")?.value || "";
 
+      // Speichern (Historie A)
       const { error } = await supa.from("tabelle1").insert({
-        KZ: mitarbeiterId, JAHR: jahr, KW: kw,
+        KZ: mitarbeiter.id, JAHR: jahr, KW: kw,
         URLAUB: Number(uGes), URLAUBgen: Number(uGen), KRANK: Number(krank),
         BEREIT: Number(bereit), ÜBER: Number(ueber), feld1: textFeld
       });
@@ -230,7 +235,7 @@ function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
       mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${String(ueber).replace(".", ",")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
     }
 
-    // Termine im State synchronisieren
+    // State synchronisieren
     const tOriginal = getTermine();
     document.querySelectorAll("#termine > div[data-id]").forEach(block => {
       const ev = tOriginal.find(t => t.id === block.dataset.id);
@@ -244,11 +249,11 @@ function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
     });
     setTermine(tOriginal);
     
-    // PDF erzeugen
+    // PDF Export
     exportierePdf(holeGefilterteTermine(zeitraum), mitarbeiter);
 
-    // NEU LADEN mit Scroll-Automatik zum Button
-    if (hatZ1) {
+    // Automatischer Refresh + Scroll
+    if (mitarbeiter.Z1 === true) {
       await zeigeTermine("nav-pdf"); 
     }
   }, SECONDARY, "#000");
