@@ -1,11 +1,13 @@
 import { benutzerListe } from "./benutzer.js";
 import { notoSubset } from "./fonts.js";
 
+// Prüft, ob ein Text Brüche enthält
 function hatBruch(text) {
   if (!text) return false;
   return /[¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]/.test(text);
 }
 
+// Prüft, ob im gesamten Dokument Brüche vorkommen
 function dokumentHatBrueche(termine) {
   return termine.some(e =>
     [e.arbeit, e.fahr, e.über, e.titel, e.beschreibung, e.material, e.mitarbeiter].some(z => hatBruch(z))
@@ -20,7 +22,6 @@ function berechneIsoKW(datum) {
   return 1 + Math.round(((temp - ersteJanuar) / 86400000 - 3 + ((ersteJanuar.getDay() + 6) % 7)) / 7);
 }
 
-// mitarbeiter-Objekt wird mitgegeben, aber noch nicht zur Layout-Änderung genutzt
 export function exportierePdf(termine, mitarbeiter = {}) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
@@ -56,7 +57,7 @@ export function exportierePdf(termine, mitarbeiter = {}) {
   const kuerzel = window.location.pathname.replace("/", "").toUpperCase();
   const name = mitarbeiter.name || benutzerListe.find(b => b.kuerzel === kuerzel)?.name || kuerzel;
 
-  // Titel (Original)
+  // Titel
   doc.setFontSize(18);
   const title = "Arbeitsnachweis";
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -66,11 +67,12 @@ export function exportierePdf(termine, mitarbeiter = {}) {
   doc.setLineWidth(0.5);
   doc.line(centerX - textWidth / 2, 22, centerX + textWidth / 2, 22);
 
-  // Infozeile (Original)
+  // Infozeile
   doc.setFontSize(14);
   const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}                         KW: ${kw}                          Name: ${name}`;
   doc.text(infoText, centerX, 30, { align: "center" });
 
+  // Tabelle vorbereiten
   const rows = [];
   let lastDatum = "";
 
@@ -80,7 +82,6 @@ export function exportierePdf(termine, mitarbeiter = {}) {
     const datumZelle = datumKurz !== lastDatum ? datumKurz : "";
     lastDatum = datumKurz;
 
-    // Alle 9 Spalten bleiben exakt wie vorher
     rows.push([
       datumZelle,
       e.arbeit || "",
@@ -137,6 +138,33 @@ export function exportierePdf(termine, mitarbeiter = {}) {
     margin: { left: 10, right: 10 }
   });
 
+  // --- ZUSATZTEXTE UNTER DER TABELLE ---
+  let currentY = doc.lastAutoTable.finalY + 10;
+
+  // Z1: Text aus der Datenbox 2 (z1Textbox)
+  if (mitarbeiter.Z1 && mitarbeiter.z1Textbox) {
+    if (currentY > 175) { doc.addPage(); currentY = 20; }
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Aktueller Wochenstand (Z1):", 10, currentY);
+    doc.setFont("helvetica", "normal");
+    const splitZ1 = doc.splitTextToSize(mitarbeiter.z1Textbox, pageWidth - 20);
+    doc.text(splitZ1, 10, currentY + 6);
+    currentY += (splitZ1.length * 5) + 10; // Y-Position für nächsten Block erhöhen
+  }
+
+  // Z2: Text aus der Mitarbeiter-Tabelle (infotext)
+  if (mitarbeiter.Z2 && mitarbeiter.infotext) {
+    if (currentY > 175) { doc.addPage(); currentY = 20; }
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Zusatzinformationen (Z2):", 10, currentY);
+    doc.setFont("helvetica", "normal");
+    const splitZ2 = doc.splitTextToSize(mitarbeiter.infotext, pageWidth - 20);
+    doc.text(splitZ2, 10, currentY + 6);
+  }
+
+  // Dateiname & Versionierung
   const kwText = `KW${kw}`;
   const basisName = `Stundenschein_${name}_${jahr}_${kwText}`;
   const versionKey = `pdfVersion_${basisName}`;
