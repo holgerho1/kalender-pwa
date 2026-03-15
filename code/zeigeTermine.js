@@ -133,20 +133,13 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
 
   let eintrag;
   let gleicheKW = false;
+  let überschrift = "";
 
-  // FALLS KEINE DATEN DA SIND: Standardwerte setzen
   if (!daten || daten.length === 0) {
-    eintrag = {
-      KW: kw,
-      JAHR: jahr,
-      URLAUB: 0,
-      URLAUBgen: 0,
-      KRANK: 0,
-      BEREIT: 0,
-      "ÜBER": 0,
-      feld1: ""
-    };
-    gleicheKW = true; // Wir behandeln es wie einen frischen Eintrag
+    // KEINE DATEN VORHANDEN
+    eintrag = { KW: kw, JAHR: jahr, URLAUB: 0, URLAUBgen: 0, KRANK: 0, BEREIT: 0, "ÜBER": 0, feld1: "" };
+    gleicheKW = true;
+    überschrift = "Start Werte festlegen";
   } else {
     const gefiltertH = daten.filter(e => (e.JAHR * 100 + e.KW) <= (jahr * 100 + kw))
       .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.created_at));
@@ -154,9 +147,11 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
     if (gefiltertH.length === 0) {
       eintrag = { KW: kw, JAHR: jahr, URLAUB: 0, URLAUBgen: 0, KRANK: 0, BEREIT: 0, "ÜBER": 0, feld1: "" };
       gleicheKW = true;
+      überschrift = "Start Werte festlegen";
     } else {
       eintrag = gefiltertH[0];
       gleicheKW = (kw === eintrag.KW && jahr === eintrag.JAHR);
+      überschrift = gleicheKW ? `Daten KW ${kw} (Letzter Stand)` : `Vorschlag (Basis KW ${eintrag.KW} + KW ${kw})`;
     }
   }
 
@@ -174,7 +169,7 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
       #livePreview { margin-top:10px; padding:10px; background:#f9f9f9; border-radius:4px; font-size:12px; color:#444; white-space: pre-wrap; border:1px solid #eee; line-height:1.4; }
     </style>
     <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">
-      ${gleicheKW ? `Daten KW ${kw} (Letzter Stand)` : `Vorschlag (Basis KW ${eintrag.KW} + KW ${kw})`}
+      ${überschrift}
     </div>
     <div class="row-stat"><span>Urlaub Gesamt</span><span class="calc-info">Basis:</span><input id="urlaubWert" type="text" inputmode="numeric" value="${eintrag.URLAUB ?? 0}"></div>
     <div class="row-stat"><span>Urlaub genommen</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.urlaub}`} =</span><input id="urlaubErgebnis" type="text" inputmode="numeric" value="${v.uG}"></div>
