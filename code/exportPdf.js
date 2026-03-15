@@ -14,6 +14,7 @@ function dokumentHatBrueche(termine) {
   );
 }
 
+// Berechnet die ISO-Kalenderwoche
 function berechneIsoKW(datum) {
   const temp = new Date(datum);
   temp.setHours(0, 0, 0, 0);
@@ -25,6 +26,8 @@ function berechneIsoKW(datum) {
 export function exportierePdf(termine, mitarbeiter = {}) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const centerX = pageWidth / 2;
 
   doc.setFont("helvetica");
 
@@ -40,6 +43,7 @@ export function exportierePdf(termine, mitarbeiter = {}) {
     return;
   }
 
+  // Zeitraum und Kopfdaten ermitteln
   const firstTimestamp = Math.min(...termine.map(t => t.timestamp));
   const firstDate = new Date(firstTimestamp);
   const kw = berechneIsoKW(firstDate);
@@ -57,22 +61,32 @@ export function exportierePdf(termine, mitarbeiter = {}) {
   const kuerzel = window.location.pathname.replace("/", "").toUpperCase();
   const name = mitarbeiter.name || benutzerListe.find(b => b.kuerzel === kuerzel)?.name || kuerzel;
 
-  // Titel
+  // 1. Titel
   doc.setFontSize(18);
   const title = "Arbeitsnachweis";
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const textWidth = doc.getTextWidth(title);
-  const centerX = pageWidth / 2;
-  doc.text(title, centerX, 20, { align: "center" });
-  doc.setLineWidth(0.5);
-  doc.line(centerX - textWidth / 2, 22, centerX + textWidth / 2, 22);
+  doc.text(title, centerX, 15, { align: "center" });
 
-  // Infozeile
-  doc.setFontSize(14);
-  const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}                         KW: ${kw}                          Name: ${name}`;
-  doc.text(infoText, centerX, 30, { align: "center" });
+  // 2. Infozeile
+  doc.setFontSize(12);
+  const infoText = `Jahr ${jahr}           Von: ${von}       Bis: ${bis}           KW: ${kw}            Name: ${name}`;
+  doc.text(infoText, centerX, 22, { align: "center" });
 
-  // Tabelle vorbereiten
+  // 3. ZENTRIERTER TEXT ÜBER DER TABELLE
+  let tableStartY = 30;
+  // Priorität: Erst Text aus Datenbox 2 (Z1), dann Text aus Mitarbeiter-Tabelle (Z2)
+  const zusatzText = (mitarbeiter.Z1 ? mitarbeiter.z1Textbox : "") || (mitarbeiter.Z2 ? mitarbeiter.Text : "") || "";
+
+  if (zusatzText) {
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "italic");
+    const splitText = doc.splitTextToSize(zusatzText, pageWidth - 40);
+    doc.text(splitText, centerX, 28, { align: "center" });
+    
+    // Abstand für Tabelle anpassen
+    tableStartY = 28 + (splitText.length * 5) + 5;
+  }
+
+  // 4. Tabellen-Daten aufbereiten
   const rows = [];
   let lastDatum = "";
 
@@ -95,28 +109,23 @@ export function exportierePdf(termine, mitarbeiter = {}) {
     ]);
   });
 
+  // 5. Tabelle generieren
   doc.autoTable({
-    head: [[
-      "Datum", "Arbeit- zeit", "Fahr- zeit", "Über- zeit", "Kom. Nr.", "Kunde", "Durchgeführte Arbeiten", "Materialeinsatz", "Mit- arbeiter"
-    ]],
+    head: [["Datum", "Arbeit- zeit", "Fahr- zeit", "Über- zeit", "Kom. Nr.", "Kunde", "Durchgeführte Arbeiten", "Materialeinsatz", "Mit- arbeiter"]],
     body: rows,
-    startY: 32,
+    startY: tableStartY,
     styles: {
       font: "helvetica",
-      fontSize: 11,
+      fontSize: 10,
       cellPadding: 2,
       lineColor: [200, 200, 200],
-      lineWidth: 0.2
+      lineWidth: 0.1
     },
     headStyles: {
       font: "helvetica",
       fontStyle: "bold",
-      fontSize: 12,
-      fillColor: [220, 220, 220],
+      fillColor: [235, 235, 235],
       textColor: 0
-    },
-    alternateRowStyles: {
-      fillColor: [245, 245, 245]
     },
     didParseCell: function (data) {
       if (data.section === "body") {
@@ -125,46 +134,20 @@ export function exportierePdf(termine, mitarbeiter = {}) {
       }
     },
     columnStyles: {
-      0: { cellWidth: 19 },
-      1: { cellWidth: 19 },
-      2: { cellWidth: 19 },
-      3: { cellWidth: 19 },
-      4: { cellWidth: 19 },
-      5: { cellWidth: 50 },
-      6: { cellWidth: 58 },
-      7: { cellWidth: 50 },
-      8: { cellWidth: 25 }
+      0: { cellWidth: 15 },
+      1: { cellWidth: 15 },
+      2: { cellWidth: 15 },
+      3: { cellWidth: 15 },
+      4: { cellWidth: 15 },
+      5: { cellWidth: 55 },
+      6: { cellWidth: 70 },
+      7: { cellWidth: 55 },
+      8: { cellWidth: 22 }
     },
     margin: { left: 10, right: 10 }
   });
 
-  // --- ZUSATZTEXTE UNTER DER TABELLE ---
-  let currentY = doc.lastAutoTable.finalY + 12;
-
-  // Z1: Text aus der Datenbox 2 (z1Textbox)
-  if (mitarbeiter.Z1 && mitarbeiter.z1Textbox) {
-    if (currentY > 180) { doc.addPage(); currentY = 20; }
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("Aktueller Wochenstand:", 10, currentY);
-    doc.setFont("helvetica", "normal");
-    const splitZ1 = doc.splitTextToSize(mitarbeiter.z1Textbox, pageWidth - 20);
-    doc.text(splitZ1, 10, currentY + 6);
-    currentY += (splitZ1.length * 6) + 12; 
-  }
-
-  // Z2: Text aus der Mitarbeiter-Tabelle (Spalte "Text")
-  if (mitarbeiter.Z2 && mitarbeiter.Text) {
-    if (currentY > 180) { doc.addPage(); currentY = 20; }
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("Zusatzinformationen:", 10, currentY);
-    doc.setFont("helvetica", "normal");
-    const splitZ2 = doc.splitTextToSize(mitarbeiter.Text, pageWidth - 20);
-    doc.text(splitZ2, 10, currentY + 6);
-  }
-
-  // Dateiname & Versionierung
+  // 6. Dateiname & Versionierung
   const kwText = `KW${kw}`;
   const basisName = `Stundenschein_${name}_${jahr}_${kwText}`;
   const versionKey = `pdfVersion_${basisName}`;
