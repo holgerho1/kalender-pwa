@@ -20,7 +20,7 @@ const CARD_SHADOW = "0 2px 10px rgba(0,0,0,0.1)";
    1. HAUPTFUNKTION
    ========================================================================== */
 
-export async function zeigeTermine() {
+export async function zeigeTermine(targetId = null) {
   const mitarbeiterDaten = await ladeMitarbeiterId();
   if (!mitarbeiterDaten) return;
 
@@ -45,7 +45,6 @@ export async function zeigeTermine() {
     wochenFarbenLogik(gefiltert);
   }
 
-  // Z1-Logik: Nur anzeigen, wenn Mitarbeiter Z1-Status hat
   if (hatZ1) {
     const stats = berechneWochenStats(gefiltert);
     renderDatenbox1(container, stats, zeitraum, mitarbeiterId);
@@ -54,11 +53,14 @@ export async function zeigeTermine() {
 
   renderSteuerung(container);
 
-  // Nach dem Rendern gespeicherte Scroll-Position wiederherstellen
-  const savedPos = localStorage.getItem("scrollPos");
-  if (savedPos) {
-    window.scrollTo(0, parseInt(savedPos));
-    localStorage.removeItem("scrollPos");
+  // Fokus-Logik: Springe zum Button, der die Aktion ausgelöst hat
+  if (targetId) {
+    setTimeout(() => {
+      const btn = document.getElementById(targetId);
+      if (btn) {
+        btn.scrollIntoView({ behavior: "instant", block: "center" });
+      }
+    }, 10);
   }
 }
 
@@ -73,26 +75,21 @@ function erstelleTerminKarte(event) {
 
   const d = new Date(event.timestamp);
   const datumStr = `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")} (${wochentage[d.getDay()]})`;
-
   const inputStyle = "width:100%; margin-top:8px; border:1px solid #ddd; border-radius:4px; padding:10px; box-sizing:border-box; background:#fafafa; font-family:inherit; font-size:14px;";
 
   block.innerHTML = `
     <div style="font-weight:500; color:${PRIMARY}; display:flex; align-items:center; gap:5px; margin-bottom:10px;">
       <span class="material-icons" style="font-size:18px;">event</span> ${datumStr}
     </div>
-    
     <textarea class="titel-input" rows="2" style="${inputStyle} font-weight:500;" placeholder="Titel / Ort"></textarea>
-    
     <div style="display: flex; gap: 8px; margin-top: 8px; width: 100%;">
       <input type="text" inputmode="decimal" class="stunden-input" data-field="arbeit" value="${event.arbeit || ""}" placeholder="Arbeit" style="${inputStyle} width:33.33%; margin-top:0; text-align:center;">
       <input type="text" inputmode="decimal" class="stunden-input" data-field="fahr" value="${event.fahr || ""}" placeholder="Fahr" style="${inputStyle} width:33.33%; margin-top:0; text-align:center;">
       <input type="text" inputmode="decimal" class="stunden-input" data-field="über" value="${event.über || ""}" placeholder="Über" style="${inputStyle} width:33.33%; margin-top:0; text-align:center;">
     </div>
-    
     <textarea class="desc-input" rows="3" style="${inputStyle}" placeholder="Beschreibung"></textarea>
     <textarea class="mat-input" rows="2" style="${inputStyle}" placeholder="Material"></textarea>
     <textarea class="mit-input" rows="1" style="${inputStyle}" placeholder="Kollegen"></textarea>
-    
     <button class="btn-delete" style="width:100%; margin-top:12px; background:none; border:none; color:#cf6679; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; font-size:13px;">
       <span class="material-icons" style="font-size:16px;">delete</span> Termin entfernen
     </button>
@@ -105,7 +102,6 @@ function erstelleTerminKarte(event) {
 
   block.querySelector(".btn-delete").onclick = () => {
     if(!confirm("Diesen Termin wirklich löschen?")) return;
-    localStorage.setItem("scrollPos", window.scrollY);
     setTermine(getTermine().filter(t => t.id !== event.id));
     zeigeTermine();
   };
@@ -115,7 +111,6 @@ function erstelleTerminKarte(event) {
 function renderDatenbox1(container, stats, { montag }, mitarbeiterId) {
   const box = document.createElement("div");
   box.style = `background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; box-sizing:border-box; width:100%; border-top:3px solid ${SECONDARY};`;
-  
   box.innerHTML = `
     <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:10px; font-weight:500;">Wochen-Statistik</div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:14px;">
@@ -154,10 +149,7 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
     };
 
     box.innerHTML = `
-      <style>
-        .row-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee; }
-        .row-stat input { width: 70px; text-align: right; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
-      </style>
+      <style>.row-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee; } .row-stat input { width: 70px; text-align: right; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }</style>
       <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:15px; font-weight:500;">Letzter Stand</div>
       <div class="row-stat"><span>Urlaub Ges.</span><input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}"></div>
       <div class="row-stat"><span>Urlaub gen.</span><input id="urlaubErgebnis" type="number" value="${v.uG}"></div>
@@ -185,69 +177,40 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
 }
 
 /* ==========================================================================
-   3. SYSTEM-FUNKTIONEN
+   3. STEUERUNG & NAVIGATION
    ========================================================================== */
-
-function aktualisiereWochenHeader({ montag, sonntag }) {
-  const info = document.getElementById("wocheninfo");
-  if (!info) return;
-  const f = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short" });
-  info.innerHTML = `KW ${berechneKalenderwoche(montag)}: ${f.format(montag)} – ${f.format(sonntag)}`;
-}
-
-async function ladeMitarbeiterId() {
-  const pathParts = window.location.pathname.split("/");
-  const kuerzel = pathParts.pop() || pathParts.pop(); // Sicherstellen, dass wir das Kürzel bekommen
-  const { data, error } = await supa.from("mitarbeiter").select("id, Z1").eq("kuerzel", kuerzel).single();
-  return error ? null : data;
-}
-
-function wochenFarbenLogik(gefiltert) {
-  gefiltert.forEach(e => {
-    const tEvents = gefiltert.filter(x => new Date(x.timestamp).toDateString() === new Date(e.timestamp).toDateString());
-    let s = 0, u = 0, sonder = false;
-    tEvents.forEach(ev => {
-      if (fuzzyMatch(ev.titel, ["urlaub", "krank", "bereitschaft"])) sonder = true;
-      s += (parseFloat(String(ev.arbeit || 0).replace(",", ".")) || 0) + (parseFloat(String(ev.fahr || 0).replace(",", ".")) || 0);
-      u += (parseFloat(String(ev.über || 0).replace(",", ".")) || 0);
-    });
-    const farbe = sonder || (Math.abs(s - (8 + u)) < 0.01) ? "#f1f8e9" : "#fff5f5";
-    const el = document.querySelector(`div[data-id="${e.id}"]`);
-    if (el) el.style.backgroundColor = farbe;
-  });
-}
 
 function renderSteuerung(container) {
   const sDiv = document.createElement("div");
   sDiv.style = "margin: 20px 0 40px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;";
   
-  // Navigation mit Scroll-Fix
-  const handleNav = (offsetChange) => {
-    localStorage.setItem("scrollPos", window.scrollY);
-    setKwOffset(getKwOffset() + offsetChange);
-    zeigeTermine();
-  };
-
-  const btn = (t, icon, f, bg = "#fff", col = "#333") => {
+  const btn = (t, icon, id, f, bg = "#fff", col = "#333") => {
     const b = document.createElement("button"); 
+    b.id = id;
     b.innerHTML = `<span class="material-icons" style="font-size:18px;">${icon}</span> ${t}`; 
     b.style = `padding:12px; border-radius:6px; border:none; background:${bg}; color:${col}; font-weight:500; box-shadow:0 1px 3px rgba(0,0,0,0.2); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;`;
     b.onclick = f; 
     return b;
   };
   
-  sDiv.appendChild(btn("Vorige", "chevron_left", () => handleNav(-1)));
-  sDiv.appendChild(btn("Nächste", "chevron_right", () => handleNav(1)));
-  
-  sDiv.appendChild(btn(getFilterAktiv() ? "Alle" : "Filter", "filter_list", () => {
-    localStorage.setItem("scrollPos", window.scrollY);
-    setFilterAktiv(!getFilterAktiv());
-    zeigeTermine();
+  sDiv.appendChild(btn("Vorige", "chevron_left", "nav-prev", () => {
+    setKwOffset(getKwOffset() - 1);
+    zeigeTermine("nav-prev");
   }));
+
+  sDiv.appendChild(btn("Nächste", "chevron_right", "nav-next", () => {
+    setKwOffset(getKwOffset() + 1);
+    zeigeTermine("nav-next");
+  }));
+
+  sDiv.appendChild(btn(getFilterAktiv() ? "Alle" : "Filter", "filter_list", "nav-filter", () => {
+    setFilterAktiv(!getFilterAktiv());
+    zeigeTermine("nav-filter");
+  }));
+
+  sDiv.appendChild(btn("Laden", "refresh", "nav-load", neuLaden));
   
-  sDiv.appendChild(btn("Laden", "refresh", neuLaden));
-  
-  const pdfBtn = btn("PDF Export", "picture_as_pdf", () => {
+  const pdfBtn = btn("PDF Export", "picture_as_pdf", "nav-pdf", () => {
     const tOriginal = getTermine();
     document.querySelectorAll("#termine > div[data-id]").forEach(block => {
       const ev = tOriginal.find(t => t.id === block.dataset.id);
@@ -269,8 +232,37 @@ function renderSteuerung(container) {
 }
 
 /* ==========================================================================
-   4. HELPER-FUNKTIONEN
+   4. HELPER
    ========================================================================== */
+
+function aktualisiereWochenHeader({ montag, sonntag }) {
+  const info = document.getElementById("wocheninfo");
+  if (!info) return;
+  const f = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short" });
+  info.innerHTML = `KW ${berechneKalenderwoche(montag)}: ${f.format(montag)} – ${f.format(sonntag)}`;
+}
+
+async function ladeMitarbeiterId() {
+  const pathParts = window.location.pathname.split("/");
+  const kuerzel = pathParts.pop() || pathParts.pop();
+  const { data, error } = await supa.from("mitarbeiter").select("id, Z1").eq("kuerzel", kuerzel).single();
+  return error ? null : data;
+}
+
+function wochenFarbenLogik(gefiltert) {
+  gefiltert.forEach(e => {
+    const tEvents = gefiltert.filter(x => new Date(x.timestamp).toDateString() === new Date(e.timestamp).toDateString());
+    let s = 0, u = 0, sonder = false;
+    tEvents.forEach(ev => {
+      if (fuzzyMatch(ev.titel, ["urlaub", "krank", "bereitschaft"])) sonder = true;
+      s += (parseFloat(String(ev.arbeit || 0).replace(",", ".")) || 0) + (parseFloat(String(ev.fahr || 0).replace(",", ".")) || 0);
+      u += (parseFloat(String(ev.über || 0).replace(",", ".")) || 0);
+    });
+    const farbe = sonder || (Math.abs(s - (8 + u)) < 0.01) ? "#f1f8e9" : "#fff5f5";
+    const el = document.querySelector(`div[data-id="${e.id}"]`);
+    if (el) el.style.backgroundColor = farbe;
+  });
+}
 
 function holeGefilterteTermine({ montag, sonntag }) {
   const termine = getTermine();
