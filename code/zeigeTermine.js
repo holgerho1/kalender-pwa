@@ -15,6 +15,10 @@ const PRIMARY = "#6200ee";
 const SECONDARY = "#03dac6";
 const CARD_SHADOW = "0 2px 10px rgba(0,0,0,0.1)";
 
+/* ==========================================================================
+   1. HAUPTFUNKTION
+   ========================================================================== */
+
 export async function zeigeTermine(targetId = null) {
   const mitarbeiterDaten = await ladeMitarbeiterId();
   if (!mitarbeiterDaten) return;
@@ -42,8 +46,8 @@ export async function zeigeTermine(targetId = null) {
 
   if (hatZ1) {
     const stats = berechneWochenStats(gefiltert);
-    renderDatenbox1(container, stats, zeitraum, mitarbeiterId);
-    await renderDatenbox2(container, stats, zeitraum, mitarbeiterId, mitarbeiterDaten);
+    renderDatenbox1(container, stats, zeitraum);
+    await renderDatenbox2(container, stats, zeitraum, mitarbeiterId);
   }
 
   renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum);
@@ -57,7 +61,7 @@ export async function zeigeTermine(targetId = null) {
 }
 
 /* ==========================================================================
-   KOMPONENTEN
+   2. UI-KOMPONENTEN
    ========================================================================== */
 
 function erstelleTerminKarte(event) {
@@ -120,7 +124,7 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
   const box = document.createElement("div");
   box.id = "datenanzeige2";
   box.style = `background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; box-sizing:border-box; width:100%;`;
-  box.innerHTML = `<div style="text-align:center; padding:10px;">Lade...</div>`;
+  box.innerHTML = `<div style="text-align:center; padding:10px;">Lade Daten...</div>`;
   container.appendChild(box);
 
   const { data: daten } = await supa.from("tabelle1").select("*").eq('"KZ"', mitarbeiterId).order("created_at", { ascending: false }).limit(30);
@@ -128,7 +132,7 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
   const jahr = montag.getFullYear();
 
   if (!daten || daten.length === 0) {
-    box.innerHTML = `<div style="text-align:center; color:#777; font-size:13px;">Keine Basisdaten gefunden.</div>`;
+    box.innerHTML = `<div style="text-align:center; color:#777; font-size:13px; padding:10px;">Keine Basisdaten in Datenbank gefunden.</div>`;
   } else {
     const gefiltertH = daten.filter(e => (e.JAHR * 100 + e.KW) <= (jahr * 100 + kw))
       .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.created_at));
@@ -143,21 +147,48 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
     };
 
     box.innerHTML = `
-      <style>.row-stat { display: grid; grid-template-columns: 1fr auto 80px; align-items: center; margin-bottom: 8px; gap: 10px; border-bottom: 1px solid #eee; padding-bottom: 4px; } .row-stat input { width: 80px; text-align: right; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; } .calc-info { font-size: 11px; color: #888; text-align: right; }</style>
-      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">Wochenstand Kalkulation</div>
+      <style>
+        .row-stat { display: grid; grid-template-columns: 1fr auto 80px; align-items: center; margin-bottom: 8px; gap: 10px; border-bottom: 1px solid #eee; padding-bottom: 4px; } 
+        .row-stat input { width: 80px; text-align: right; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; } 
+        .calc-info { font-size: 11px; color: #888; text-align: right; }
+        #livePreview { margin-top:10px; padding:10px; background:#f9f9f9; border-radius:4px; font-size:12px; color:#444; white-space: pre-wrap; border:1px solid #eee; line-height:1.4; }
+      </style>
+      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">
+        ${gleicheKW ? `Daten KW ${kw} (Gespeichert)` : `Vorschlag (Stand KW ${eintrag.KW} + aktuell)`}
+      </div>
+      
       <div class="row-stat"><span>Urlaub Gesamt</span><span class="calc-info">Basis:</span><input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}"></div>
       <div class="row-stat"><span>Urlaub genommen</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.urlaub}`} =</span><input id="urlaubErgebnis" type="number" value="${v.uG}"></div>
       <div class="row-stat"><span>Krank Tage</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.krank}`} =</span><input id="krankErgebnis" type="number" value="${v.k}"></div>
       <div class="row-stat"><span>Bereitschaft</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.bereit}`} =</span><input id="bereitErgebnis" type="number" value="${v.b}"></div>
       <div class="row-stat"><span>Überstunden</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.ueber.toFixed(2)}`} =</span><input id="ueberErgebnis" type="number" step="0.01" value="${v.ue}"></div>
+      
       <div style="margin-top:15px; font-weight:500; font-size:13px;">Zusatztext:</div>
       <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:5px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box; font-family:inherit;">${eintrag.feld1 ?? ""}</textarea>
+      
+      <div style="margin-top:15px; font-size:11px; color:#666; font-weight:bold;">VORSCHAU INFOZEILE:</div>
+      <div id="livePreview"></div>
     `;
+
+    const updatePreview = () => {
+      const uGes = document.getElementById("urlaubWert").value;
+      const uGen = document.getElementById("urlaubErgebnis").value;
+      const krank = document.getElementById("krankErgebnis").value;
+      const ueber = document.getElementById("ueberErgebnis").value;
+      const bereit = document.getElementById("bereitErgebnis").value;
+      const text = document.getElementById("textBearbeiten").value;
+      document.getElementById("livePreview").textContent = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${String(ueber).replace(".", ",")} Stunden    Bereitschaft: ${bereit} Tage    ${text}`;
+    };
+
+    ["urlaubWert", "urlaubErgebnis", "krankErgebnis", "ueberErgebnis", "bereitErgebnis", "textBearbeiten"].forEach(id => {
+      document.getElementById(id).addEventListener("input", updatePreview);
+    });
+    updatePreview();
   }
 }
 
 /* ==========================================================================
-   STEUERUNG & PDF-LOGIK
+   3. STEUERUNG & PDF/SPEICHER-LOGIK
    ========================================================================== */
 
 function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
@@ -191,23 +222,20 @@ function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
       const bereit = document.getElementById("bereitErgebnis")?.value || 0;
       const textFeld = document.getElementById("textBearbeiten")?.value || "";
 
-      // 1. ZUERST IN SUPABASE SPEICHERN (Upsert basierend auf KZ, JAHR, KW)
+      // 1. Speichern (Upsert)
       const { error } = await supa.from("tabelle1").upsert({
         KZ: mitarbeiterId, JAHR: jahr, KW: kw,
         URLAUB: Number(uGes), URLAUBgen: Number(uGen), KRANK: Number(krank),
         BEREIT: Number(bereit), ÜBER: Number(ueber), feld1: textFeld
       }, { onConflict: 'KZ, JAHR, KW' });
 
-      if (error) {
-        alert("Fehler beim Speichern der Daten: " + error.message);
-        return; 
-      }
+      if (error) { alert("Fehler beim Speichern: " + error.message); return; }
 
-      // 2. TEXT FÜR PDF VORBEREITEN
+      // 2. Infozeile für PDF setzen
       mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${String(ueber).replace(".", ",")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
     }
 
-    // Termine im State aktualisieren vor PDF
+    // Termine im State synchronisieren
     const tOriginal = getTermine();
     document.querySelectorAll("#termine > div[data-id]").forEach(block => {
       const ev = tOriginal.find(t => t.id === block.dataset.id);
@@ -229,7 +257,7 @@ function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
 }
 
 /* ==========================================================================
-   HELPER
+   4. HELPER
    ========================================================================== */
 
 function aktualisiereWochenHeader({ montag, sonntag }) {
