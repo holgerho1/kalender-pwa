@@ -25,6 +25,7 @@ export async function zeigeTermine(targetId = null) {
 
   const mitarbeiterId = mitarbeiterDaten.id;
   const hatZ1 = mitarbeiterDaten.Z1 === true;
+  const hatZ2 = mitarbeiterDaten.Z2 === true;
 
   const zeitraum = getKWZeitraum(getKwOffset());
   aktualisiereWochenHeader(zeitraum);
@@ -44,10 +45,13 @@ export async function zeigeTermine(targetId = null) {
     wochenFarbenLogik(gefiltert);
   }
 
+  // Box-Logik: Z1 zeigt Historie/Statistik, Z2 zeigt direktes Textfeld aus Mitarbeiter-Tabelle
   if (hatZ1) {
     const stats = berechneWochenStats(gefiltert);
     renderDatenbox1(container, stats, zeitraum);
-    await renderDatenbox2(container, stats, zeitraum, mitarbeiterId);
+    await renderDatenbox2Z1(container, stats, zeitraum, mitarbeiterId);
+  } else if (hatZ2) {
+    renderDatenboxZ2(container, mitarbeiterDaten);
   }
 
   renderSteuerung(container, mitarbeiterDaten, zeitraum);
@@ -120,7 +124,8 @@ function renderDatenbox1(container, stats, { montag }) {
   container.appendChild(box);
 }
 
-async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
+// BOX FÜR Z1 (HISTORIE IN TABELLE1)
+async function renderDatenbox2Z1(container, stats, { montag }, mitarbeiterId) {
   const box = document.createElement("div");
   box.id = "datenanzeige2";
   box.style = `background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; box-sizing:border-box; width:100%;`;
@@ -131,23 +136,18 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
   const kw = berechneKalenderwoche(montag);
   const jahr = montag.getFullYear();
 
-  let eintrag;
-  let gleicheKW = false;
-  let überschrift = "";
+  let eintrag; let gleicheKW = false; let überschrift = "";
 
   if (!daten || daten.length === 0) {
-    // KEINE DATEN VORHANDEN
     eintrag = { KW: kw, JAHR: jahr, URLAUB: 0, URLAUBgen: 0, KRANK: 0, BEREIT: 0, "ÜBER": 0, feld1: "" };
-    gleicheKW = true;
-    überschrift = "Start Werte festlegen";
+    gleicheKW = true; überschrift = "Start Werte festlegen";
   } else {
     const gefiltertH = daten.filter(e => (e.JAHR * 100 + e.KW) <= (jahr * 100 + kw))
       .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.created_at));
     
     if (gefiltertH.length === 0) {
       eintrag = { KW: kw, JAHR: jahr, URLAUB: 0, URLAUBgen: 0, KRANK: 0, BEREIT: 0, "ÜBER": 0, feld1: "" };
-      gleicheKW = true;
-      überschrift = "Start Werte festlegen";
+      gleicheKW = true; überschrift = "Start Werte festlegen";
     } else {
       eintrag = gefiltertH[0];
       gleicheKW = (kw === eintrag.KW && jahr === eintrag.JAHR);
@@ -168,18 +168,14 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
       .calc-info { font-size: 11px; color: #888; text-align: right; }
       #livePreview { margin-top:10px; padding:10px; background:#f9f9f9; border-radius:4px; font-size:12px; color:#444; white-space: pre-wrap; border:1px solid #eee; line-height:1.4; }
     </style>
-    <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">
-      ${überschrift}
-    </div>
+    <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">${überschrift}</div>
     <div class="row-stat"><span>Urlaub Gesamt</span><span class="calc-info">Basis:</span><input id="urlaubWert" type="text" inputmode="numeric" value="${eintrag.URLAUB ?? 0}"></div>
     <div class="row-stat"><span>Urlaub genommen</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.urlaub}`} =</span><input id="urlaubErgebnis" type="text" inputmode="numeric" value="${v.uG}"></div>
     <div class="row-stat"><span>Krank Tage</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.krank}`} =</span><input id="krankErgebnis" type="text" inputmode="numeric" value="${v.k}"></div>
     <div class="row-stat"><span>Bereitschaft</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.bereit}`} =</span><input id="bereitErgebnis" type="text" inputmode="numeric" value="${v.b}"></div>
     <div class="row-stat"><span>Überstunden</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.ueber.toFixed(2)}`} =</span><input id="ueberErgebnis" type="text" inputmode="text" value="${v.ue.replace(".",",")}"></div>
-    
     <div style="margin-top:15px; font-weight:500; font-size:13px;">Zusatztext:</div>
     <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:5px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box; font-family:inherit;">${eintrag.feld1 ?? ""}</textarea>
-    
     <div style="margin-top:15px; font-size:11px; color:#666; font-weight:bold;">VORSCHAU INFOZEILE (PDF):</div>
     <div id="livePreview"></div>
   `;
@@ -198,6 +194,18 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
     document.getElementById(id).addEventListener("input", updatePreview);
   });
   updatePreview();
+}
+
+// BOX FÜR Z2 (PERSISTENTES TEXTFELD IN MITARBEITER)
+function renderDatenboxZ2(container, mDaten) {
+  const box = document.createElement("div");
+  box.style = `background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; box-sizing:border-box; width:100%; border-top:3px solid ${SECONDARY};`;
+  box.innerHTML = `
+    <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">Infozeile bearbeiten</div>
+    <textarea id="z2TextFeld" style="width:100%; height:80px; border:1px solid #ccc; border-radius:4px; padding:10px; box-sizing:border-box; font-family:inherit; font-size:14px; background:#fafafa;">${mDaten.Text || ""}</textarea>
+    <div style="margin-top:8px; font-size:11px; color:#888;">Dieser Text wird direkt gespeichert und erscheint auf dem PDF.</div>
+  `;
+  container.appendChild(box);
 }
 
 /* ==========================================================================
@@ -227,29 +235,30 @@ function renderSteuerung(container, mDaten, zeitraum) {
     const mitarbeiter = await ladeMitarbeiterId();
     if (!mitarbeiter) return;
 
+    // SPEICHERN Z1 (Neuer Eintrag in Historie)
     if (mitarbeiter.Z1 === true) {
       const kw = berechneKalenderwoche(zeitraum.montag);
       const jahr = zeitraum.montag.getFullYear();
-      
       const val = id => (document.getElementById(id)?.value || "0").replace(",", ".");
-      const uGes = val("urlaubWert");
-      const uGen = val("urlaubErgebnis");
-      const krank = val("krankErgebnis");
-      const ueber = val("ueberErgebnis");
-      const bereit = val("bereitErgebnis");
+      const uGes = val("urlaubWert"); const uGen = val("urlaubErgebnis"); const krank = val("krankErgebnis"); const ueber = val("ueberErgebnis"); const bereit = val("bereitErgebnis");
       const textFeld = document.getElementById("textBearbeiten")?.value || "";
 
       const { error } = await supa.from("tabelle1").insert({
-        KZ: mitarbeiter.id, JAHR: jahr, KW: kw,
-        URLAUB: Number(uGes), URLAUBgen: Number(uGen), KRANK: Number(krank),
-        BEREIT: Number(bereit), ÜBER: Number(ueber), feld1: textFeld
+        KZ: mitarbeiter.id, JAHR: jahr, KW: kw, URLAUB: Number(uGes), URLAUBgen: Number(uGen), KRANK: Number(krank), BEREIT: Number(bereit), ÜBER: Number(ueber), feld1: textFeld
       });
-
-      if (error) { alert("Fehler beim Speichern: " + error.message); return; }
-
+      if (error) { alert("Fehler beim Speichern Z1: " + error.message); return; }
       mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${ueber.replace(".",",")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
     }
 
+    // SPEICHERN Z2 (Update des Mitarbeiter-Datensatzes)
+    if (mitarbeiter.Z2 === true) {
+      const neuerText = document.getElementById("z2TextFeld")?.value || "";
+      const { error } = await supa.from("mitarbeiter").update({ Text: neuerText }).eq("id", mitarbeiter.id);
+      if (error) { alert("Fehler beim Speichern Z2: " + error.message); return; }
+      mitarbeiter.Text = neuerText; 
+    }
+
+    // Termine synchronisieren
     const tOriginal = getTermine();
     document.querySelectorAll("#termine > div[data-id]").forEach(block => {
       const ev = tOriginal.find(t => t.id === block.dataset.id);
@@ -265,9 +274,7 @@ function renderSteuerung(container, mDaten, zeitraum) {
     
     exportierePdf(holeGefilterteTermine(zeitraum), mitarbeiter);
 
-    if (mitarbeiter.Z1 === true) {
-      await zeigeTermine("nav-pdf"); 
-    }
+    if (mitarbeiter.Z1 === true) await zeigeTermine("nav-pdf"); 
   }, SECONDARY, "#000");
   
   pdfBtn.style.gridColumn = "span 2";
