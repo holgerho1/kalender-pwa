@@ -51,15 +51,7 @@
 
     .section-title { font-size: 0.85rem; text-transform: uppercase; color: #777; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-weight: 500; }
 
-    label { display: block; margin-top: 10px; font-size: 0.8rem; color: var(--primary-color); }
-    input[type="text"] { width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; background: #fafafa; font-family: inherit; }
-
-    button { font-family: 'Roboto', sans-serif; font-weight: 500; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-
-    .btn-primary { background-color: var(--primary-color); color: white; padding: 12px; width: 100%; margin-top: 15px; }
-    .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); padding: 6px 12px; font-size: 0.85rem; border-radius: 20px; margin-top: 10px; text-decoration: none; }
-
-    #linkListe, #benutzerListe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    #linkListe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .chip-link { background: #eee; color: var(--text-color); text-decoration: none; padding: 8px 14px; border-radius: 16px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; border: 1px solid #ddd; }
 
     .hidden { display: none !important; }
@@ -72,29 +64,10 @@
   <header>
     <h1><span class="material-icons">assignment</span> Arbeitsnachweis</h1>
     <div id="wocheninfo">Woche wird geladen...</div>
-    
-    <a href="mitarbeiter.html" id="admin-link" class="btn-outline">
-      <span class="material-icons" style="font-size: 16px;">people</span> Verwaltung
-    </a>
   </header>
 
   <div class="container">
     <div id="termine"></div>
-
-    <div id="admin-bereich" class="card">
-      <div class="section-title"><span class="material-icons">settings</span> Benutzerverwaltung</div>
-      <label>Kürzel (z.B. HH)</label>
-      <input id="kuerzel" type="text" placeholder="Kürzel">
-      
-      <label>Vollständiger Name</label>
-      <input id="name" type="text" placeholder="Name">
-      
-      <button class="btn-primary" onclick="speichereBenutzer()">
-        <span class="material-icons">save</span> Benutzer speichern
-      </button>
-      
-      <div id="benutzerListe"></div>
-    </div>
 
     <div id="links-bereich" class="card">
       <div class="section-title"><span class="material-icons">link</span> Schnellzugriff</div>
@@ -113,12 +86,13 @@
       const pathParts = window.location.pathname.split("/");
       const lastPart = pathParts.pop();
 
-      // Wenn ein Kürzel erkannt wird (lastPart ist nicht leer und nicht index.html)
+      // Wenn ein Kürzel in der URL ist, blenden wir den Schnellzugriff aus
       if (lastPart && lastPart !== "index.html" && lastPart !== "") {
-        document.getElementById("admin-bereich").classList.add("hidden");
-        document.getElementById("links-bereich").classList.add("hidden");
-        document.getElementById("admin-link").classList.add("hidden");
-        document.getElementById("debug-log").classList.add("hidden");
+        const links = document.getElementById("links-bereich");
+        if(links) links.classList.add("hidden");
+        
+        const debug = document.getElementById("debug-log");
+        if(debug) debug.classList.add("hidden");
       }
     }
 
@@ -132,7 +106,6 @@
       }
     });
 
-    // Debug-Werte setzen (wird nur gefüllt, wenn nicht hidden)
     const log = document.getElementById("debug-log");
     if (log) log.innerText = `${window.innerWidth}x${window.innerHeight}px`;
   </script>
