@@ -5,7 +5,7 @@ const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let aktuellerId = null;
 
 // ---------------------------------------------------------
-// LISTE LADEN (UL statt Dropdown)
+// LISTE LADEN
 // ---------------------------------------------------------
 async function ladeListe() {
   const { data, error } = await supa
@@ -24,9 +24,11 @@ async function ladeListe() {
   data.forEach(row => {
     const li = document.createElement("li");
     li.textContent = `${row.kuerzel} – ${row.name ?? ""}`;
-    li.style.padding = "10px";
-    li.style.borderBottom = "1px solid #ccc";
-    li.style.cursor = "pointer";
+    
+    // Falls dieser Mitarbeiter gerade bearbeitet wird, markiere ihn wieder
+    if (row.id === aktuellerId) {
+      li.classList.add("selected-worker");
+    }
 
     li.onclick = () => {
       aktuellerId = row.id;
@@ -39,16 +41,13 @@ async function ladeListe() {
 }
 
 // ---------------------------------------------------------
-// AUSWAHL MARKIEREN
+// AUSWAHL MARKIEREN (Nutzt jetzt CSS-Klassen)
 // ---------------------------------------------------------
 function markiereAuswahl(li) {
   document.querySelectorAll("#liste li").forEach(el => {
-    el.style.background = "";
-    el.style.fontWeight = "";
+    el.classList.remove("selected-worker");
   });
-
-  li.style.background = "#def";
-  li.style.fontWeight = "bold";
+  li.classList.add("selected-worker");
 }
 
 // ---------------------------------------------------------
@@ -70,6 +69,7 @@ window.auswahlGeaendert = async function () {
 
   document.getElementById("eingabe_kuerzel").value = data.kuerzel ?? "";
   document.getElementById("eingabe_name").value = data.name ?? "";
+  log(`Bearbeite: ${data.kuerzel}`);
 };
 
 // ---------------------------------------------------------
@@ -77,6 +77,7 @@ window.auswahlGeaendert = async function () {
 // ---------------------------------------------------------
 window.neu = function () {
   aktuellerId = null;
+  document.querySelectorAll("#liste li").forEach(el => el.classList.remove("selected-worker"));
 
   document.getElementById("eingabe_kuerzel").value = "";
   document.getElementById("eingabe_name").value = "";
@@ -117,6 +118,7 @@ window.speichern = async function () {
   }
 
   log("Gespeichert.");
+  // Wir laden die Liste neu, behalten aber die ID im Kopf
   ladeListe();
 };
 
@@ -129,6 +131,8 @@ window.loeschen = async function () {
     return;
   }
 
+  if (!confirm("Diesen Mitarbeiter wirklich löschen?")) return;
+
   const { error } = await supa
     .from("mitarbeiter")
     .delete()
@@ -140,6 +144,8 @@ window.loeschen = async function () {
   }
 
   aktuellerId = null;
+  document.getElementById("eingabe_kuerzel").value = "";
+  document.getElementById("eingabe_name").value = "";
   log("Mitarbeiter gelöscht.");
   ladeListe();
 };
@@ -148,7 +154,8 @@ window.loeschen = async function () {
 // LOG
 // ---------------------------------------------------------
 function log(text) {
-  document.getElementById("log").textContent = text;
+  const logElem = document.getElementById("log");
+  logElem.textContent = text;
 }
 
 // ---------------------------------------------------------

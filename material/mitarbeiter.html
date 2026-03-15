@@ -2,91 +2,209 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Mitarbeiter verwalten</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mitarbeiter verwalten | Supabase</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
   <style>
+    :root {
+      --primary-color: #6200ee;
+      --secondary-color: #03dac6;
+      --bg-color: #f5f5f5;
+      --card-bg: #ffffff;
+      --text-color: #333;
+    }
+
     body {
-      font-family: sans-serif;
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--primary-color);
+      font-weight: 300;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 8px;
       padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      color: #777;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     label {
       display: block;
-      margin-top: 15px;
-      font-weight: bold;
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: var(--primary-color);
     }
 
     input {
-      font-size: 1.4em;
-      padding: 0.3em;
+      font-size: 1rem;
+      padding: 10px;
       width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
       box-sizing: border-box;
+      margin-top: 4px;
+      background: #fafafa;
     }
 
-    button {
-      font-size: 1.4em;
-      padding: 0.4em 0.8em;
-      width: 100%;
-      margin-top: 15px;
-      box-sizing: border-box;
+    input:focus {
+      border-color: var(--primary-color);
+      outline: none;
+      background: #fff;
+    }
+
+    /* Mitarbeiter Liste Styling */
+    #liste {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid #eee;
+      border-radius: 4px;
     }
 
     #liste li {
-      padding: 10px;
-      border-bottom: 1px solid #ccc;
+      padding: 14px;
+      border-bottom: 1px solid #f0f0f0;
       cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
     }
 
-    #liste li:hover {
-      background: #eef;
+    #liste li:last-child {
+      border-bottom: none;
+    }
+
+    #liste li:active {
+      background-color: #e0e0e0;
+    }
+
+    /* Markierung für ausgewählten Mitarbeiter (wird meist via JS gesteuert) */
+    .selected-worker {
+      background-color: #f0ebff !important;
+      border-left: 4px solid var(--primary-color);
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    button {
+      font-family: 'Roboto', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      padding: 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.2s;
+    }
+
+    .btn-primary { background-color: var(--primary-color); color: white; }
+    .btn-secondary { background-color: var(--secondary-color); color: black; }
+    .btn-danger { background-color: #cf6679; color: white; }
+    .btn-outline { 
+      background-color: transparent; 
+      border: 1px solid var(--primary-color); 
+      color: var(--primary-color); 
+      width: 100%; 
+      margin-bottom: 20px;
     }
 
     #log {
-      background: #eee;
-      padding: 10px;
-      white-space: pre-wrap;
+      background: #333;
+      color: #00ff00;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 0.8rem;
       font-family: monospace;
-      border: 1px solid #ccc;
-      margin-top: 30px;
-    }
-
-    hr {
-      margin: 25px 0;
+      margin-top: 20px;
+      white-space: pre-wrap;
     }
   </style>
 </head>
 
 <body>
-  <h1>Mitarbeiter verwalten</h1>
 
-  <!-- ZURÜCK -->
-  <button onclick="window.location.href='index.html'">
-    Zurück zur Hauptseite
-  </button>
+  <div class="container">
+    <h1>Mitarbeiter-Verwaltung</h1>
 
-  <hr>
+    <button class="btn-outline" onclick="window.location.href='index.html'">
+      <span class="material-icons">arrow_back</span> Zurück zum Kalender
+    </button>
 
-  <!-- LISTE -->
-  <label>Mitarbeiter auswählen</label>
-  <ul id="liste" style="list-style:none; padding:0; margin:0;"></ul>
+    <div class="card">
+      <div class="section-title"><span class="material-icons">people</span> Mitarbeiter auswählen</div>
+      
+      <ul id="liste">
+        </ul>
 
-  <button onclick="neu()">Neu</button>
-  <button onclick="loeschen()">Löschen</button>
+      <div class="button-group">
+        <button class="btn-secondary" onclick="neu()">
+          <span class="material-icons">person_add</span> Neu
+        </button>
+        <button class="btn-danger" onclick="loeschen()">
+          <span class="material-icons">person_remove</span> Löschen
+        </button>
+      </div>
+    </div>
 
-  <hr>
+    <div class="card">
+      <div class="section-title"><span class="material-icons">badge</span> Mitarbeiter-Details</div>
+      
+      <label for="eingabe_kuerzel">Kürzel (KZ)</label>
+      <input id="eingabe_kuerzel" type="text" placeholder="z.B. AB" />
 
-  <!-- FORMULAR -->
-  <label for="eingabe_kuerzel">Kürzel</label>
-  <input id="eingabe_kuerzel" type="text" />
+      <label for="eingabe_name">Vollständiger Name</label>
+      <input id="eingabe_name" type="text" placeholder="Vorname Nachname" />
 
-  <label for="eingabe_name">Name</label>
-  <input id="eingabe_name" type="text" />
+      <button class="btn-primary" style="width: 100%; margin-top: 25px;" onclick="speichern()">
+        <span class="material-icons">save</span> Mitarbeiter speichern
+      </button>
+    </div>
 
-  <button onclick="speichern()">Speichern</button>
+    <div id="log">Bereit zur Bearbeitung...</div>
+  </div>
 
-  <div id="log"></div>
-
-  <!-- Supabase + JS -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script type="module" src="mitarbeiter.js"></script>
 </body>
