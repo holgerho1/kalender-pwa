@@ -11,7 +11,6 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 const supa = createClient(SUPABASE_URL, SUPABASE_KEY);
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-// Material Design Konstanten
 const PRIMARY = "#6200ee";
 const SECONDARY = "#03dac6";
 const CARD_SHADOW = "0 2px 10px rgba(0,0,0,0.1)";
@@ -92,8 +91,8 @@ function erstelleTerminKarte(event) {
     </button>
   `;
 
-  block.querySelector(".titel-input").value = event.titel;
-  block.querySelector(".desc-input").value = event.beschreibung;
+  block.querySelector(".titel-input").value = event.titel || "";
+  block.querySelector(".desc-input").value = event.beschreibung || "";
   block.querySelector(".mat-input").value = event.material || "";
   block.querySelector(".mit-input").value = event.mitarbeiter || "";
 
@@ -109,7 +108,7 @@ function renderDatenbox1(container, stats, { montag }, mitarbeiterId) {
   const box = document.createElement("div");
   box.style = `background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; box-sizing:border-box; width:100%; border-top:3px solid ${SECONDARY};`;
   box.innerHTML = `
-    <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:10px; font-weight:500;">Wochen-Statistik</div>
+    <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:10px; font-weight:500;">Wochen-Statistik (Aktuell)</div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:14px;">
       <div>KW: <b>${berechneKalenderwoche(montag)}</b></div>
       <div>Über: <b>${stats.ueber.toFixed(2).replace(".", ",")}h</b></div>
@@ -135,11 +134,14 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId, mita
   if (!daten || daten.length === 0) {
     box.innerHTML = `<button id="speichernBtn" style="width:100%; padding:12px; background:${PRIMARY}; color:white; border:none; border-radius:4px;">Ersten Eintrag speichern</button>`;
   } else {
+    // Letzten relevanten Eintrag finden
     const gefiltertH = daten.filter(e => (e.JAHR * 100 + e.KW) <= (jahr * 100 + kw))
       .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.created_at));
     
     const eintrag = gefiltertH[0];
-    const gleicheKW = (kw === eintrag.KW);
+    const gleicheKW = (kw === eintrag.KW && jahr === eintrag.JAHR);
+
+    // BERECHNUNG: Vorwoche + Aktuelle Woche
     const v = {
       uG: gleicheKW ? (eintrag.URLAUBgen ?? 0) : (eintrag.URLAUBgen ?? 0) + stats.urlaub,
       k: gleicheKW ? (eintrag.KRANK ?? 0) : (eintrag.KRANK ?? 0) + stats.krank,
@@ -147,30 +149,27 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId, mita
       ue: (parseFloat(eintrag["ÜBER"] ?? 0) + (gleicheKW ? 0 : stats.ueber)).toFixed(2)
     };
 
-    // Die zusammengesetzte Text-Vorschau aus deiner alten Version
-    const zusatzText = `Urlaub: ${eintrag.URLAUB ?? 0} Tage    Urlaub genommen: ${v.uG} Tage    Krank: ${v.k} Tage    Überstunden: ${v.ue.replace(".", ",")} Stunden    Bereitschaft: ${v.b} Tage    ${eintrag.feld1 ?? ""}`;
+    const vorschauSatz = `Urlaub: ${eintrag.URLAUB ?? 0} Tage    Urlaub genommen: ${v.uG} Tage    Krank: ${v.k} Tage    Überstunden: ${v.ue.replace(".", ",")} Stunden    Bereitschaft: ${v.b} Tage    ${eintrag.feld1 ?? ""}`;
 
     box.innerHTML = `
-      <style>.row-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #eee; } .row-stat input { width: 75px; text-align: right; padding: 4px; border: 1px solid #ccc; border-radius: 4px; }</style>
-      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">${gleicheKW ? `Berechnete Daten KW ${kw}` : "Vorschlag aus Vorwoche"}</div>
+      <style>.row-stat { display: grid; grid-template-columns: 1fr auto 80px; align-items: center; margin-bottom: 8px; gap: 10px; border-bottom: 1px solid #eee; padding-bottom: 4px; } .row-stat input { width: 80px; text-align: right; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; } .calc-info { font-size: 11px; color: #888; text-align: right; }</style>
+      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">Wochenstand Kalkulation</div>
       
-      <div class="row-stat"><span>Urlaub Ges.</span><input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}"></div>
-      <div class="row-stat"><span>Urlaub gen.</span><input id="urlaubErgebnis" type="number" value="${v.uG}"></div>
-      <div class="row-stat"><span>Krank Tage</span><input id="krankErgebnis" type="number" value="${v.k}"></div>
-      <div class="row-stat"><span>Bereitschaft</span><input id="bereitErgebnis" type="number" value="${v.b}"></div>
-      <div class="row-stat"><span>Überstunden</span><input id="ueberErgebnis" type="number" step="0.01" value="${v.ue}"></div>
+      <div class="row-stat"><span>Urlaub Gesamt</span><span class="calc-info">Basis:</span><input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}"></div>
+      <div class="row-stat"><span>Urlaub genommen</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.urlaub}`} =</span><input id="urlaubErgebnis" type="number" value="${v.uG}"></div>
+      <div class="row-stat"><span>Krank Tage</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.krank}`} =</span><input id="krankErgebnis" type="number" value="${v.k}"></div>
+      <div class="row-stat"><span>Bereitschaft</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.bereit}`} =</span><input id="bereitErgebnis" type="number" value="${v.b}"></div>
+      <div class="row-stat"><span>Überstunden</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.ueber.toFixed(2)}`} =</span><input id="ueberErgebnis" type="number" step="0.01" value="${v.ue}"></div>
       
-      <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:10px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box; font-family:inherit;">${eintrag.feld1 ?? ""}</textarea>
+      <div style="margin-top:15px; font-weight:500; font-size:13px;">Zusatztext:</div>
+      <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:5px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box; font-family:inherit;">${eintrag.feld1 ?? ""}</textarea>
       
-      <div style="margin-top:15px; padding:10px; background:#f9f9f9; border-radius:4px; font-size:13px; color:#555; white-space: pre-wrap; line-height:1.4; border:1px inset #eee;">${zusatzText}</div>
+      <div style="margin-top:15px; padding:10px; background:#f9f9f9; border-radius:4px; font-size:12px; color:#444; white-space: pre-wrap; border:1px solid #eee; line-height:1.4;"><strong>Vorschau (wie im PDF):</strong>\n${vorschauSatz}</div>
       
       <button id="speichernBtn" style="width:100%; margin-top:15px; padding:12px; background:${PRIMARY}; color:white; border:none; border-radius:4px; font-weight:500; cursor:pointer;">Speichern</button>
     `;
-  }
 
-  const sBtn = document.getElementById("speichernBtn");
-  if(sBtn) {
-    sBtn.onclick = async () => {
+    document.getElementById("speichernBtn").onclick = async () => {
       const { error } = await supa.from("tabelle1").insert({
         KZ: mitarbeiterId, JAHR: jahr, KW: kw,
         URLAUB: Number(document.getElementById("urlaubWert").value),
@@ -211,8 +210,7 @@ function renderSteuerung(container) {
     const mitarbeiter = await ladeMitarbeiterId();
     if (!mitarbeiter) return;
 
-    // Den zusammengesetzten Text für das PDF generieren
-    const stats = berechneWochenStats(holeGefilterteTermine(getKWZeitraum(getKwOffset())));
+    // Werte für PDF aus den aktuellen Inputs holen
     const textFeld = document.getElementById("textBearbeiten")?.value || "";
     const uGen = document.getElementById("urlaubErgebnis")?.value || 0;
     const krank = document.getElementById("krankErgebnis")?.value || 0;
