@@ -137,7 +137,7 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
     box.innerHTML = `<button id="speichernBtn" style="width:100%; padding:12px; background:${PRIMARY}; color:white; border:none; border-radius:4px;">Ersten Eintrag speichern</button>`;
   } else {
     const gefiltertH = daten.filter(e => (e.JAHR * 100 + e.KW) <= (jahr * 100 + kw))
-      .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.created_at));
+      .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.current_at));
     
     const eintrag = gefiltertH[0];
     const gleicheKW = (kw === eintrag.KW);
@@ -147,13 +147,21 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
       ue: (parseFloat(eintrag["ÜBER"] ?? 0) + (gleicheKW ? 0 : stats.ueber)).toFixed(2)
     };
 
+    const zusatzVorschau = `Urlaub: ${v.uG} / Krank: ${v.k} / Über: ${v.ue.replace(".", ",")}h`;
+
     box.innerHTML = `
       <style>.row-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee; } .row-stat input { width: 70px; text-align: right; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }</style>
-      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:15px; font-weight:500;">Letzter Stand</div>
+      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">Aktueller Stand</div>
+      
+      <div style="background:#f5f5f5; padding:8px; border-radius:4px; margin-bottom:15px; font-weight:bold; font-size:14px; text-align:center; color:#333; border:1px solid #eee;">
+        ${zusatzVorschau}
+      </div>
+
       <div class="row-stat"><span>Urlaub Ges.</span><input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}"></div>
       <div class="row-stat"><span>Urlaub gen.</span><input id="urlaubErgebnis" type="number" value="${v.uG}"></div>
       <div class="row-stat"><span>Krank Tage</span><input id="krankErgebnis" type="number" value="${v.k}"></div>
       <div class="row-stat"><span>Überstunden</span><input id="ueberErgebnis" type="number" step="0.01" value="${v.ue}"></div>
+      
       <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:10px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box;">${eintrag.feld1 ?? ""}</textarea>
       <button id="speichernBtn" style="width:100%; margin-top:15px; padding:12px; background:${PRIMARY}; color:white; border:none; border-radius:4px; font-weight:500; cursor:pointer;">Speichern</button>
     `;
@@ -210,15 +218,12 @@ function renderSteuerung(container) {
   sDiv.appendChild(btn("Laden", "refresh", "nav-load", neuLaden));
   
   const pdfBtn = btn("PDF Export", "picture_as_pdf", "nav-pdf", async () => {
-    // 1. Mitarbeiterdaten laden (mit "Text")
     const mitarbeiter = await ladeMitarbeiterId();
     if (!mitarbeiter) return;
 
-    // 2. Aktuellen Text aus Datenbox 2 (Z1) einsammeln
     const z1Zusatz = document.getElementById("textBearbeiten")?.value || "";
     mitarbeiter.z1Textbox = z1Zusatz;
 
-    // 3. Aktuelle Termineingaben synchronisieren
     const tOriginal = getTermine();
     document.querySelectorAll("#termine > div[data-id]").forEach(block => {
       const ev = tOriginal.find(t => t.id === block.dataset.id);
@@ -232,7 +237,6 @@ function renderSteuerung(container) {
     });
     setTermine(tOriginal);
 
-    // 4. Export
     exportierePdf(holeGefilterteTermine(getKWZeitraum(getKwOffset())), mitarbeiter);
   }, SECONDARY, "#000");
   pdfBtn.style.gridColumn = "span 2";
@@ -256,7 +260,6 @@ async function ladeMitarbeiterId() {
   const pathParts = window.location.pathname.split("/");
   const kuerzel = pathParts.pop() || pathParts.pop();
   
-  // "Text" ist korrekt
   const { data, error } = await supa.from("mitarbeiter")
     .select("id, name, Z1, Z2, Text")
     .eq("kuerzel", kuerzel)
