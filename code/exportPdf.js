@@ -71,24 +71,25 @@ export function exportierePdf(termine, mitarbeiter = {}) {
   const infoWidth = doc.getTextWidth(infoText);
   doc.text(infoText, centerX, 29, { align: "center" });
 
-  // 3. ZUSATZTEXT MIT TRENNLINIE
+  // 3. ZUSATZTEXT MIT TRENNLINIE (Gleicher Stil wie Infozeile)
   let tableStartY = 33; 
   const zusatzText = (mitarbeiter.Z1 ? mitarbeiter.z1Textbox : "") || (mitarbeiter.Z2 ? mitarbeiter.Text : "") || "";
 
   if (zusatzText) {
-    // Trennlinie zeichnen (gleiche Breite wie Infozeile)
+    // Trennlinie
     doc.setLineWidth(0.2);
     doc.line(centerX - infoWidth / 2, 31, centerX + infoWidth / 2, 31);
 
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "italic");
+    // Text (Größe 14, normaler Stil)
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "normal");
     const splitText = doc.splitTextToSize(zusatzText, pageWidth - 40);
     
-    const textStartY = 36; // Startpunkt für den Text unter der Linie
+    const textStartY = 37; 
     doc.text(splitText, centerX, textStartY, { align: "center" });
     
-    // tableStartY direkt nach dem Text
-    tableStartY = textStartY + (splitText.length * 5); 
+    // tableStartY: Text-Start + (Anzahl Zeilen * Zeilenhöhe für 14pt)
+    tableStartY = textStartY + (splitText.length * 6); 
   }
 
   // 4. Tabelle
