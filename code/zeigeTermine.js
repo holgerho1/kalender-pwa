@@ -11,13 +11,16 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 const supa = createClient(SUPABASE_URL, SUPABASE_KEY);
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-/* ================hh==========================================================
+/* ==========================================================================
    1. HAUPTFUNKTION (Der Regisseur)
    ========================================================================== */
 
 export async function zeigeTermine() {
-  const mitarbeiterId = await ladeMitarbeiterId();
-  if (!mitarbeiterId) return;
+  const mitarbeiterDaten = await ladeMitarbeiterId();
+  if (!mitarbeiterDaten) return;
+
+  const mitarbeiterId = mitarbeiterDaten.id;
+  const hatZ1 = mitarbeiterDaten.Z1 === true; // Bedingung für die Boxen
 
   const zeitraum = getKWZeitraum(getKwOffset());
   aktualisiereWochenHeader(zeitraum);
@@ -38,10 +41,12 @@ export async function zeigeTermine() {
     wochenFarbenLogik(gefiltert);
   }
 
-  // Statistiken & Boxen
-  const stats = berechneWochenStats(gefiltert);
-  renderDatenbox1(container, stats, zeitraum, mitarbeiterId);
-  await renderDatenbox2(container, stats, zeitraum, mitarbeiterId);
+  // Statistiken & Boxen: Nur anzeigen wenn Z1 in der DB true ist
+  if (hatZ1) {
+    const stats = berechneWochenStats(gefiltert);
+    renderDatenbox1(container, stats, zeitraum, mitarbeiterId);
+    await renderDatenbox2(container, stats, zeitraum, mitarbeiterId);
+  }
 
   // Steuerung
   renderSteuerung(container);
@@ -143,7 +148,6 @@ function renderDatenbox1(container, stats, { montag }, mitarbeiterId) {
     <strong>Daten dieser Woche</strong><br><br>
     Jahr: ${montag.getFullYear()}<br>
     KW: ${berechneKalenderwoche(montag)}<br>
-    Kürzel: ${window.location.pathname.split("/").pop()}<br>
     Mitarbeiter-ID: ${mitarbeiterId}<br>
     Urlaub: ${stats.urlaub}<br>
     Krank: ${stats.krank}<br>
@@ -220,8 +224,9 @@ function aktualisiereWochenHeader({ montag, sonntag }) {
 
 async function ladeMitarbeiterId() {
   const kuerzel = window.location.pathname.split("/").pop();
-  const { data, error } = await supa.from("mitarbeiter").select("id").eq("kuerzel", kuerzel).single();
-  return error ? null : data?.id;
+  // Holt jetzt id und die Spalte Z1
+  const { data, error } = await supa.from("mitarbeiter").select("id, Z1").eq("kuerzel", kuerzel).single();
+  return error ? null : data;
 }
 
 function wochenFarbenLogik(gefiltert) {
