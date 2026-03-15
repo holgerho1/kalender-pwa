@@ -1,7 +1,6 @@
 import { benutzerListe } from "./benutzer.js";
 import { notoSubset } from "./fonts.js";
 
-// Prüft, ob ein Text Brüche enthält
 function hatBruch(text) {
   if (!text) return false;
   return /[¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]/.test(text);
@@ -64,24 +63,25 @@ export function exportierePdf(termine, mitarbeiter = {}) {
   const textWidth = doc.getTextWidth(title);
   doc.text(title, centerX, 20, { align: "center" });
   doc.setLineWidth(0.5);
-  doc.line(centerX - textWidth / 2, 22, centerX + textWidth / 2, 22);
+  doc.line(centerX - textWidth / 2, 21.5, centerX + textWidth / 2, 21.5);
 
-  // 2. Infozeile (Original-Formatierung wiederhergestellt)
+  // 2. Infozeile
   doc.setFontSize(14);
   const infoText = `Jahr ${jahr}                         Von: ${von}               Bis: ${bis}                         KW: ${kw}                          Name: ${name}`;
-  doc.text(infoText, centerX, 30, { align: "center" });
+  doc.text(infoText, centerX, 29, { align: "center" });
 
-  // 3. ZENTRIERTER TEXT DIREKT ÜBER DER TABELLE
-  let tableStartY = 32;
+  // 3. ZENTRIERTER TEXT (Z1 oder Z2) - Kompakt ohne Leerzeilen
+  let tableStartY = 32; // Standard-Start ohne Zusatztext
   const zusatzText = (mitarbeiter.Z1 ? mitarbeiter.z1Textbox : "") || (mitarbeiter.Z2 ? mitarbeiter.Text : "") || "";
 
   if (zusatzText) {
     doc.setFontSize(11);
     doc.setFont("helvetica", "italic");
     const splitText = doc.splitTextToSize(zusatzText, pageWidth - 40);
-    // Erscheint kurz unter der Infozeile
-    doc.text(splitText, centerX, 38, { align: "center" });
-    tableStartY = 38 + (splitText.length * 5) + 2; 
+    // Startet direkt 4mm unter der Infozeile
+    doc.text(splitText, centerX, 33, { align: "center" });
+    // Tabelle startet direkt nach der letzten Textzeile (5mm pro Zeile + kleiner Puffer)
+    tableStartY = 33 + (splitText.length * 5) + 1; 
   }
 
   // 4. Tabelle
