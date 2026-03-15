@@ -3,9 +3,9 @@ import { neuLaden } from "./code/neuLaden.js";
 import { zeigeTermine } from "./code/zeigeTermine.js";
 
 // 1. Daten laden und Anzeige starten
-// Dies entspricht dem ursprünglichen Ablauf: Erst laden, dann anzeigen.
+// Wir müssen auf BEIDE Funktionen warten, bevor wir die Anzeige triggern
 await ladeBenutzer();
-neuLaden(); 
+await neuLaden(); // Das "await" hier ist entscheidend!
 zeigeTermine();
 
 // 2. Pfad-Erkennung für den Schnellzugriff
@@ -25,6 +25,9 @@ if (istProfil) {
 } else {
   // Auf der Startseite: Schnellzugriff-Chips erzeugen
   if (linkContainer) {
+    // Falls die Liste doppelt erscheint, vorher leeren:
+    linkContainer.innerHTML = ""; 
+    
     benutzerListe.forEach(({ kuerzel, name }) => {
       const a = document.createElement("a");
       a.href = `/${kuerzel}`;
