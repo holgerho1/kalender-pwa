@@ -2,124 +2,240 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Holgers Terminplaner</title>
-
-  <!-- ❌ Supabase entfernt – db.js lädt es selbst -->
-  <!-- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Arbeitsnachweis | Material Design</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
   <style>
+    :root {
+      --primary-color: #6200ee;
+      --secondary-color: #03dac6;
+      --bg-color: #f5f5f5;
+      --card-bg: #ffffff;
+      --text-color: #333;
+    }
+
     body {
-      font-family: sans-serif;
-      background: #f5f5f5;
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
       margin: 0;
-      padding: 2rem;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
     }
+
+    header {
+      width: 100%;
+      background-color: var(--card-bg);
+      padding: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-sizing: border-box;
+    }
+
     h1 {
-      margin-bottom: 1rem;
-    }
-    #wocheninfo {
-      font-weight: bold;
+      margin: 0;
       font-size: 1.2rem;
-      margin-bottom: 1rem;
-      padding: 0.5rem;
-      background-color: #f0f8ff;
-      border-left: 4px solid #0077cc;
-      border-radius: 6px;
+      font-weight: 500;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    #termine {
-      margin-bottom: 2rem;
-    }
-    #debug-log {
-      font-size: 0.9rem;
-      color: #555;
-      background: #eee;
-      padding: 1rem;
-      border-radius: 6px;
-      white-space: pre-line;
-    }
-    button {
-      margin-top: 0.5rem;
-      padding: 0.4rem 0.8rem;
+
+    #wocheninfo {
+      margin-top: 8px;
       font-size: 1rem;
-      cursor: pointer;
+      font-weight: 500;
+      color: #666;
     }
-    #benutzerverwaltung {
-      margin-top: 2rem;
-      padding: 1rem;
-      background: #fff;
-      border-radius: 6px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      padding: 16px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
-    #benutzerverwaltung input {
-      margin: 0.5rem;
-      padding: 0.4rem;
-      font-size: 1rem;
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+      width: 100%;
     }
-    #benutzerListe button {
-      margin: 0.3rem;
-      padding: 0.4rem 0.8rem;
-      font-size: 0.95rem;
+
+    .section-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: #777;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
     }
-    #direktlinks {
-      margin-top: 2rem;
-      padding: 1rem;
-      background: #fff;
-      border-radius: 6px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+
+    /* Formulare */
+    label {
+      display: block;
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: var(--primary-color);
     }
-    #linkListe a {
-      display: inline-block;
-      margin: 0.3rem;
-      padding: 0.4rem 0.8rem;
-      background: #0077cc;
-      color: #fff;
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 4px;
+      border: 1px solid #ddd;
       border-radius: 4px;
-      text-decoration: none;
-      font-size: 0.95rem;
+      box-sizing: border-box;
+      background: #fafafa;
+      font-family: inherit;
     }
-    .zeitfeld {
-      font-size: clamp(0.9rem, 1vw, 1.2rem);
+
+    /* Buttons */
+    button {
+      font-family: 'Roboto', sans-serif;
+      font-weight: 500;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.2s;
+    }
+
+    button:active { opacity: 0.7; }
+
+    .btn-primary { 
+      background-color: var(--primary-color); 
+      color: white; 
+      padding: 12px; 
+      width: 100%; 
+      margin-top: 15px;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      border-radius: 20px;
+      margin-top: 10px;
+      text-decoration: none;
+    }
+
+    /* Links & Listen */
+    #linkListe, #benutzerListe {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .chip-link {
+      background: #eee;
+      color: var(--text-color);
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 16px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid #ddd;
+    }
+
+    #debug-log {
+      font-size: 0.7rem;
+      color: #999;
+      text-align: center;
+      margin-top: 20px;
+      font-family: monospace;
     }
   </style>
 </head>
 <body>
-  <h1>📅 Arbeitsnachweis </h1>
 
-  <div id="wocheninfo">📆 KW wird geladen…</div>
-  <div id="termine"></div>
-  <div id="debug-log"></div>
+  <header>
+    <h1><span class="material-icons">assignment</span> Arbeitsnachweis</h1>
+    <div id="wocheninfo">Woche wird geladen...</div>
+    
+    <a href="mitarbeiter.html" class="btn-outline">
+      <span class="material-icons" style="font-size: 16px;">people</span> Mitarbeiter-Verwaltung
+    </a>
+  </header>
 
-  <div id="benutzerverwaltung">
-    <h2>🔧 Benutzerverwaltung</h2>
-    <label>Kürzel: <input id="kuerzel" placeholder="z. B. HH"></label>
-    <label>Name: <input id="name" placeholder="z. B. Heckel"></label>
-    <button onclick="speichereBenutzer()">Speichern</button>
-    <div id="benutzerListe"></div>
+  <div class="container">
+    
+    <div id="termine"></div>
+
+    <div class="card">
+      <div class="section-title"><span class="material-icons">settings</span> Benutzerverwaltung</div>
+      <label>Kürzel (z.B. HH)</label>
+      <input id="kuerzel" type="text" placeholder="Kürzel">
+      
+      <label>Vollständiger Name</label>
+      <input id="name" type="text" placeholder="Name">
+      
+      <button class="btn-primary" onclick="speichereBenutzer()">
+        <span class="material-icons">save</span> Benutzer speichern
+      </button>
+      
+      <div id="benutzerListe"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><span class="material-icons">link</span> Schnellzugriff</div>
+      <div id="linkListe"></div>
+    </div>
+
+    <div id="debug-log"></div>
   </div>
 
-  <div id="direktlinks">
-    <h2>🔗 Direktlinks zu Hauptbenutzern</h2>
-    <div id="linkListe"></div>
-  </div>
-
-  <!-- Supabase-Client für die PWA -->
   <script type="module" src="material/db.js"></script>
-
-  <!-- Termin-Anzeige -->
   <script type="module" src="code/zeigeTermine.js"></script>
-
-  <!-- Dein App-Code -->
   <script type="module" src="app.js"></script>
 
   <script>
-    const debug = document.getElementById("debug-log");
-    if (debug) {
-      debug.innerText = `📱 Breite: ${window.innerWidth}px\n🖼️ Höhe: ${window.innerHeight}px`;
+    // Debug Info (Breite/Höhe)
+    const log = document.getElementById("debug-log");
+    if (log) {
+      log.innerText = `${window.innerWidth}x${window.innerHeight}px`;
     }
+
+    // Scroll-Position nach Reload wiederherstellen
+    window.addEventListener('load', () => {
+      const scrollPos = localStorage.getItem("scrollPos");
+      if (scrollPos) {
+        window.scrollTo(0, parseInt(scrollPos));
+        localStorage.removeItem("scrollPos");
+      }
+    });
   </script>
+
 </body>
 </html>
