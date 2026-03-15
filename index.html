@@ -24,158 +24,48 @@
       font-family: 'Roboto', sans-serif;
       background-color: var(--bg-color);
       color: var(--text-color);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      margin: 0; padding: 0;
+      display: flex; flex-direction: column; align-items: center;
       min-height: 100vh;
     }
 
     header {
-      width: 100%;
-      background-color: var(--card-bg);
-      padding: 16px;
+      width: 100%; background-color: var(--card-bg); padding: 16px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-sizing: border-box;
+      display: flex; flex-direction: column; align-items: center;
+      position: sticky; top: 0; z-index: 100; box-sizing: border-box;
     }
 
-    h1 {
-      margin: 0;
-      font-size: 1.2rem;
-      font-weight: 500;
-      color: var(--primary-color);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    #wocheninfo {
-      margin-top: 8px;
-      font-size: 1rem;
-      font-weight: 500;
-      color: #666;
-    }
+    h1 { margin: 0; font-size: 1.2rem; font-weight: 500; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
+    #wocheninfo { margin-top: 8px; font-size: 1rem; font-weight: 500; color: #666; }
 
     .container {
-      width: 100%;
-      max-width: 600px;
-      padding: 16px;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      width: 100%; max-width: 600px; padding: 16px;
+      box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;
     }
 
-    /* Cards */
     .card {
-      background: var(--card-bg);
-      border-radius: 8px;
-      padding: 16px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      box-sizing: border-box;
-      width: 100%;
+      background: var(--card-bg); border-radius: 8px; padding: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1); box-sizing: border-box; width: 100%;
     }
 
-    .section-title {
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      color: #777;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 500;
-    }
+    .section-title { font-size: 0.85rem; text-transform: uppercase; color: #777; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-weight: 500; }
 
-    /* Formulare */
-    label {
-      display: block;
-      margin-top: 10px;
-      font-size: 0.8rem;
-      color: var(--primary-color);
-    }
+    label { display: block; margin-top: 10px; font-size: 0.8rem; color: var(--primary-color); }
+    input[type="text"] { width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; background: #fafafa; font-family: inherit; }
 
-    input[type="text"] {
-      width: 100%;
-      padding: 10px;
-      margin-top: 4px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      box-sizing: border-box;
-      background: #fafafa;
-      font-family: inherit;
-    }
+    button { font-family: 'Roboto', sans-serif; font-weight: 500; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
-    /* Buttons */
-    button {
-      font-family: 'Roboto', sans-serif;
-      font-weight: 500;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: opacity 0.2s;
-    }
+    .btn-primary { background-color: var(--primary-color); color: white; padding: 12px; width: 100%; margin-top: 15px; }
+    .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); padding: 6px 12px; font-size: 0.85rem; border-radius: 20px; margin-top: 10px; text-decoration: none; }
 
-    button:active { opacity: 0.7; }
+    #linkListe, #benutzerListe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .chip-link { background: #eee; color: var(--text-color); text-decoration: none; padding: 8px 14px; border-radius: 16px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; border: 1px solid #ddd; }
 
-    .btn-primary { 
-      background-color: var(--primary-color); 
-      color: white; 
-      padding: 12px; 
-      width: 100%; 
-      margin-top: 15px;
-    }
+    /* Sichtbarkeit steuern */
+    .hidden { display: none !important; }
 
-    .btn-outline {
-      background: transparent;
-      border: 1px solid var(--primary-color);
-      color: var(--primary-color);
-      padding: 6px 12px;
-      font-size: 0.85rem;
-      border-radius: 20px;
-      margin-top: 10px;
-      text-decoration: none;
-    }
-
-    /* Links & Listen */
-    #linkListe, #benutzerListe {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .chip-link {
-      background: #eee;
-      color: var(--text-color);
-      text-decoration: none;
-      padding: 8px 14px;
-      border-radius: 16px;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      border: 1px solid #ddd;
-    }
-
-    #debug-log {
-      font-size: 0.7rem;
-      color: #999;
-      text-align: center;
-      margin-top: 20px;
-      font-family: monospace;
-    }
+    #debug-log { font-size: 0.7rem; color: #999; text-align: center; margin-top: 20px; font-family: monospace; }
   </style>
 </head>
 <body>
@@ -185,15 +75,14 @@
     <div id="wocheninfo">Woche wird geladen...</div>
     
     <a href="mitarbeiter.html" class="btn-outline">
-      <span class="material-icons" style="font-size: 16px;">people</span> Mitarbeiter-Verwaltung
+      <span class="material-icons" style="font-size: 16px;">people</span> Verwaltung
     </a>
   </header>
 
   <div class="container">
-    
     <div id="termine"></div>
 
-    <div class="card">
+    <div id="admin-bereich" class="card">
       <div class="section-title"><span class="material-icons">settings</span> Benutzerverwaltung</div>
       <label>Kürzel (z.B. HH)</label>
       <input id="kuerzel" type="text" placeholder="Kürzel">
@@ -208,7 +97,7 @@
       <div id="benutzerListe"></div>
     </div>
 
-    <div class="card">
+    <div id="links-bereich" class="card">
       <div class="section-title"><span class="material-icons">link</span> Schnellzugriff</div>
       <div id="linkListe"></div>
     </div>
@@ -221,21 +110,31 @@
   <script type="module" src="app.js"></script>
 
   <script>
-    // Debug Info (Breite/Höhe)
-    const log = document.getElementById("debug-log");
-    if (log) {
-      log.innerText = `${window.innerWidth}x${window.innerHeight}px`;
+    function checkUrlContext() {
+      // Prüft, ob nach dem letzten Slash ein Kürzel steht (z.B. index.html/HH)
+      const pathParts = window.location.pathname.split("/");
+      const lastPart = pathParts.pop();
+
+      // Wenn der letzte Teil nicht index.html ist und nicht leer ist,
+      // gehen wir davon aus, dass ein Kürzel aktiv ist.
+      if (lastPart && lastPart !== "index.html" && lastPart !== "") {
+        document.getElementById("admin-bereich").classList.add("hidden");
+        document.getElementById("links-bereich").classList.add("hidden");
+      }
     }
 
-    // Scroll-Position nach Reload wiederherstellen
     window.addEventListener('load', () => {
+      checkUrlContext();
+      
       const scrollPos = localStorage.getItem("scrollPos");
       if (scrollPos) {
         window.scrollTo(0, parseInt(scrollPos));
         localStorage.removeItem("scrollPos");
       }
     });
-  </script>
 
+    const log = document.getElementById("debug-log");
+    if (log) log.innerText = `${window.innerWidth}x${window.innerHeight}px`;
+  </script>
 </body>
 </html>
