@@ -48,7 +48,7 @@ export async function zeigeTermine(targetId = null) {
   if (hatZ1) {
     const stats = berechneWochenStats(gefiltert);
     renderDatenbox1(container, stats, zeitraum, mitarbeiterId);
-    await renderDatenbox2(container, stats, zeitraum, mitarbeiterId);
+    await renderDatenbox2(container, stats, zeitraum, mitarbeiterId, mitarbeiterDaten);
   }
 
   renderSteuerung(container);
@@ -56,9 +56,7 @@ export async function zeigeTermine(targetId = null) {
   if (targetId) {
     setTimeout(() => {
       const btn = document.getElementById(targetId);
-      if (btn) {
-        btn.scrollIntoView({ behavior: "instant", block: "center" });
-      }
+      if (btn) btn.scrollIntoView({ behavior: "instant", block: "center" });
     }, 10);
   }
 }
@@ -117,12 +115,13 @@ function renderDatenbox1(container, stats, { montag }, mitarbeiterId) {
       <div>Über: <b>${stats.ueber.toFixed(2).replace(".", ",")}h</b></div>
       <div>Urlaub: <b>${stats.urlaub}</b></div>
       <div>Krank: <b>${stats.krank}</b></div>
+      <div>Bereitschaft: <b>${stats.bereit}</b></div>
     </div>
   `;
   container.appendChild(box);
 }
 
-async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
+async function renderDatenbox2(container, stats, { montag }, mitarbeiterId, mitarbeiterDaten) {
   const box = document.createElement("div");
   box.id = "datenanzeige2";
   box.style = `background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; box-sizing:border-box; width:100%;`;
@@ -137,32 +136,34 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
     box.innerHTML = `<button id="speichernBtn" style="width:100%; padding:12px; background:${PRIMARY}; color:white; border:none; border-radius:4px;">Ersten Eintrag speichern</button>`;
   } else {
     const gefiltertH = daten.filter(e => (e.JAHR * 100 + e.KW) <= (jahr * 100 + kw))
-      .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.current_at));
+      .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.created_at));
     
     const eintrag = gefiltertH[0];
     const gleicheKW = (kw === eintrag.KW);
     const v = {
       uG: gleicheKW ? (eintrag.URLAUBgen ?? 0) : (eintrag.URLAUBgen ?? 0) + stats.urlaub,
       k: gleicheKW ? (eintrag.KRANK ?? 0) : (eintrag.KRANK ?? 0) + stats.krank,
+      b: gleicheKW ? (eintrag.BEREIT ?? 0) : (eintrag.BEREIT ?? 0) + stats.bereit,
       ue: (parseFloat(eintrag["ÜBER"] ?? 0) + (gleicheKW ? 0 : stats.ueber)).toFixed(2)
     };
 
-    const zusatzVorschau = `Urlaub: ${v.uG} / Krank: ${v.k} / Über: ${v.ue.replace(".", ",")}h`;
+    // Die zusammengesetzte Text-Vorschau aus deiner alten Version
+    const zusatzText = `Urlaub: ${eintrag.URLAUB ?? 0} Tage    Urlaub genommen: ${v.uG} Tage    Krank: ${v.k} Tage    Überstunden: ${v.ue.replace(".", ",")} Stunden    Bereitschaft: ${v.b} Tage    ${eintrag.feld1 ?? ""}`;
 
     box.innerHTML = `
-      <style>.row-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee; } .row-stat input { width: 70px; text-align: right; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }</style>
-      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">Aktueller Stand</div>
+      <style>.row-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #eee; } .row-stat input { width: 75px; text-align: right; padding: 4px; border: 1px solid #ccc; border-radius: 4px; }</style>
+      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">${gleicheKW ? `Berechnete Daten KW ${kw}` : "Vorschlag aus Vorwoche"}</div>
       
-      <div style="background:#f5f5f5; padding:8px; border-radius:4px; margin-bottom:15px; font-weight:bold; font-size:14px; text-align:center; color:#333; border:1px solid #eee;">
-        ${zusatzVorschau}
-      </div>
-
       <div class="row-stat"><span>Urlaub Ges.</span><input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}"></div>
       <div class="row-stat"><span>Urlaub gen.</span><input id="urlaubErgebnis" type="number" value="${v.uG}"></div>
       <div class="row-stat"><span>Krank Tage</span><input id="krankErgebnis" type="number" value="${v.k}"></div>
+      <div class="row-stat"><span>Bereitschaft</span><input id="bereitErgebnis" type="number" value="${v.b}"></div>
       <div class="row-stat"><span>Überstunden</span><input id="ueberErgebnis" type="number" step="0.01" value="${v.ue}"></div>
       
-      <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:10px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box;">${eintrag.feld1 ?? ""}</textarea>
+      <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:10px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box; font-family:inherit;">${eintrag.feld1 ?? ""}</textarea>
+      
+      <div style="margin-top:15px; padding:10px; background:#f9f9f9; border-radius:4px; font-size:13px; color:#555; white-space: pre-wrap; line-height:1.4; border:1px inset #eee;">${zusatzText}</div>
+      
       <button id="speichernBtn" style="width:100%; margin-top:15px; padding:12px; background:${PRIMARY}; color:white; border:none; border-radius:4px; font-weight:500; cursor:pointer;">Speichern</button>
     `;
   }
@@ -175,6 +176,7 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
         URLAUB: Number(document.getElementById("urlaubWert").value),
         URLAUBgen: Number(document.getElementById("urlaubErgebnis").value),
         KRANK: Number(document.getElementById("krankErgebnis").value),
+        BEREIT: Number(document.getElementById("bereitErgebnis").value),
         ÜBER: Number(document.getElementById("ueberErgebnis").value),
         feld1: document.getElementById("textBearbeiten").value
       });
@@ -184,7 +186,7 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
 }
 
 /* ==========================================================================
-   3. STEUERUNG & NAVIGATION
+   3. STEUERUNG
    ========================================================================== */
 
 function renderSteuerung(container) {
@@ -200,29 +202,25 @@ function renderSteuerung(container) {
     return b;
   };
   
-  sDiv.appendChild(btn("Vorige", "chevron_left", "nav-prev", () => {
-    setKwOffset(getKwOffset() - 1);
-    zeigeTermine("nav-prev");
-  }));
-
-  sDiv.appendChild(btn("Nächste", "chevron_right", "nav-next", () => {
-    setKwOffset(getKwOffset() + 1);
-    zeigeTermine("nav-next");
-  }));
-
-  sDiv.appendChild(btn(getFilterAktiv() ? "Alle" : "Filter", "filter_list", "nav-filter", () => {
-    setFilterAktiv(!getFilterAktiv());
-    zeigeTermine("nav-filter");
-  }));
-
+  sDiv.appendChild(btn("Vorige", "chevron_left", "nav-prev", () => { setKwOffset(getKwOffset() - 1); zeigeTermine("nav-prev"); }));
+  sDiv.appendChild(btn("Nächste", "chevron_right", "nav-next", () => { setKwOffset(getKwOffset() + 1); zeigeTermine("nav-next"); }));
+  sDiv.appendChild(btn(getFilterAktiv() ? "Alle" : "Filter", "filter_list", "nav-filter", () => { setFilterAktiv(!getFilterAktiv()); zeigeTermine("nav-filter"); }));
   sDiv.appendChild(btn("Laden", "refresh", "nav-load", neuLaden));
   
   const pdfBtn = btn("PDF Export", "picture_as_pdf", "nav-pdf", async () => {
     const mitarbeiter = await ladeMitarbeiterId();
     if (!mitarbeiter) return;
 
-    const z1Zusatz = document.getElementById("textBearbeiten")?.value || "";
-    mitarbeiter.z1Textbox = z1Zusatz;
+    // Den zusammengesetzten Text für das PDF generieren
+    const stats = berechneWochenStats(holeGefilterteTermine(getKWZeitraum(getKwOffset())));
+    const textFeld = document.getElementById("textBearbeiten")?.value || "";
+    const uGen = document.getElementById("urlaubErgebnis")?.value || 0;
+    const krank = document.getElementById("krankErgebnis")?.value || 0;
+    const ueber = document.getElementById("ueberErgebnis")?.value || 0;
+    const bereit = document.getElementById("bereitErgebnis")?.value || 0;
+    const uGes = document.getElementById("urlaubWert")?.value || 0;
+
+    mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${String(ueber).replace(".", ",")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
 
     const tOriginal = getTermine();
     document.querySelectorAll("#termine > div[data-id]").forEach(block => {
@@ -236,7 +234,6 @@ function renderSteuerung(container) {
       }
     });
     setTermine(tOriginal);
-
     exportierePdf(holeGefilterteTermine(getKWZeitraum(getKwOffset())), mitarbeiter);
   }, SECONDARY, "#000");
   pdfBtn.style.gridColumn = "span 2";
@@ -252,19 +249,14 @@ function renderSteuerung(container) {
 function aktualisiereWochenHeader({ montag, sonntag }) {
   const info = document.getElementById("wocheninfo");
   if (!info) return;
-  const f = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short" });
+  const f = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" });
   info.innerHTML = `KW ${berechneKalenderwoche(montag)}: ${f.format(montag)} – ${f.format(sonntag)}`;
 }
 
 async function ladeMitarbeiterId() {
   const pathParts = window.location.pathname.split("/");
   const kuerzel = pathParts.pop() || pathParts.pop();
-  
-  const { data, error } = await supa.from("mitarbeiter")
-    .select("id, name, Z1, Z2, Text")
-    .eq("kuerzel", kuerzel)
-    .single();
-    
+  const { data, error } = await supa.from("mitarbeiter").select("*").eq("kuerzel", kuerzel).single();
   return error ? null : data;
 }
 
@@ -293,8 +285,9 @@ function berechneWochenStats(gefiltert) {
     acc.ueber += parseFloat(String(e.über || 0).replace(",", ".")) || 0;
     if (fuzzyMatch(e.titel || "", ["urlaub"])) acc.urlaub++;
     if (fuzzyMatch(e.titel || "", ["krank"])) acc.krank++;
+    if (fuzzyMatch(e.titel || "", ["bereitschaft"])) acc.bereit++;
     return acc;
-  }, { ueber: 0, urlaub: 0, krank: 0 });
+  }, { ueber: 0, urlaub: 0, krank: 0, bereit: 0 });
 }
 
 function fuzzyMatch(text, patterns) {
