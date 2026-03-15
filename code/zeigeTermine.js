@@ -45,6 +45,7 @@ export async function zeigeTermine() {
     wochenFarbenLogik(gefiltert);
   }
 
+  // Z1-Logik: Nur anzeigen, wenn Mitarbeiter Z1-Status hat
   if (hatZ1) {
     const stats = berechneWochenStats(gefiltert);
     renderDatenbox1(container, stats, zeitraum, mitarbeiterId);
@@ -52,16 +53,22 @@ export async function zeigeTermine() {
   }
 
   renderSteuerung(container);
+
+  // Nach dem Rendern gespeicherte Scroll-Position wiederherstellen
+  const savedPos = localStorage.getItem("scrollPos");
+  if (savedPos) {
+    window.scrollTo(0, parseInt(savedPos));
+    localStorage.removeItem("scrollPos");
+  }
 }
 
 /* ==========================================================================
-   2. UI-KOMPONENTEN (Material Design)
+   2. UI-KOMPONENTEN
    ========================================================================== */
 
 function erstelleTerminKarte(event) {
   const block = document.createElement("div");
   block.dataset.id = event.id;
-  // Material Card Style
   block.style = `background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; border-left:5px solid ${PRIMARY}; box-sizing:border-box; width:100%;`;
 
   const d = new Date(event.timestamp);
@@ -143,7 +150,6 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
     const v = {
       uG: gleicheKW ? (eintrag.URLAUBgen ?? 0) : (eintrag.URLAUBgen ?? 0) + stats.urlaub,
       k: gleicheKW ? (eintrag.KRANK ?? 0) : (eintrag.KRANK ?? 0) + stats.krank,
-      b: gleicheKW ? (eintrag.BEREIT ?? 0) : (eintrag.BEREIT ?? 0) + stats.bereit,
       ue: (parseFloat(eintrag["ÜBER"] ?? 0) + (gleicheKW ? 0 : stats.ueber)).toFixed(2)
     };
 
@@ -170,7 +176,6 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
         URLAUB: Number(document.getElementById("urlaubWert").value),
         URLAUBgen: Number(document.getElementById("urlaubErgebnis").value),
         KRANK: Number(document.getElementById("krankErgebnis").value),
-        BEREIT: Number(v.b),
         ÜBER: Number(document.getElementById("ueberErgebnis").value),
         feld1: document.getElementById("textBearbeiten").value
       });
@@ -191,7 +196,8 @@ function aktualisiereWochenHeader({ montag, sonntag }) {
 }
 
 async function ladeMitarbeiterId() {
-  const kuerzel = window.location.pathname.split("/").pop();
+  const pathParts = window.location.pathname.split("/");
+  const kuerzel = pathParts.pop() || pathParts.pop(); // Sicherstellen, dass wir das Kürzel bekommen
   const { data, error } = await supa.from("mitarbeiter").select("id, Z1").eq("kuerzel", kuerzel).single();
   return error ? null : data;
 }
@@ -215,6 +221,13 @@ function renderSteuerung(container) {
   const sDiv = document.createElement("div");
   sDiv.style = "margin: 20px 0 40px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;";
   
+  // Navigation mit Scroll-Fix
+  const handleNav = (offsetChange) => {
+    localStorage.setItem("scrollPos", window.scrollY);
+    setKwOffset(getKwOffset() + offsetChange);
+    zeigeTermine();
+  };
+
   const btn = (t, icon, f, bg = "#fff", col = "#333") => {
     const b = document.createElement("button"); 
     b.innerHTML = `<span class="material-icons" style="font-size:18px;">${icon}</span> ${t}`; 
@@ -223,13 +236,18 @@ function renderSteuerung(container) {
     return b;
   };
   
-  sDiv.appendChild(btn("Vorige", "chevron_left", () => { setKwOffset(getKwOffset() - 1); zeigeTermine(); }));
-  sDiv.appendChild(btn("Nächste", "chevron_right", () => { setKwOffset(getKwOffset() + 1); zeigeTermine(); }));
-  sDiv.appendChild(btn(getFilterAktiv() ? "Alle" : "Filter", "filter_list", () => { setFilterAktiv(!getFilterAktiv()); zeigeTermine(); }));
+  sDiv.appendChild(btn("Vorige", "chevron_left", () => handleNav(-1)));
+  sDiv.appendChild(btn("Nächste", "chevron_right", () => handleNav(1)));
+  
+  sDiv.appendChild(btn(getFilterAktiv() ? "Alle" : "Filter", "filter_list", () => {
+    localStorage.setItem("scrollPos", window.scrollY);
+    setFilterAktiv(!getFilterAktiv());
+    zeigeTermine();
+  }));
+  
   sDiv.appendChild(btn("Laden", "refresh", neuLaden));
   
   const pdfBtn = btn("PDF Export", "picture_as_pdf", () => {
-    // Vor dem Export Daten sammeln
     const tOriginal = getTermine();
     document.querySelectorAll("#termine > div[data-id]").forEach(block => {
       const ev = tOriginal.find(t => t.id === block.dataset.id);
@@ -250,7 +268,10 @@ function renderSteuerung(container) {
   container.appendChild(sDiv);
 }
 
-// Logik-Hilfsfunktionen wie gehabt...
+/* ==========================================================================
+   4. HELPER-FUNKTIONEN
+   ========================================================================== */
+
 function holeGefilterteTermine({ montag, sonntag }) {
   const termine = getTermine();
   return getFilterAktiv() ? termine.filter(e => { const d = new Date(e.timestamp); return d >= montag && d <= sonntag; }) : termine;
