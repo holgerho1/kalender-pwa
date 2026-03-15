@@ -62,7 +62,6 @@
     #linkListe, #benutzerListe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .chip-link { background: #eee; color: var(--text-color); text-decoration: none; padding: 8px 14px; border-radius: 16px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; border: 1px solid #ddd; }
 
-    /* Sichtbarkeit steuern */
     .hidden { display: none !important; }
 
     #debug-log { font-size: 0.7rem; color: #999; text-align: center; margin-top: 20px; font-family: monospace; }
@@ -74,7 +73,7 @@
     <h1><span class="material-icons">assignment</span> Arbeitsnachweis</h1>
     <div id="wocheninfo">Woche wird geladen...</div>
     
-    <a href="mitarbeiter.html" class="btn-outline">
+    <a href="mitarbeiter.html" id="admin-link" class="btn-outline">
       <span class="material-icons" style="font-size: 16px;">people</span> Verwaltung
     </a>
   </header>
@@ -111,15 +110,15 @@
 
   <script>
     function checkUrlContext() {
-      // Prüft, ob nach dem letzten Slash ein Kürzel steht (z.B. index.html/HH)
       const pathParts = window.location.pathname.split("/");
       const lastPart = pathParts.pop();
 
-      // Wenn der letzte Teil nicht index.html ist und nicht leer ist,
-      // gehen wir davon aus, dass ein Kürzel aktiv ist.
+      // Wenn ein Kürzel erkannt wird (lastPart ist nicht leer und nicht index.html)
       if (lastPart && lastPart !== "index.html" && lastPart !== "") {
         document.getElementById("admin-bereich").classList.add("hidden");
         document.getElementById("links-bereich").classList.add("hidden");
+        document.getElementById("admin-link").classList.add("hidden");
+        document.getElementById("debug-log").classList.add("hidden");
       }
     }
 
@@ -133,6 +132,7 @@
       }
     });
 
+    // Debug-Werte setzen (wird nur gefüllt, wenn nicht hidden)
     const log = document.getElementById("debug-log");
     if (log) log.innerText = `${window.innerWidth}x${window.innerHeight}px`;
   </script>
