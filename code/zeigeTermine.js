@@ -61,7 +61,7 @@ export async function zeigeTermine(targetId = null) {
 }
 
 /* ==========================================================================
-   2. UI-KOMPONENTEN
+   2. UI-KOMPONENTEN (Karte & Datenboxen)
    ========================================================================== */
 
 function erstelleTerminKarte(event) {
@@ -185,7 +185,7 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
 }
 
 /* ==========================================================================
-   3. STEUERUNG & PDF-LOGIK
+   3. STEUERUNG & PDF/SPEICHER-LOGIK
    ========================================================================== */
 
 function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
@@ -219,25 +219,14 @@ function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
       const bereit = document.getElementById("bereitErgebnis")?.value || 0;
       const textFeld = document.getElementById("textBearbeiten")?.value || "";
 
-      // 1. NEUER DATENSATZ SPEICHERN (Möglichkeit A: Einfacher Insert)
       const { error } = await supa.from("tabelle1").insert({
-        KZ: mitarbeiterId, 
-        JAHR: jahr, 
-        KW: kw,
-        URLAUB: Number(uGes), 
-        URLAUBgen: Number(uGen), 
-        KRANK: Number(krank),
-        BEREIT: Number(bereit), 
-        ÜBER: Number(ueber), 
-        feld1: textFeld
+        KZ: mitarbeiterId, JAHR: jahr, KW: kw,
+        URLAUB: Number(uGes), URLAUBgen: Number(uGen), KRANK: Number(krank),
+        BEREIT: Number(bereit), ÜBER: Number(ueber), feld1: textFeld
       });
 
-      if (error) {
-        alert("Fehler beim Speichern der Historie: " + error.message);
-        return; 
-      }
+      if (error) { alert("Fehler beim Speichern: " + error.message); return; }
 
-      // 2. TEXT FÜR PDF VORBEREITEN
       mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${String(ueber).replace(".", ",")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
     }
 
@@ -254,7 +243,14 @@ function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
       }
     });
     setTermine(tOriginal);
+    
+    // PDF erzeugen
     exportierePdf(holeGefilterteTermine(zeitraum), mitarbeiter);
+
+    // NEU LADEN mit Scroll-Automatik zum Button
+    if (hatZ1) {
+      await zeigeTermine("nav-pdf"); 
+    }
   }, SECONDARY, "#000");
   
   pdfBtn.style.gridColumn = "span 2";
