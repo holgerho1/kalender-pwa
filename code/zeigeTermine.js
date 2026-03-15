@@ -11,7 +11,7 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 const supa = createClient(SUPABASE_URL, SUPABASE_KEY);
 const wochentage = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-/* ==========================================================================
+/* ================hh==========================================================
    1. HAUPTFUNKTION (Der Regisseur)
    ========================================================================== */
 
