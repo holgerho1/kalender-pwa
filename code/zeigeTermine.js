@@ -132,7 +132,7 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
   const jahr = montag.getFullYear();
 
   if (!daten || daten.length === 0) {
-    box.innerHTML = `<div style="text-align:center; color:#777; font-size:13px; padding:10px;">Keine Basisdaten in Datenbank gefunden.</div>`;
+    box.innerHTML = `<div style="text-align:center; color:#777; font-size:13px; padding:10px;">Keine Basisdaten gefunden.</div>`;
   } else {
     const gefiltertH = daten.filter(e => (e.JAHR * 100 + e.KW) <= (jahr * 100 + kw))
       .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.created_at));
@@ -154,19 +154,16 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
         #livePreview { margin-top:10px; padding:10px; background:#f9f9f9; border-radius:4px; font-size:12px; color:#444; white-space: pre-wrap; border:1px solid #eee; line-height:1.4; }
       </style>
       <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">
-        ${gleicheKW ? `Daten KW ${kw} (Gespeichert)` : `Vorschlag (Stand KW ${eintrag.KW} + aktuell)`}
+        ${gleicheKW ? `Daten KW ${kw} (Letzter Stand)` : `Vorschlag (Basis KW ${eintrag.KW} + KW ${kw})`}
       </div>
-      
       <div class="row-stat"><span>Urlaub Gesamt</span><span class="calc-info">Basis:</span><input id="urlaubWert" type="number" value="${eintrag.URLAUB ?? 0}"></div>
       <div class="row-stat"><span>Urlaub genommen</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.urlaub}`} =</span><input id="urlaubErgebnis" type="number" value="${v.uG}"></div>
       <div class="row-stat"><span>Krank Tage</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.krank}`} =</span><input id="krankErgebnis" type="number" value="${v.k}"></div>
       <div class="row-stat"><span>Bereitschaft</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.bereit}`} =</span><input id="bereitErgebnis" type="number" value="${v.b}"></div>
       <div class="row-stat"><span>Überstunden</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.ueber.toFixed(2)}`} =</span><input id="ueberErgebnis" type="number" step="0.01" value="${v.ue}"></div>
-      
       <div style="margin-top:15px; font-weight:500; font-size:13px;">Zusatztext:</div>
       <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:5px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box; font-family:inherit;">${eintrag.feld1 ?? ""}</textarea>
-      
-      <div style="margin-top:15px; font-size:11px; color:#666; font-weight:bold;">VORSCHAU INFOZEILE:</div>
+      <div style="margin-top:15px; font-size:11px; color:#666; font-weight:bold;">VORSCHAU INFOZEILE (PDF):</div>
       <div id="livePreview"></div>
     `;
 
@@ -188,7 +185,7 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
 }
 
 /* ==========================================================================
-   3. STEUERUNG & PDF/SPEICHER-LOGIK
+   3. STEUERUNG & PDF-LOGIK
    ========================================================================== */
 
 function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
@@ -222,16 +219,25 @@ function renderSteuerung(container, hatZ1, mitarbeiterId, zeitraum) {
       const bereit = document.getElementById("bereitErgebnis")?.value || 0;
       const textFeld = document.getElementById("textBearbeiten")?.value || "";
 
-      // 1. Speichern (Upsert)
-      const { error } = await supa.from("tabelle1").upsert({
-        KZ: mitarbeiterId, JAHR: jahr, KW: kw,
-        URLAUB: Number(uGes), URLAUBgen: Number(uGen), KRANK: Number(krank),
-        BEREIT: Number(bereit), ÜBER: Number(ueber), feld1: textFeld
-      }, { onConflict: 'KZ, JAHR, KW' });
+      // 1. NEUER DATENSATZ SPEICHERN (Möglichkeit A: Einfacher Insert)
+      const { error } = await supa.from("tabelle1").insert({
+        KZ: mitarbeiterId, 
+        JAHR: jahr, 
+        KW: kw,
+        URLAUB: Number(uGes), 
+        URLAUBgen: Number(uGen), 
+        KRANK: Number(krank),
+        BEREIT: Number(bereit), 
+        ÜBER: Number(ueber), 
+        feld1: textFeld
+      });
 
-      if (error) { alert("Fehler beim Speichern: " + error.message); return; }
+      if (error) {
+        alert("Fehler beim Speichern der Historie: " + error.message);
+        return; 
+      }
 
-      // 2. Infozeile für PDF setzen
+      // 2. TEXT FÜR PDF VORBEREITEN
       mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${String(ueber).replace(".", ",")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
     }
 
