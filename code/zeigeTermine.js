@@ -131,59 +131,78 @@ async function renderDatenbox2(container, stats, { montag }, mitarbeiterId) {
   const kw = berechneKalenderwoche(montag);
   const jahr = montag.getFullYear();
 
+  let eintrag;
+  let gleicheKW = false;
+
+  // FALLS KEINE DATEN DA SIND: Standardwerte setzen
   if (!daten || daten.length === 0) {
-    box.innerHTML = `<div style="text-align:center; color:#777; font-size:13px; padding:10px;">Keine Basisdaten gefunden.</div>`;
+    eintrag = {
+      KW: kw,
+      JAHR: jahr,
+      URLAUB: 0,
+      URLAUBgen: 0,
+      KRANK: 0,
+      BEREIT: 0,
+      "ÜBER": 0,
+      feld1: ""
+    };
+    gleicheKW = true; // Wir behandeln es wie einen frischen Eintrag
   } else {
     const gefiltertH = daten.filter(e => (e.JAHR * 100 + e.KW) <= (jahr * 100 + kw))
       .sort((a, b) => b.JAHR !== a.JAHR ? b.JAHR - a.JAHR : b.KW !== a.KW ? b.KW - a.KW : new Date(b.created_at) - new Date(a.created_at));
     
-    const eintrag = gefiltertH[0];
-    const gleicheKW = (kw === eintrag.KW && jahr === eintrag.JAHR);
-
-    let v = gleicheKW ? {
-      uG: eintrag.URLAUBgen ?? 0, k: eintrag.KRANK ?? 0, b: eintrag.BEREIT ?? 0, ue: parseFloat(eintrag["ÜBER"] ?? 0).toFixed(2)
-    } : {
-      uG: (eintrag.URLAUBgen ?? 0) + stats.urlaub, k: (eintrag.KRANK ?? 0) + stats.krank, b: (eintrag.BEREIT ?? 0) + stats.bereit, ue: (parseFloat(eintrag["ÜBER"] ?? 0) + stats.ueber).toFixed(2)
-    };
-
-    box.innerHTML = `
-      <style>
-        .row-stat { display: grid; grid-template-columns: 1fr auto 80px; align-items: center; margin-bottom: 8px; gap: 10px; border-bottom: 1px solid #eee; padding-bottom: 4px; } 
-        .row-stat input { width: 80px; text-align: right; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; } 
-        .calc-info { font-size: 11px; color: #888; text-align: right; }
-        #livePreview { margin-top:10px; padding:10px; background:#f9f9f9; border-radius:4px; font-size:12px; color:#444; white-space: pre-wrap; border:1px solid #eee; line-height:1.4; }
-      </style>
-      <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">
-        ${gleicheKW ? `Daten KW ${kw} (Letzter Stand)` : `Vorschlag (Basis KW ${eintrag.KW} + KW ${kw})`}
-      </div>
-      <div class="row-stat"><span>Urlaub Gesamt</span><span class="calc-info">Basis:</span><input id="urlaubWert" type="text" inputmode="numeric" value="${eintrag.URLAUB ?? 0}"></div>
-      <div class="row-stat"><span>Urlaub genommen</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.urlaub}`} =</span><input id="urlaubErgebnis" type="text" inputmode="numeric" value="${v.uG}"></div>
-      <div class="row-stat"><span>Krank Tage</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.krank}`} =</span><input id="krankErgebnis" type="text" inputmode="numeric" value="${v.k}"></div>
-      <div class="row-stat"><span>Bereitschaft</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.bereit}`} =</span><input id="bereitErgebnis" type="text" inputmode="numeric" value="${v.b}"></div>
-      <div class="row-stat"><span>Überstunden</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.ueber.toFixed(2)}`} =</span><input id="ueberErgebnis" type="text" inputmode="text" value="${v.ue.replace(".",",")}"></div>
-      
-      <div style="margin-top:15px; font-weight:500; font-size:13px;">Zusatztext:</div>
-      <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:5px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box; font-family:inherit;">${eintrag.feld1 ?? ""}</textarea>
-      
-      <div style="margin-top:15px; font-size:11px; color:#666; font-weight:bold;">VORSCHAU INFOZEILE (PDF):</div>
-      <div id="livePreview"></div>
-    `;
-
-    const updatePreview = () => {
-      const uGes = document.getElementById("urlaubWert").value;
-      const uGen = document.getElementById("urlaubErgebnis").value;
-      const krank = document.getElementById("krankErgebnis").value;
-      const ueber = document.getElementById("ueberErgebnis").value;
-      const bereit = document.getElementById("bereitErgebnis").value;
-      const text = document.getElementById("textBearbeiten").value;
-      document.getElementById("livePreview").textContent = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${ueber} Stunden    Bereitschaft: ${bereit} Tage    ${text}`;
-    };
-
-    ["urlaubWert", "urlaubErgebnis", "krankErgebnis", "ueberErgebnis", "bereitErgebnis", "textBearbeiten"].forEach(id => {
-      document.getElementById(id).addEventListener("input", updatePreview);
-    });
-    updatePreview();
+    if (gefiltertH.length === 0) {
+      eintrag = { KW: kw, JAHR: jahr, URLAUB: 0, URLAUBgen: 0, KRANK: 0, BEREIT: 0, "ÜBER": 0, feld1: "" };
+      gleicheKW = true;
+    } else {
+      eintrag = gefiltertH[0];
+      gleicheKW = (kw === eintrag.KW && jahr === eintrag.JAHR);
+    }
   }
+
+  let v = gleicheKW ? {
+    uG: eintrag.URLAUBgen ?? 0, k: eintrag.KRANK ?? 0, b: eintrag.BEREIT ?? 0, ue: parseFloat(eintrag["ÜBER"] ?? 0).toFixed(2)
+  } : {
+    uG: (eintrag.URLAUBgen ?? 0) + stats.urlaub, k: (eintrag.KRANK ?? 0) + stats.krank, b: (eintrag.BEREIT ?? 0) + stats.bereit, ue: (parseFloat(eintrag["ÜBER"] ?? 0) + stats.ueber).toFixed(2)
+  };
+
+  box.innerHTML = `
+    <style>
+      .row-stat { display: grid; grid-template-columns: 1fr auto 80px; align-items: center; margin-bottom: 8px; gap: 10px; border-bottom: 1px solid #eee; padding-bottom: 4px; } 
+      .row-stat input { width: 80px; text-align: right; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; } 
+      .calc-info { font-size: 11px; color: #888; text-align: right; }
+      #livePreview { margin-top:10px; padding:10px; background:#f9f9f9; border-radius:4px; font-size:12px; color:#444; white-space: pre-wrap; border:1px solid #eee; line-height:1.4; }
+    </style>
+    <div style="font-size:0.8rem; text-transform:uppercase; color:#777; margin-bottom:12px; font-weight:500;">
+      ${gleicheKW ? `Daten KW ${kw} (Letzter Stand)` : `Vorschlag (Basis KW ${eintrag.KW} + KW ${kw})`}
+    </div>
+    <div class="row-stat"><span>Urlaub Gesamt</span><span class="calc-info">Basis:</span><input id="urlaubWert" type="text" inputmode="numeric" value="${eintrag.URLAUB ?? 0}"></div>
+    <div class="row-stat"><span>Urlaub genommen</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.urlaub}`} =</span><input id="urlaubErgebnis" type="text" inputmode="numeric" value="${v.uG}"></div>
+    <div class="row-stat"><span>Krank Tage</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.krank}`} =</span><input id="krankErgebnis" type="text" inputmode="numeric" value="${v.k}"></div>
+    <div class="row-stat"><span>Bereitschaft</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.bereit}`} =</span><input id="bereitErgebnis" type="text" inputmode="numeric" value="${v.b}"></div>
+    <div class="row-stat"><span>Überstunden</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.ueber.toFixed(2)}`} =</span><input id="ueberErgebnis" type="text" inputmode="text" value="${v.ue.replace(".",",")}"></div>
+    
+    <div style="margin-top:15px; font-weight:500; font-size:13px;">Zusatztext:</div>
+    <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:5px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box; font-family:inherit;">${eintrag.feld1 ?? ""}</textarea>
+    
+    <div style="margin-top:15px; font-size:11px; color:#666; font-weight:bold;">VORSCHAU INFOZEILE (PDF):</div>
+    <div id="livePreview"></div>
+  `;
+
+  const updatePreview = () => {
+    const uGes = document.getElementById("urlaubWert").value;
+    const uGen = document.getElementById("urlaubErgebnis").value;
+    const krank = document.getElementById("krankErgebnis").value;
+    const ueber = document.getElementById("ueberErgebnis").value;
+    const bereit = document.getElementById("bereitErgebnis").value;
+    const text = document.getElementById("textBearbeiten").value;
+    document.getElementById("livePreview").textContent = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${ueber} Stunden    Bereitschaft: ${bereit} Tage    ${text}`;
+  };
+
+  ["urlaubWert", "urlaubErgebnis", "krankErgebnis", "ueberErgebnis", "bereitErgebnis", "textBearbeiten"].forEach(id => {
+    document.getElementById(id).addEventListener("input", updatePreview);
+  });
+  updatePreview();
 }
 
 /* ==========================================================================
