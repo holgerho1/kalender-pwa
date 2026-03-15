@@ -139,28 +139,28 @@ export function exportierePdf(termine, mitarbeiter = {}) {
   });
 
   // --- ZUSATZTEXTE UNTER DER TABELLE ---
-  let currentY = doc.lastAutoTable.finalY + 10;
+  let currentY = doc.lastAutoTable.finalY + 12;
 
   // Z1: Text aus der Datenbox 2 (z1Textbox)
   if (mitarbeiter.Z1 && mitarbeiter.z1Textbox) {
-    if (currentY > 175) { doc.addPage(); currentY = 20; }
+    if (currentY > 180) { doc.addPage(); currentY = 20; }
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.text("Aktueller Wochenstand (Z1):", 10, currentY);
+    doc.text("Aktueller Wochenstand:", 10, currentY);
     doc.setFont("helvetica", "normal");
     const splitZ1 = doc.splitTextToSize(mitarbeiter.z1Textbox, pageWidth - 20);
     doc.text(splitZ1, 10, currentY + 6);
-    currentY += (splitZ1.length * 5) + 10; // Y-Position für nächsten Block erhöhen
+    currentY += (splitZ1.length * 6) + 12; 
   }
 
-  // Z2: Text aus der Mitarbeiter-Tabelle (infotext)
-  if (mitarbeiter.Z2 && mitarbeiter.infotext) {
-    if (currentY > 175) { doc.addPage(); currentY = 20; }
+  // Z2: Text aus der Mitarbeiter-Tabelle (Spalte "Text")
+  if (mitarbeiter.Z2 && mitarbeiter.Text) {
+    if (currentY > 180) { doc.addPage(); currentY = 20; }
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.text("Zusatzinformationen (Z2):", 10, currentY);
+    doc.text("Zusatzinformationen:", 10, currentY);
     doc.setFont("helvetica", "normal");
-    const splitZ2 = doc.splitTextToSize(mitarbeiter.infotext, pageWidth - 20);
+    const splitZ2 = doc.splitTextToSize(mitarbeiter.Text, pageWidth - 20);
     doc.text(splitZ2, 10, currentY + 6);
   }
 
