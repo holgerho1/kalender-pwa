@@ -20,17 +20,20 @@ const CARD_SHADOW = "0 2px 10px rgba(0,0,0,0.1)";
    ========================================================================== */
 
 export async function zeigeTermine(targetId = null) {
+  // 1. Mitarbeiter laden (Unterstützt jetzt Groß/Kleinschreibung & Startseite)
   const mitarbeiterDaten = await ladeMitarbeiterId();
-  if (!mitarbeiterDaten) return;
-
-  const mitarbeiterId = mitarbeiterDaten.id;
-  const hatZ1 = mitarbeiterDaten.Z1 === true;
-  const hatZ2 = mitarbeiterDaten.Z2 === true;
+  
+  // Falls kein Mitarbeiter (Startseite), setzen wir Standardwerte
+  const hatMitarbeiter = !!mitarbeiterDaten;
+  const mitarbeiterId = mitarbeiterDaten?.id || null;
+  const hatZ1 = mitarbeiterDaten?.Z1 === true;
+  const hatZ2 = mitarbeiterDaten?.Z2 === true;
 
   const zeitraum = getKWZeitraum(getKwOffset());
-  aktualisiereWochenHeader(zeitraum);
+  aktualiseHeader(zeitraum);
 
   const container = document.getElementById("termine");
+  if (!container) return;
   container.innerHTML = "";
 
   const gefiltert = holeGefilterteTermine(zeitraum);
@@ -45,7 +48,7 @@ export async function zeigeTermine(targetId = null) {
     wochenFarbenLogik(gefiltert);
   }
 
-  // Box-Logik: Z1 zeigt Historie/Statistik, Z2 zeigt direktes Textfeld aus Mitarbeiter-Tabelle
+  // Box-Logik: Nur ausführen, wenn ein Mitarbeiterprofil aktiv ist
   if (hatZ1) {
     const stats = berechneWochenStats(gefiltert);
     renderDatenbox1(container, stats, zeitraum);
@@ -54,7 +57,8 @@ export async function zeigeTermine(targetId = null) {
     renderDatenboxZ2(container, mitarbeiterDaten);
   }
 
-  renderSteuerung(container, mitarbeiterDaten, zeitraum);
+  // Steuerung immer rendern, mDaten kann auch leer sein {}
+  renderSteuerung(container, mitarbeiterDaten || {}, zeitraum);
 
   if (targetId) {
     setTimeout(() => {
@@ -124,7 +128,6 @@ function renderDatenbox1(container, stats, { montag }) {
   container.appendChild(box);
 }
 
-// BOX FÜR Z1 (HISTORIE IN TABELLE1)
 async function renderDatenbox2Z1(container, stats, { montag }, mitarbeiterId) {
   const box = document.createElement("div");
   box.id = "datenanzeige2";
@@ -191,12 +194,11 @@ async function renderDatenbox2Z1(container, stats, { montag }, mitarbeiterId) {
   };
 
   ["urlaubWert", "urlaubErgebnis", "krankErgebnis", "ueberErgebnis", "bereitErgebnis", "textBearbeiten"].forEach(id => {
-    document.getElementById(id).addEventListener("input", updatePreview);
+    document.getElementById(id)?.addEventListener("input", updatePreview);
   });
   updatePreview();
 }
 
-// BOX FÜR Z2 (PERSISTENTES TEXTFELD IN MITARBEITER)
 function renderDatenboxZ2(container, mDaten) {
   const box = document.createElement("div");
   box.style = `background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; box-sizing:border-box; width:100%; border-top:3px solid ${SECONDARY};`;
@@ -228,15 +230,14 @@ function renderSteuerung(container, mDaten, zeitraum) {
   sDiv.appendChild(btn(getFilterAktiv() ? "Alle" : "Filter", "filter_list", "nav-filter", () => { setFilterAktiv(!getFilterAktiv()); zeigeTermine("nav-filter"); }));
   sDiv.appendChild(btn("Laden", "refresh", "nav-load", neuLaden));
   
-  const brauchtSpeichern = (mDaten.Z1 === true || mDaten.Z2 === true);
+  const brauchtSpeichern = (mDaten && (mDaten.Z1 === true || mDaten.Z2 === true));
   const pdfBtnText = brauchtSpeichern ? "PDF Export & Speichern" : "PDF Export";
 
   const pdfBtn = btn(pdfBtnText, "picture_as_pdf", "nav-pdf", async () => {
     const mitarbeiter = await ladeMitarbeiterId();
-    if (!mitarbeiter) return;
-
-    // SPEICHERN Z1 (Neuer Eintrag in Historie)
-    if (mitarbeiter.Z1 === true) {
+    
+    // SPEICHERN Z1
+    if (mitarbeiter?.Z1 === true) {
       const kw = berechneKalenderwoche(zeitraum.montag);
       const jahr = zeitraum.montag.getFullYear();
       const val = id => (document.getElementById(id)?.value || "0").replace(",", ".");
@@ -247,11 +248,11 @@ function renderSteuerung(container, mDaten, zeitraum) {
         KZ: mitarbeiter.id, JAHR: jahr, KW: kw, URLAUB: Number(uGes), URLAUBgen: Number(uGen), KRANK: Number(krank), BEREIT: Number(bereit), ÜBER: Number(ueber), feld1: textFeld
       });
       if (error) { alert("Fehler beim Speichern Z1: " + error.message); return; }
-      mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${ueber.replace(".",",")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
+      mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${ueber.replace(".",,")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
     }
 
-    // SPEICHERN Z2 (Update des Mitarbeiter-Datensatzes)
-    if (mitarbeiter.Z2 === true) {
+    // SPEICHERN Z2
+    if (mitarbeiter?.Z2 === true) {
       const neuerText = document.getElementById("z2TextFeld")?.value || "";
       const { error } = await supa.from("mitarbeiter").update({ Text: neuerText }).eq("id", mitarbeiter.id);
       if (error) { alert("Fehler beim Speichern Z2: " + error.message); return; }
@@ -272,9 +273,9 @@ function renderSteuerung(container, mDaten, zeitraum) {
     });
     setTermine(tOriginal);
     
-    exportierePdf(holeGefilterteTermine(zeitraum), mitarbeiter);
+    exportierePdf(holeGefilterteTermine(zeitraum), mitarbeiter || {});
 
-    if (mitarbeiter.Z1 === true) await zeigeTermine("nav-pdf"); 
+    if (mitarbeiter?.Z1 === true) await zeigeTermine("nav-pdf"); 
   }, SECONDARY, "#000");
   
   pdfBtn.style.gridColumn = "span 2";
@@ -286,7 +287,7 @@ function renderSteuerung(container, mDaten, zeitraum) {
    4. HELPER
    ========================================================================== */
 
-function aktualisiereWochenHeader({ montag, sonntag }) {
+function aktualiseHeader({ montag, sonntag }) {
   const info = document.getElementById("wocheninfo");
   if (!info) return;
   const f = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" });
@@ -294,8 +295,13 @@ function aktualisiereWochenHeader({ montag, sonntag }) {
 }
 
 async function ladeMitarbeiterId() {
-  const pathParts = window.location.pathname.split("/");
-  const kuerzel = pathParts.pop() || pathParts.pop();
+  const path = window.location.pathname;
+  const parts = path.split("/").filter(p => p.length > 0);
+  const kuerzelRaw = parts[parts.length - 1] || "";
+  const kuerzel = kuerzelRaw.trim().toUpperCase();
+
+  if (!kuerzel || kuerzel === "INDEX.HTML") return null;
+
   const { data, error } = await supa.from("mitarbeiter").select("*").eq("kuerzel", kuerzel).single();
   return error ? null : data;
 }
