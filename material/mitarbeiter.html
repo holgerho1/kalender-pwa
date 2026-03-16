@@ -1,260 +1,198 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mitarbeiter verwalten | Supabase</title>
+import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
+
+const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let aktuellerId = null;
+
+// ---------------------------------------------------------
+// 1. LISTE LADEN
+// ---------------------------------------------------------
+async function ladeListe() {
+  const { data, error } = await supa
+    .from("mitarbeiter")
+    .select("*")
+    .order("kuerzel");
+
+  if (error) {
+    log("Fehler beim Laden der Liste:\n" + error.message);
+    return;
+  }
+
+  const liste = document.getElementById("liste");
+  liste.innerHTML = "";
+
+  data.forEach(row => {
+    const li = document.createElement("li");
+    li.textContent = `${row.kuerzel} – ${row.name ?? ""}`;
+    
+    if (row.id === aktuellerId) {
+      li.classList.add("selected-worker");
+    }
+
+    li.onclick = () => {
+      aktuellerId = row.id;
+      auswahlGeaendert();
+      markiereAuswahl(li);
+    };
+
+    liste.appendChild(li);
+  });
+}
+
+function markiereAuswahl(li) {
+  document.querySelectorAll("#liste li").forEach(el => {
+    el.classList.remove("selected-worker");
+  });
+  li.classList.add("selected-worker");
+}
+
+// ---------------------------------------------------------
+// 2. AUSWAHL GEÄNDERT (Laden der Details)
+// ---------------------------------------------------------
+window.auswahlGeaendert = async function () {
+  if (!aktuellerId) return;
+
+  const { data, error } = await supa
+    .from("mitarbeiter")
+    .select("*")
+    .eq("id", aktuellerId)
+    .single();
+
+  if (error) {
+    log("Fehler beim Laden des Datensatzes:\n" + error.message);
+    return;
+  }
+
+  // Standardfelder
+  document.getElementById("eingabe_kuerzel").value = data.kuerzel ?? "";
+  document.getElementById("eingabe_name").value = data.name ?? "";
+  document.getElementById("eingabe_text").value = data.Text ?? "";
+
+  // Checkbox Z1a & Radios
+  const checkZ1a = document.getElementById("check_z1a");
   
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  if (data.Z1 === true) {
+    document.getElementById("radio_z1").checked = true;
+    checkZ1a.disabled = false;
+  } else if (data.Z2 === true) {
+    document.getElementById("radio_z2").checked = true;
+    checkZ1a.disabled = true;
+  } else {
+    document.getElementById("radio_none").checked = true;
+    checkZ1a.disabled = true;
+  }
 
-  <style>
-    :root {
-      --primary-color: #6200ee;
-      --secondary-color: #03dac6;
-      --bg-color: #f5f5f5;
-      --card-bg: #ffffff;
-      --text-color: #333;
+  // Wert der Checkbox setzen
+  checkZ1a.checked = (data.Z1a === true);
+
+  log(`Bearbeite: ${data.kuerzel}`);
+};
+
+// ---------------------------------------------------------
+// 3. UI-LOGIK: SOFORTIGE REAKTION AUF RADIO-BUTTONS
+// ---------------------------------------------------------
+document.addEventListener("change", (event) => {
+  if (event.target.name === "zusatz") {
+    const checkZ1a = document.getElementById("check_z1a");
+    if (event.target.id === "radio_z1") {
+      checkZ1a.disabled = false;
+    } else {
+      checkZ1a.disabled = true;
+      checkZ1a.checked = false; // Deaktivieren löscht auch den Haken
     }
+  }
+});
 
-    body {
-      font-family: 'Roboto', sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+// ---------------------------------------------------------
+// 4. NEU (Felder leeren)
+// ---------------------------------------------------------
+window.neu = function () {
+  aktuellerId = null;
+  document.querySelectorAll("#liste li").forEach(el => el.classList.remove("selected-worker"));
 
-    .container {
-      width: 100%;
-      max-width: 600px;
-    }
+  document.getElementById("eingabe_kuerzel").value = "";
+  document.getElementById("eingabe_name").value = "";
+  document.getElementById("eingabe_text").value = "";
+  document.getElementById("radio_none").checked = true;
+  
+  const checkZ1a = document.getElementById("check_z1a");
+  checkZ1a.checked = false;
+  checkZ1a.disabled = true;
 
-    h1 {
-      text-align: center;
-      color: var(--primary-color);
-      font-weight: 300;
-      margin-bottom: 24px;
-    }
+  log("Neuer Mitarbeiter – bitte Daten eingeben.");
+};
 
-    .card {
-      background: var(--card-bg);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
+// ---------------------------------------------------------
+// 5. SPEICHERN (Inklusive Z1, Z1a, Z2 und Text)
+// ---------------------------------------------------------
+window.speichern = async function () {
+  const kuerzel = document.getElementById("eingabe_kuerzel").value.trim();
+  const name = document.getElementById("eingabe_name").value.trim();
+  const infoText = document.getElementById("eingabe_text").value.trim();
+  
+  const istZ1 = document.getElementById("radio_z1").checked;
+  const istZ2 = document.getElementById("radio_z2").checked;
+  // Z1a wird nur true gespeichert, wenn auch Z1 aktiv ist
+  const istZ1a = istZ1 && document.getElementById("check_z1a").checked;
 
-    .section-title {
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      color: #777;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+  if (kuerzel === "") {
+    log("Kürzel darf nicht leer sein.");
+    return;
+  }
 
-    label {
-      display: block;
-      margin-top: 12px;
-      font-size: 0.85rem;
-      color: var(--primary-color);
-    }
+  const daten = { 
+    kuerzel: kuerzel, 
+    name: name, 
+    Z1: istZ1, 
+    Z1a: istZ1a,
+    Z2: istZ2, 
+    Text: infoText 
+  };
 
-    input[type="text"] {
-      font-size: 1rem;
-      padding: 10px;
-      width: 100%;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      box-sizing: border-box;
-      margin-top: 4px;
-      background: #fafafa;
-    }
+  let result;
 
-    /* Mitarbeiter Liste Styling */
-    #liste {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      max-height: 200px;
-      overflow-y: auto;
-      border: 1px solid #eee;
-      border-radius: 4px;
-    }
+  if (aktuellerId === null) {
+    result = await supa.from("mitarbeiter").insert(daten);
+  } else {
+    result = await supa.from("mitarbeiter").update(daten).eq("id", aktuellerId);
+  }
 
-    #liste li {
-      padding: 14px;
-      border-bottom: 1px solid #f0f0f0;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
+  if (result.error) {
+    log("Fehler beim Speichern:\n" + result.error.message);
+    return;
+  }
 
-    #liste li:active { background-color: #e0e0e0; }
+  log("Gespeichert.");
+  ladeListe();
+};
 
-    .selected-worker {
-      background-color: #f0ebff !important;
-      border-left: 4px solid var(--primary-color);
-      font-weight: 500;
-    }
+// ---------------------------------------------------------
+// 6. LÖSCHEN
+// ---------------------------------------------------------
+window.loeschen = async function () {
+  if (!aktuellerId) {
+    log("Kein Mitarbeiter ausgewählt.");
+    return;
+  }
 
-    .radio-group {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 10px;
-      background: #fafafa;
-      padding: 12px;
-      border-radius: 4px;
-      border: 1px solid #ddd;
-    }
+  if (!confirm("Diesen Mitarbeiter wirklich löschen?")) return;
 
-    .radio-option {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: normal;
-      margin: 0;
-      cursor: pointer;
-    }
+  const { error } = await supa.from("mitarbeiter").delete().eq("id", aktuellerId);
 
-    /* Neu: Einrückung für Unter-Optionen */
-    .sub-option {
-      margin-left: 30px;
-      font-size: 0.85rem;
-      color: #555;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-    }
+  if (error) {
+    log("Fehler beim Löschen:\n" + error.message);
+    return;
+  }
 
-    .radio-option input, .sub-option input {
-      width: 18px;
-      height: 18px;
-      margin: 0;
-    }
+  aktuellerId = null;
+  window.neu(); 
+  log("Mitarbeiter gelöscht.");
+  ladeListe();
+};
 
-    .sub-option:has(input:disabled) {
-      color: #bbb;
-      cursor: not-allowed;
-    }
+function log(text) {
+  document.getElementById("log").textContent = text;
+}
 
-    .button-group {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    button {
-      font-family: 'Roboto', sans-serif;
-      font-size: 1rem;
-      font-weight: 500;
-      padding: 12px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .btn-primary { background-color: var(--primary-color); color: white; }
-    .btn-secondary { background-color: var(--secondary-color); color: black; }
-    .btn-danger { background-color: #cf6679; color: white; }
-    .btn-outline { 
-      background-color: transparent; 
-      border: 1px solid var(--primary-color); 
-      color: var(--primary-color); 
-      width: 100%; 
-      margin-bottom: 20px;
-    }
-
-    #log {
-      background: #333;
-      color: #00ff00;
-      padding: 12px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-family: monospace;
-      margin-top: 20px;
-      white-space: pre-wrap;
-    }
-  </style>
-</head>
-
-<body>
-
-  <div class="container">
-    <h1>Mitarbeiter-Verwaltung</h1>
-
-    <button class="btn-outline" onclick="window.location.href='index.html'">
-      <span class="material-icons">arrow_back</span> Zurück zum Kalender
-    </button>
-
-    <div class="card">
-      <div class="section-title"><span class="material-icons">people</span> Mitarbeiter auswählen</div>
-      <ul id="liste"></ul>
-      <div class="button-group">
-        <button class="btn-secondary" onclick="neu()">
-          <span class="material-icons">person_add</span> Neu
-        </button>
-        <button class="btn-danger" onclick="loeschen()">
-          <span class="material-icons">person_remove</span> Löschen
-        </button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-title"><span class="material-icons">badge</span> Mitarbeiter-Details</div>
-      
-      <label for="eingabe_kuerzel">Kürzel (KZ)</label>
-      <input id="eingabe_kuerzel" type="text" placeholder="z.B. AB" />
-
-      <label for="eingabe_name">Vollständiger Name</label>
-      <input id="eingabe_name" type="text" placeholder="Vorname Nachname" />
-
-      <label style="margin-top: 20px; color: var(--primary-color);">Zusatz-Status</label>
-      <div class="radio-group">
-        <label class="radio-option">
-          <input type="radio" name="zusatz" value="none" id="radio_none" checked>
-          Keine Auswahl (Standard)
-        </label>
-        
-        <label class="radio-option">
-          <input type="radio" name="zusatz" value="Z1" id="radio_z1">
-          Status Z1 (Statistik)
-        </label>
-        
-        <label class="sub-option">
-          <input type="checkbox" id="check_z1a" disabled>
-          ↳ Überstunden im Text anzeigen
-        </label>
-
-        <label class="radio-option">
-          <input type="radio" name="zusatz" value="Z2" id="radio_z2">
-          Status Z2 (Infozeile)
-        </label>
-      </div>
-
-      <label for="eingabe_text">Anmerkungen (Text)</label>
-      <input id="eingabe_text" type="text" placeholder="Hier Info-Text eingeben..." />
-
-      <button class="btn-primary" style="width: 100%; margin-top: 25px;" onclick="speichern()">
-        <span class="material-icons">save</span> Mitarbeiter speichern
-      </button>
-    </div>
-
-    <div id="log">Bereit zur Bearbeitung...</div>
-  </div>
-
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script type="module" src="mitarbeiter.js"></script>
-</body>
-</html>
+// START
+ladeListe();
