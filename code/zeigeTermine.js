@@ -172,7 +172,7 @@ async function renderDatenbox2Z1(container, stats, { montag }, mitarbeiterId) {
     <div class="row-stat"><span>Urlaub genommen</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.urlaub}`} =</span><input id="urlaubErgebnis" type="text" inputmode="numeric" value="${v.uG}"></div>
     <div class="row-stat"><span>Krank Tage</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.krank}`} =</span><input id="krankErgebnis" type="text" inputmode="numeric" value="${v.k}"></div>
     <div class="row-stat"><span>Bereitschaft</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.bereit}`} =</span><input id="bereitErgebnis" type="text" inputmode="numeric" value="${v.b}"></div>
-    <div class="row-stat"><span>Überstunden</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.ueber.toFixed(2)}`} =</span><input id="ueberErgebnis" type="text" inputmode="text" value="${v.ue.replace(".",",")}"></div>
+    <div class="row-stat"><span>Überstunden</span><span class="calc-info">${gleicheKW ? "" : `+ ${stats.ueber.toFixed(2)}`} =</span><input id="ueberErgebnis" type="text" inputmode="text" value="${v.ue.replace(".",,")}"></div>
     <div style="margin-top:15px; font-weight:500; font-size:13px;">Zusatztext:</div>
     <textarea id="textBearbeiten" style="width:100%; height:60px; margin-top:5px; border:1px solid #ccc; border-radius:4px; padding:8px; box-sizing:border-box; font-family:inherit;">${eintrag.feld1 ?? ""}</textarea>
     <div style="margin-top:15px; font-size:11px; color:#666; font-weight:bold;">VORSCHAU INFOZEILE (PDF):</div>
@@ -226,7 +226,8 @@ function renderSteuerung(container, mDaten, zeitraum) {
   sDiv.appendChild(btn(getFilterAktiv() ? "Alle" : "Filter", "filter_list", "nav-filter", () => { setFilterAktiv(!getFilterAktiv()); zeigeTermine("nav-filter"); }));
   sDiv.appendChild(btn("Laden", "refresh", "nav-load", neuLaden));
   
-  const pdfBtnText = (mDaten && (mDaten.Z1 === true || mDaten.Z2 === true)) ? "PDF Export & Speichern" : "PDF Export";
+  const hatZ = mDaten && (mDaten.Z1 === true || mDaten.Z2 === true);
+  const pdfBtnText = hatZ ? "PDF Export & Speichern" : "PDF Export";
 
   const pdfBtn = btn(pdfBtnText, "picture_as_pdf", "nav-pdf", async () => {
     const mitarbeiter = await ladeMitarbeiterId();
@@ -286,6 +287,7 @@ function aktualisiereWochenHeader({ montag, sonntag }) {
   info.innerHTML = `KW ${berechneKalenderwoche(montag)}: ${f.format(montag)} – ${f.format(sonntag)}`;
 }
 
+// ⭐ KORREKTUR: KÜRZEL-BEHANDLUNG (GROSS/KLEIN)
 async function ladeMitarbeiterId() {
   const path = window.location.pathname;
   const parts = path.split("/").filter(p => p.length > 0);
