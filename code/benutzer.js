@@ -16,10 +16,16 @@ async function ladeBenutzerIntern() {
 
   if (error) {
     console.error("Fehler beim Laden der Benutzer:", error);
+    // Falls ein Fehler auftritt, schließen wir den Balken ab, damit er nicht bei 35% hängen bleibt
+    if (window.setLadePunkt) window.setLadePunkt(6);
     return;
   }
 
   benutzerListe = data ?? [];
+
+  // --- PUNKT 3: MITARBEITER ID / PROFIL ERMITTELT ---
+  // Sobald die Daten von Supabase da sind, setzen wir den Punkt 3
+  if (window.setLadePunkt) window.setLadePunkt(3);
 }
 
 // 👉 Export für app.js
