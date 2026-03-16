@@ -45,6 +45,7 @@ export async function zeigeTermine(targetId = null) {
     wochenFarbenLogik(gefiltert);
   }
 
+  // Box-Logik: Z1 zeigt Historie/Statistik, Z2 zeigt direktes Textfeld aus Mitarbeiter-Tabelle
   if (hatZ1) {
     const stats = berechneWochenStats(gefiltert);
     renderDatenbox1(container, stats, zeitraum);
@@ -64,7 +65,7 @@ export async function zeigeTermine(targetId = null) {
 }
 
 /* ==========================================================================
-   2. UI-KOMPONENTEN (Unverändert)
+   2. UI-KOMPONENTEN
    ========================================================================== */
 
 function erstelleTerminKarte(event) {
@@ -123,6 +124,7 @@ function renderDatenbox1(container, stats, { montag }) {
   container.appendChild(box);
 }
 
+// BOX FÜR Z1 (HISTORIE IN TABELLE1)
 async function renderDatenbox2Z1(container, stats, { montag }, mitarbeiterId) {
   const box = document.createElement("div");
   box.id = "datenanzeige2";
@@ -194,6 +196,7 @@ async function renderDatenbox2Z1(container, stats, { montag }, mitarbeiterId) {
   updatePreview();
 }
 
+// BOX FÜR Z2 (PERSISTENTES TEXTFELD IN MITARBEITER)
 function renderDatenboxZ2(container, mDaten) {
   const box = document.createElement("div");
   box.style = `background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; box-sizing:border-box; width:100%; border-top:3px solid ${SECONDARY};`;
@@ -225,12 +228,14 @@ function renderSteuerung(container, mDaten, zeitraum) {
   sDiv.appendChild(btn(getFilterAktiv() ? "Alle" : "Filter", "filter_list", "nav-filter", () => { setFilterAktiv(!getFilterAktiv()); zeigeTermine("nav-filter"); }));
   sDiv.appendChild(btn("Laden", "refresh", "nav-load", neuLaden));
   
-  const pdfBtnText = (mDaten.Z1 === true || mDaten.Z2 === true) ? "PDF Export & Speichern" : "PDF Export";
+  const brauchtSpeichern = (mDaten.Z1 === true || mDaten.Z2 === true);
+  const pdfBtnText = brauchtSpeichern ? "PDF Export & Speichern" : "PDF Export";
 
   const pdfBtn = btn(pdfBtnText, "picture_as_pdf", "nav-pdf", async () => {
     const mitarbeiter = await ladeMitarbeiterId();
     if (!mitarbeiter) return;
 
+    // SPEICHERN Z1 (Neuer Eintrag in Historie)
     if (mitarbeiter.Z1 === true) {
       const kw = berechneKalenderwoche(zeitraum.montag);
       const jahr = zeitraum.montag.getFullYear();
@@ -242,9 +247,10 @@ function renderSteuerung(container, mDaten, zeitraum) {
         KZ: mitarbeiter.id, JAHR: jahr, KW: kw, URLAUB: Number(uGes), URLAUBgen: Number(uGen), KRANK: Number(krank), BEREIT: Number(bereit), ÜBER: Number(ueber), feld1: textFeld
       });
       if (error) { alert("Fehler beim Speichern Z1: " + error.message); return; }
-      mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${ueber.replace(".",,")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
+      mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${ueber.replace(".",",")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
     }
 
+    // SPEICHERN Z2 (Update des Mitarbeiter-Datensatzes)
     if (mitarbeiter.Z2 === true) {
       const neuerText = document.getElementById("z2TextFeld")?.value || "";
       const { error } = await supa.from("mitarbeiter").update({ Text: neuerText }).eq("id", mitarbeiter.id);
@@ -252,6 +258,7 @@ function renderSteuerung(container, mDaten, zeitraum) {
       mitarbeiter.Text = neuerText; 
     }
 
+    // Termine synchronisieren
     const tOriginal = getTermine();
     document.querySelectorAll("#termine > div[data-id]").forEach(block => {
       const ev = tOriginal.find(t => t.id === block.dataset.id);
@@ -286,15 +293,9 @@ function aktualisiereWochenHeader({ montag, sonntag }) {
   info.innerHTML = `KW ${berechneKalenderwoche(montag)}: ${f.format(montag)} – ${f.format(sonntag)}`;
 }
 
-// ⭐ HIER IST DIE ROBUSTE KORREKTUR FÜR DAS KÜRZEL
 async function ladeMitarbeiterId() {
   const pathParts = window.location.pathname.split("/");
-  // Letztes Element im Pfad nehmen, Leerzeichen weg und GROSS machen
-  const kuerzel = (pathParts.pop() || pathParts.pop() || "").trim().toUpperCase();
-  
-  // Falls keine Eingabe (index.html), brich ab
-  if (!kuerzel || kuerzel === "INDEX.HTML") return null;
-
+  const kuerzel = pathParts.pop() || pathParts.pop();
   const { data, error } = await supa.from("mitarbeiter").select("*").eq("kuerzel", kuerzel).single();
   return error ? null : data;
 }

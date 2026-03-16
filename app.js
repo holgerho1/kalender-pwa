@@ -1,22 +1,84 @@
-// ... (GitHub-Speicherfunktion bleibt wie sie war) ...
+// -------------------------------------------------------------
+// GitHub-Speicherfunktion für textfeld.json
+// -------------------------------------------------------------
+async function speichereTextfeld(text) {
+  const owner = "holgerho1";
+  const repo = "kalender-pwa";
+  const path = "textfeld.json";
+
+  const token = "";
+
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+
+  const getRes = await fetch(url, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/vnd.github+json"
+    }
+  });
+
+  if (!getRes.ok) {
+    console.error("Fehler beim Lesen von textfeld.json:", await getRes.text());
+    return;
+  }
+
+  const fileData = await getRes.json();
+  const sha = fileData.sha;
+
+  const newContent = {
+    message: "Update textfeld.json",
+    content: btoa(JSON.stringify({ text }, null, 2)),
+    sha
+  };
+
+  const putRes = await fetch(url, {
+    method: "PUT",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/vnd.github+json"
+    },
+    body: JSON.stringify(newContent)
+  });
+
+  if (!putRes.ok) {
+    console.error("Fehler beim Speichern von textfeld.json:", await putRes.text());
+    return;
+  }
+
+  console.log("textfeld.json erfolgreich in GitHub gespeichert");
+}
+
+// -------------------------------------------------------------
+// Benutzer laden + App starten
+// -------------------------------------------------------------
 
 import { ladeBenutzer, benutzerListe, zeigeBenutzerListe } from "./code/benutzer.js";
 import { neuLaden } from "./code/neuLaden.js";
 import { exportierePdf } from "./code/exportPdf.js";
 
-// Zurück zum ursprünglichen, einfachen Ablauf:
+// 🔥 1. Benutzer wirklich laden
 await ladeBenutzer();
+
+// 🔥 2. Benutzerliste anzeigen (Benutzerverwaltung)
 zeigeBenutzerListe();
 
+// 🔥 3. Jetzt erst kuerzelNamen erzeugen (weil Liste jetzt gefüllt ist)
 const kuerzelNamen = Object.fromEntries(
   benutzerListe.map(({ kuerzel, name }) => [kuerzel.toUpperCase(), name])
 );
 
-// Nur diese eine Zeile sorgt jetzt für die Robustheit:
+// -------------------------------------------------------------
+// Direktlink-Erkennung aus URL-Pfad
+// -------------------------------------------------------------
+
 const pfad = window.location.pathname.replace("/", "").toUpperCase();
 
+// ⭐ 4. neuLaden() WIE VORHER — DIREKT, NICHT IM load-Event
 neuLaden();
 
+// -------------------------------------------------------------
+// Benutzer im Pfad erkannt → Direktlink-Modus
+// -------------------------------------------------------------
 const kuerzel = pfad;
 const name = kuerzelNamen[kuerzel] || kuerzel;
 
@@ -38,7 +100,11 @@ if (kuerzelNamen[kuerzel]) {
   if (direktLinks) direktLinks.style.display = "none";
 }
 
+// -------------------------------------------------------------
+// Direktlink-Liste erzeugen (nur wenn kein Benutzer im Pfad)
+// -------------------------------------------------------------
 const linkContainer = document.getElementById("linkListe");
+
 if (linkContainer && !kuerzelNamen[pfad]) {
   benutzerListe.forEach(({ kuerzel, name }) => {
     const btn = document.createElement("a");
@@ -56,6 +122,9 @@ if (linkContainer && !kuerzelNamen[pfad]) {
   });
 }
 
+// -------------------------------------------------------------
+// PDF-Export
+// -------------------------------------------------------------
 const exportBtn = document.getElementById("pdf-export");
 if (exportBtn) {
   exportBtn.onclick = () => {
