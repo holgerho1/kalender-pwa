@@ -71,7 +71,7 @@ export function exportierePdf(termine, mitarbeiter = {}) {
   const infoWidth = doc.getTextWidth(infoText);
   doc.text(infoText, centerX, 29, { align: "center" });
 
-  // 3. ZUSATZTEXT MIT TRENNLINIE (Gleicher Stil wie Infozeile)
+  // 3. ZUSATZTEXT MIT TRENNLINIE (Schriftgröße auf 11 reduziert)
   let tableStartY = 33; 
   const zusatzText = (mitarbeiter.Z1 ? mitarbeiter.z1Textbox : "") || (mitarbeiter.Z2 ? mitarbeiter.Text : "") || "";
 
@@ -80,16 +80,16 @@ export function exportierePdf(termine, mitarbeiter = {}) {
     doc.setLineWidth(0.2);
     doc.line(centerX - infoWidth / 2, 31, centerX + infoWidth / 2, 31);
 
-    // Text (Größe 14, normaler Stil)
-    doc.setFontSize(14);
+    // Text (Größe 11, passend zur Tabelle)
+    doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
     const splitText = doc.splitTextToSize(zusatzText, pageWidth - 40);
     
-    const textStartY = 37; 
+    const textStartY = 36; 
     doc.text(splitText, centerX, textStartY, { align: "center" });
     
-    // tableStartY: Text-Start + (Anzahl Zeilen * Zeilenhöhe für 14pt)
-    tableStartY = textStartY + (splitText.length * 6); 
+    // tableStartY: Text-Start + (Anzahl Zeilen * Zeilenhöhe für 11pt)
+    tableStartY = textStartY + (splitText.length * 5); 
   }
 
   // 4. Tabelle
