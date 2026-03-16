@@ -146,7 +146,7 @@
       
       <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
         <a href="material/index.html" class="btn-outline" style="width: 100%;">
-          <span class="material-icons" style="font-size: 16px;">folder</span> Material Übersicht
+          <span class="material-icons" style="font-size: 16px;">view_list</span> Zeilen Übersicht
         </a>
       </div>
     </div>
@@ -198,7 +198,6 @@
       const pathParts = window.location.pathname.split("/");
       const lastPart = pathParts.pop();
 
-      // Wenn die URL auf ein Kürzel endet (nicht index.html oder leer)
       if (lastPart && lastPart !== "index.html" && lastPart !== "") {
         document.getElementById("admin-bereich").classList.add("hidden");
         document.getElementById("links-bereich").classList.add("hidden");
