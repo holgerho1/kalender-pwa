@@ -126,14 +126,15 @@
     <div id="termine"></div>
 
     <div id="admin-bereich" class="card">
-      <div class="section-title"><span class="material-icons">settings</span> Benutzerverwaltung</div>
-      <label>Kürzel (z.B. HH)</label>
-      <input id="kuerzel" type="text" placeholder="Kürzel">
+      <div class="section-title hidden"><span class="material-icons">settings</span> Benutzerverwaltung</div>
       
-      <label>Vollständiger Name</label>
-      <input id="name" type="text" placeholder="Name">
+      <label class="hidden">Kürzel (z.B. HH)</label>
+      <input id="kuerzel" type="text" placeholder="Kürzel" class="hidden">
       
-      <button class="btn-primary" onclick="speichereBenutzer()">
+      <label class="hidden">Vollständiger Name</label>
+      <input id="name" type="text" placeholder="Name" class="hidden">
+      
+      <button class="btn-primary hidden" onclick="speichereBenutzer()">
         <span class="material-icons">save</span> Benutzer speichern
       </button>
       
