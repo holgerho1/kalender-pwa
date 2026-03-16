@@ -5,7 +5,7 @@ const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let aktuellerId = null;
 
 // ---------------------------------------------------------
-// LISTE LADEN
+// 1. LISTE LADEN
 // ---------------------------------------------------------
 async function ladeListe() {
   const { data, error } = await supa
@@ -47,7 +47,7 @@ function markiereAuswahl(li) {
 }
 
 // ---------------------------------------------------------
-// AUSWAHL GEÄNDERT (Laden der Z-Felder und Text)
+// 2. AUSWAHL GEÄNDERT (Laden der Details)
 // ---------------------------------------------------------
 window.auswahlGeaendert = async function () {
   if (!aktuellerId) return;
@@ -68,12 +68,11 @@ window.auswahlGeaendert = async function () {
   document.getElementById("eingabe_name").value = data.name ?? "";
   document.getElementById("eingabe_text").value = data.Text ?? "";
 
-  // Radio-Buttons setzen
-  const radioZ1 = document.getElementById("radio_z1");
+  // Checkbox Z1a & Radios
   const checkZ1a = document.getElementById("check_z1a");
-
+  
   if (data.Z1 === true) {
-    radioZ1.checked = true;
+    document.getElementById("radio_z1").checked = true;
     checkZ1a.disabled = false;
   } else if (data.Z2 === true) {
     document.getElementById("radio_z2").checked = true;
@@ -83,28 +82,29 @@ window.auswahlGeaendert = async function () {
     checkZ1a.disabled = true;
   }
 
-  // Checkbox Z1a setzen
-  checkZ1a.checked = data.Z1a === true;
+  // Wert der Checkbox setzen
+  checkZ1a.checked = (data.Z1a === true);
 
   log(`Bearbeite: ${data.kuerzel}`);
 };
 
-// Hilfs-Logik für die UI: Z1a sperren/entsperren je nach Radio-Button
-// Fügen Sie diese Event-Listener einmalig hinzu (z.B. am Ende der Datei oder im HTML)
-document.querySelectorAll('input[name="z_gruppe"]').forEach(radio => {
-  radio.addEventListener('change', (e) => {
+// ---------------------------------------------------------
+// 3. UI-LOGIK: SOFORTIGE REAKTION AUF RADIO-BUTTONS
+// ---------------------------------------------------------
+document.addEventListener("change", (event) => {
+  if (event.target.name === "zusatz") {
     const checkZ1a = document.getElementById("check_z1a");
-    if (e.target.id === "radio_z1") {
+    if (event.target.id === "radio_z1") {
       checkZ1a.disabled = false;
     } else {
       checkZ1a.disabled = true;
-      checkZ1a.checked = false;
+      checkZ1a.checked = false; // Deaktivieren löscht auch den Haken
     }
-  });
+  }
 });
 
 // ---------------------------------------------------------
-// NEU (Felder leeren)
+// 4. NEU (Felder leeren)
 // ---------------------------------------------------------
 window.neu = function () {
   aktuellerId = null;
@@ -123,17 +123,16 @@ window.neu = function () {
 };
 
 // ---------------------------------------------------------
-// SPEICHERN (Inklusive Z1, Z1a, Z2 und Text)
+// 5. SPEICHERN (Inklusive Z1, Z1a, Z2 und Text)
 // ---------------------------------------------------------
 window.speichern = async function () {
   const kuerzel = document.getElementById("eingabe_kuerzel").value.trim();
   const name = document.getElementById("eingabe_name").value.trim();
   const infoText = document.getElementById("eingabe_text").value.trim();
   
-  // Logik für Radio-Buttons: Nur eine Spalte kann true sein
   const istZ1 = document.getElementById("radio_z1").checked;
   const istZ2 = document.getElementById("radio_z2").checked;
-  // Z1a nur speichern wenn Z1 aktiv ist
+  // Z1a wird nur true gespeichert, wenn auch Z1 aktiv ist
   const istZ1a = istZ1 && document.getElementById("check_z1a").checked;
 
   if (kuerzel === "") {
@@ -168,7 +167,7 @@ window.speichern = async function () {
 };
 
 // ---------------------------------------------------------
-// LÖSCHEN
+// 6. LÖSCHEN
 // ---------------------------------------------------------
 window.loeschen = async function () {
   if (!aktuellerId) {
@@ -186,7 +185,7 @@ window.loeschen = async function () {
   }
 
   aktuellerId = null;
-  window.neu(); // Felder leeren
+  window.neu(); 
   log("Mitarbeiter gelöscht.");
   ladeListe();
 };
