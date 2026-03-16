@@ -49,7 +49,7 @@ export async function zeigeTermine(targetId = null) {
   if (hatZ1) {
     const stats = berechneWochenStats(gefiltert);
     renderDatenbox1(container, stats, zeitraum);
-    await renderDatenbox2Z1(container, stats, zeitraum, mitarbeiterId);
+    await renderDatenbox2Z1(container, stats, zeitraum, mitarbeiterDaten);
   } else if (hatZ2) {
     renderDatenboxZ2(container, mitarbeiterDaten);
   }
@@ -124,14 +124,14 @@ function renderDatenbox1(container, stats, { montag }) {
   container.appendChild(box);
 }
 
-async function renderDatenbox2Z1(container, stats, { montag }, mitarbeiterId) {
+async function renderDatenbox2Z1(container, stats, { montag }, mDaten) {
   const box = document.createElement("div");
   box.id = "datenanzeige2";
   box.style = `background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; box-sizing:border-box; width:100%;`;
   box.innerHTML = `<div style="text-align:center; padding:10px;">Lade Daten...</div>`;
   container.appendChild(box);
 
-  const { data: daten } = await supa.from("tabelle1").select("*").eq('"KZ"', mitarbeiterId).order("created_at", { ascending: false }).limit(30);
+  const { data: daten } = await supa.from("tabelle1").select("*").eq('"KZ"', mDaten.id).order("created_at", { ascending: false }).limit(30);
   const kw = berechneKalenderwoche(montag);
   const jahr = montag.getFullYear();
 
@@ -186,7 +186,14 @@ async function renderDatenbox2Z1(container, stats, { montag }, mitarbeiterId) {
     const ueber = document.getElementById("ueberErgebnis").value;
     const bereit = document.getElementById("bereitErgebnis").value;
     const text = document.getElementById("textBearbeiten").value;
-    document.getElementById("livePreview").textContent = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${ueber} Stunden    Bereitschaft: ${bereit} Tage    ${text}`;
+    
+    let infoLine = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    `;
+    if (mDaten.Z1a === true) {
+      infoLine += `Überstunden: ${ueber} Stunden    `;
+    }
+    infoLine += `Bereitschaft: ${bereit} Tage    ${text}`;
+    
+    document.getElementById("livePreview").textContent = infoLine;
   };
 
   ["urlaubWert", "urlaubErgebnis", "krankErgebnis", "ueberErgebnis", "bereitErgebnis", "textBearbeiten"].forEach(id => {
@@ -244,7 +251,14 @@ function renderSteuerung(container, mDaten, zeitraum) {
         KZ: mitarbeiter.id, JAHR: jahr, KW: kw, URLAUB: Number(uGes), URLAUBgen: Number(uGen), KRANK: Number(krank), BEREIT: Number(bereit), ÜBER: Number(ueber), feld1: textFeld
       });
       if (error) { alert("Fehler beim Speichern Z1: " + error.message); return; }
-      mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${ueber.replace(".",",")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
+      
+      let finalBoxText = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    `;
+      if (mitarbeiter.Z1a === true) {
+        finalBoxText += `Überstunden: ${ueber.replace(".",",")} Stunden    `;
+      }
+      finalBoxText += `Bereitschaft: ${bereit} Tage    ${textFeld}`;
+      
+      mitarbeiter.z1Textbox = finalBoxText;
     }
 
     if (mitarbeiter.Z2 === true) {
