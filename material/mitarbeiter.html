@@ -122,10 +122,26 @@
       cursor: pointer;
     }
 
-    .radio-option input {
-      width: 20px;
-      height: 20px;
+    /* Neu: Einrückung für Unter-Optionen */
+    .sub-option {
+      margin-left: 30px;
+      font-size: 0.85rem;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .radio-option input, .sub-option input {
+      width: 18px;
+      height: 18px;
       margin: 0;
+    }
+
+    .sub-option:has(input:disabled) {
+      color: #bbb;
+      cursor: not-allowed;
     }
 
     .button-group {
@@ -210,13 +226,20 @@
           <input type="radio" name="zusatz" value="none" id="radio_none" checked>
           Keine Auswahl (Standard)
         </label>
+        
         <label class="radio-option">
           <input type="radio" name="zusatz" value="Z1" id="radio_z1">
-          Status Z1
+          Status Z1 (Statistik)
         </label>
+        
+        <label class="sub-option">
+          <input type="checkbox" id="check_z1a" disabled>
+          ↳ Überstunden im Text anzeigen
+        </label>
+
         <label class="radio-option">
           <input type="radio" name="zusatz" value="Z2" id="radio_z2">
-          Status Z2
+          Status Z2 (Infozeile)
         </label>
       </div>
 

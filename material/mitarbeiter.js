@@ -69,16 +69,39 @@ window.auswahlGeaendert = async function () {
   document.getElementById("eingabe_text").value = data.Text ?? "";
 
   // Radio-Buttons setzen
+  const radioZ1 = document.getElementById("radio_z1");
+  const checkZ1a = document.getElementById("check_z1a");
+
   if (data.Z1 === true) {
-    document.getElementById("radio_z1").checked = true;
+    radioZ1.checked = true;
+    checkZ1a.disabled = false;
   } else if (data.Z2 === true) {
     document.getElementById("radio_z2").checked = true;
+    checkZ1a.disabled = true;
   } else {
     document.getElementById("radio_none").checked = true;
+    checkZ1a.disabled = true;
   }
+
+  // Checkbox Z1a setzen
+  checkZ1a.checked = data.Z1a === true;
 
   log(`Bearbeite: ${data.kuerzel}`);
 };
+
+// Hilfs-Logik für die UI: Z1a sperren/entsperren je nach Radio-Button
+// Fügen Sie diese Event-Listener einmalig hinzu (z.B. am Ende der Datei oder im HTML)
+document.querySelectorAll('input[name="z_gruppe"]').forEach(radio => {
+  radio.addEventListener('change', (e) => {
+    const checkZ1a = document.getElementById("check_z1a");
+    if (e.target.id === "radio_z1") {
+      checkZ1a.disabled = false;
+    } else {
+      checkZ1a.disabled = true;
+      checkZ1a.checked = false;
+    }
+  });
+});
 
 // ---------------------------------------------------------
 // NEU (Felder leeren)
@@ -91,12 +114,16 @@ window.neu = function () {
   document.getElementById("eingabe_name").value = "";
   document.getElementById("eingabe_text").value = "";
   document.getElementById("radio_none").checked = true;
+  
+  const checkZ1a = document.getElementById("check_z1a");
+  checkZ1a.checked = false;
+  checkZ1a.disabled = true;
 
   log("Neuer Mitarbeiter – bitte Daten eingeben.");
 };
 
 // ---------------------------------------------------------
-// SPEICHERN (Inklusive Z1, Z2 und Text)
+// SPEICHERN (Inklusive Z1, Z1a, Z2 und Text)
 // ---------------------------------------------------------
 window.speichern = async function () {
   const kuerzel = document.getElementById("eingabe_kuerzel").value.trim();
@@ -106,6 +133,8 @@ window.speichern = async function () {
   // Logik für Radio-Buttons: Nur eine Spalte kann true sein
   const istZ1 = document.getElementById("radio_z1").checked;
   const istZ2 = document.getElementById("radio_z2").checked;
+  // Z1a nur speichern wenn Z1 aktiv ist
+  const istZ1a = istZ1 && document.getElementById("check_z1a").checked;
 
   if (kuerzel === "") {
     log("Kürzel darf nicht leer sein.");
@@ -116,6 +145,7 @@ window.speichern = async function () {
     kuerzel: kuerzel, 
     name: name, 
     Z1: istZ1, 
+    Z1a: istZ1a,
     Z2: istZ2, 
     Text: infoText 
   };
