@@ -112,7 +112,7 @@
     <h1><span class="material-icons">assignment</span> Arbeitsnachweis</h1>
     <div id="wocheninfo">Woche wird geladen...</div>
     
-    <a href="mitarbeiter.html" id="admin-link" class="btn-outline">
+    <a href="material/mitarbeiter.html" id="admin-link" class="btn-outline">
       <span class="material-icons" style="font-size: 16px;">people</span> Verwaltung
     </a>
   </header>
@@ -151,6 +151,7 @@
   </div>
 
   <script>
+    // Globale Funktion zur Steuerung des Balkens
     window.setLadePunkt = function(nummer) {
       const container = document.getElementById("progress-container");
       const bar = document.getElementById("progress-bar");
