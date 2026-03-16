@@ -36,6 +36,45 @@
       position: sticky; top: 0; z-index: 100; box-sizing: border-box;
     }
 
+    /* Fortschrittsbalken Design */
+    #progress-container {
+      display: none; 
+      width: 100%; 
+      background: white; 
+      padding: 8px 0; 
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 85px; /* Direkt unter dem Header */
+      z-index: 99;
+      transition: opacity 0.4s ease;
+    }
+
+    #progress-outer {
+      width: 85%; 
+      height: 6px; 
+      background: #eee; 
+      border-radius: 3px; 
+      margin: 0 auto; 
+      overflow: hidden;
+    }
+
+    #progress-bar {
+      width: 0%; 
+      height: 100%; 
+      background: var(--primary-color); 
+      transition: width 0.4s ease-out;
+    }
+
+    #progress-text {
+      font-size: 10px; 
+      text-align: center; 
+      color: var(--primary-color); 
+      margin-top: 4px; 
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
     h1 { margin: 0; font-size: 1.2rem; font-weight: 500; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
     #wocheninfo { margin-top: 8px; font-size: 1rem; font-weight: 500; color: #666; }
 
@@ -78,6 +117,13 @@
     </a>
   </header>
 
+  <div id="progress-container">
+    <div id="progress-outer">
+      <div id="progress-bar"></div>
+    </div>
+    <div id="progress-text">Initialisierung...</div>
+  </div>
+
   <div class="container">
     <div id="termine"></div>
 
@@ -104,6 +150,41 @@
     <div id="debug-log"></div>
   </div>
 
+  <script>
+    window.setLadePunkt = function(nummer) {
+      const container = document.getElementById("progress-container");
+      const bar = document.getElementById("progress-bar");
+      const status = document.getElementById("progress-text");
+      
+      const schritte = {
+        1: { p: 10,  t: "1. Start..." },
+        2: { p: 35,  t: "2. Google Daten geliefert" },
+        3: { p: 55,  t: "3. Mitarbeiter ID ermittelt" },
+        4: { p: 75,  t: "4. Bereit zur Anzeige" },
+        5: { p: 90,  t: "5. Letzte Daten abgerufen" },
+        6: { p: 100, t: "6. Fertig" }
+      };
+
+      const daten = schritte[nummer];
+      if (!daten || !container) return;
+
+      container.style.display = "block";
+      container.style.opacity = "1";
+      bar.style.width = daten.p + "%";
+      status.textContent = daten.t;
+
+      if (nummer === 6) {
+        setTimeout(() => { 
+          container.style.opacity = "0";
+          setTimeout(() => {
+            container.style.display = "none";
+            bar.style.width = "0%";
+          }, 400);
+        }, 800);
+      }
+    };
+  </script>
+
   <script type="module" src="material/db.js"></script>
   <script type="module" src="code/zeigeTermine.js"></script>
   <script type="module" src="app.js"></script>
@@ -113,7 +194,6 @@
       const pathParts = window.location.pathname.split("/");
       const lastPart = pathParts.pop();
 
-      // Wenn ein Kürzel erkannt wird (lastPart ist nicht leer und nicht index.html)
       if (lastPart && lastPart !== "index.html" && lastPart !== "") {
         document.getElementById("admin-bereich").classList.add("hidden");
         document.getElementById("links-bereich").classList.add("hidden");
@@ -132,7 +212,6 @@
       }
     });
 
-    // Debug-Werte setzen (wird nur gefüllt, wenn nicht hidden)
     const log = document.getElementById("debug-log");
     if (log) log.innerText = `${window.innerWidth}x${window.innerHeight}px`;
   </script>

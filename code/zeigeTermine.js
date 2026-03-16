@@ -20,8 +20,14 @@ const CARD_SHADOW = "0 2px 10px rgba(0,0,0,0.1)";
    ========================================================================== */
 
 export async function zeigeTermine(targetId = null) {
+  // --- PUNKT 4: ANZEIGE STARTET ---
+  if (window.setLadePunkt) window.setLadePunkt(4);
+
   const mitarbeiterDaten = await ladeMitarbeiterId();
-  if (!mitarbeiterDaten) return;
+  if (!mitarbeiterDaten) {
+    if (window.setLadePunkt) window.setLadePunkt(6);
+    return;
+  }
 
   const mitarbeiterId = mitarbeiterDaten.id;
   const hatZ1 = mitarbeiterDaten.Z1 === true;
@@ -46,15 +52,23 @@ export async function zeigeTermine(targetId = null) {
     wochenFarbenLogik(gefiltert);
   }
 
+  // --- PUNKT 5: ZUSATZDATEN (Z1/Z2) ---
   if (hatZ1) {
     const stats = berechneWochenStats(gefiltert);
     renderDatenbox1(container, stats, zeitraum);
     await renderDatenbox2Z1(container, stats, zeitraum, mitarbeiterDaten);
+    if (window.setLadePunkt) window.setLadePunkt(5);
   } else if (hatZ2) {
     renderDatenboxZ2(container, mitarbeiterDaten);
+    if (window.setLadePunkt) window.setLadePunkt(5);
+  } else {
+    if (window.setLadePunkt) window.setLadePunkt(5);
   }
 
   renderSteuerung(container, mitarbeiterDaten, zeitraum);
+
+  // --- PUNKT 6: FERTIG ---
+  if (window.setLadePunkt) window.setLadePunkt(6);
 
   if (targetId) {
     setTimeout(() => {
@@ -215,7 +229,7 @@ function renderDatenboxZ2(container, mDaten) {
 
 /* ==========================================================================
    3. STEUERUNG & PDF-LOGIK
-   ========================================================================== */
+   ========================================================================= */
 
 function renderSteuerung(container, mDaten, zeitraum) {
   const sDiv = document.createElement("div");
@@ -237,10 +251,14 @@ function renderSteuerung(container, mDaten, zeitraum) {
   const pdfBtnText = hatZ ? "PDF Export & Speichern" : "PDF Export";
 
   const pdfBtn = btn(pdfBtnText, "picture_as_pdf", "nav-pdf", async () => {
+    // PDF-Start: Wir zeigen den Fortschritt beim Speichern
+    if (window.setLadePunkt) window.setLadePunkt(4);
+
     const mitarbeiter = await ladeMitarbeiterId();
     if (!mitarbeiter) return;
 
     if (mitarbeiter.Z1 === true) {
+      if (window.setLadePunkt) window.setLadePunkt(5);
       const kw = berechneKalenderwoche(zeitraum.montag);
       const jahr = zeitraum.montag.getFullYear();
       const val = id => (document.getElementById(id)?.value || "0").replace(",", ".");
@@ -250,21 +268,20 @@ function renderSteuerung(container, mDaten, zeitraum) {
       const { error } = await supa.from("tabelle1").insert({
         KZ: mitarbeiter.id, JAHR: jahr, KW: kw, URLAUB: Number(uGes), URLAUBgen: Number(uGen), KRANK: Number(krank), BEREIT: Number(bereit), ÜBER: Number(ueber), feld1: textFeld
       });
-      if (error) { alert("Fehler beim Speichern Z1: " + error.message); return; }
+      if (error) { alert("Fehler beim Speichern Z1: " + error.message); if (window.setLadePunkt) window.setLadePunkt(6); return; }
       
       let finalBoxText = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    `;
       if (mitarbeiter.Z1a === true) {
         finalBoxText += `Überstunden: ${ueber.replace(".",",")} Stunden    `;
       }
       finalBoxText += `Bereitschaft: ${bereit} Tage    ${textFeld}`;
-      
       mitarbeiter.z1Textbox = finalBoxText;
     }
 
     if (mitarbeiter.Z2 === true) {
       const neuerText = document.getElementById("z2TextFeld")?.value || "";
       const { error } = await supa.from("mitarbeiter").update({ Text: neuerText }).eq("id", mitarbeiter.id);
-      if (error) { alert("Fehler beim Speichern Z2: " + error.message); return; }
+      if (error) { alert("Fehler beim Speichern Z2: " + error.message); if (window.setLadePunkt) window.setLadePunkt(6); return; }
       mitarbeiter.Text = neuerText; 
     }
 
@@ -282,6 +299,7 @@ function renderSteuerung(container, mDaten, zeitraum) {
     setTermine(tOriginal);
     
     exportierePdf(holeGefilterteTermine(zeitraum), mitarbeiter);
+    if (window.setLadePunkt) window.setLadePunkt(6);
     if (mitarbeiter.Z1 === true) await zeigeTermine("nav-pdf"); 
   }, SECONDARY, "#000");
   
@@ -306,9 +324,7 @@ async function ladeMitarbeiterId() {
   const parts = path.split("/").filter(p => p.length > 0);
   const kuerzelRaw = parts[parts.length - 1] || "";
   const kuerzel = kuerzelRaw.trim().toUpperCase();
-
   if (!kuerzel || kuerzel === "INDEX.HTML") return null;
-
   const { data, error } = await supa.from("mitarbeiter").select("*").eq("kuerzel", kuerzel).single();
   return error ? null : data;
 }
