@@ -20,20 +20,17 @@ const CARD_SHADOW = "0 2px 10px rgba(0,0,0,0.1)";
    ========================================================================== */
 
 export async function zeigeTermine(targetId = null) {
-  // 1. Mitarbeiter laden (Unterstützt jetzt Groß/Kleinschreibung & Startseite)
   const mitarbeiterDaten = await ladeMitarbeiterId();
-  
-  // Falls kein Mitarbeiter (Startseite), setzen wir Standardwerte
-  const hatMitarbeiter = !!mitarbeiterDaten;
-  const mitarbeiterId = mitarbeiterDaten?.id || null;
-  const hatZ1 = mitarbeiterDaten?.Z1 === true;
-  const hatZ2 = mitarbeiterDaten?.Z2 === true;
+  if (!mitarbeiterDaten) return;
+
+  const mitarbeiterId = mitarbeiterDaten.id;
+  const hatZ1 = mitarbeiterDaten.Z1 === true;
+  const hatZ2 = mitarbeiterDaten.Z2 === true;
 
   const zeitraum = getKWZeitraum(getKwOffset());
-  aktualiseHeader(zeitraum);
+  aktualisiereWochenHeader(zeitraum);
 
   const container = document.getElementById("termine");
-  if (!container) return;
   container.innerHTML = "";
 
   const gefiltert = holeGefilterteTermine(zeitraum);
@@ -48,7 +45,6 @@ export async function zeigeTermine(targetId = null) {
     wochenFarbenLogik(gefiltert);
   }
 
-  // Box-Logik: Nur ausführen, wenn ein Mitarbeiterprofil aktiv ist
   if (hatZ1) {
     const stats = berechneWochenStats(gefiltert);
     renderDatenbox1(container, stats, zeitraum);
@@ -57,8 +53,7 @@ export async function zeigeTermine(targetId = null) {
     renderDatenboxZ2(container, mitarbeiterDaten);
   }
 
-  // Steuerung immer rendern, mDaten kann auch leer sein {}
-  renderSteuerung(container, mitarbeiterDaten || {}, zeitraum);
+  renderSteuerung(container, mitarbeiterDaten, zeitraum);
 
   if (targetId) {
     setTimeout(() => {
@@ -69,7 +64,7 @@ export async function zeigeTermine(targetId = null) {
 }
 
 /* ==========================================================================
-   2. UI-KOMPONENTEN
+   2. UI-KOMPONENTEN (Unverändert)
    ========================================================================== */
 
 function erstelleTerminKarte(event) {
@@ -194,7 +189,7 @@ async function renderDatenbox2Z1(container, stats, { montag }, mitarbeiterId) {
   };
 
   ["urlaubWert", "urlaubErgebnis", "krankErgebnis", "ueberErgebnis", "bereitErgebnis", "textBearbeiten"].forEach(id => {
-    document.getElementById(id)?.addEventListener("input", updatePreview);
+    document.getElementById(id).addEventListener("input", updatePreview);
   });
   updatePreview();
 }
@@ -230,14 +225,13 @@ function renderSteuerung(container, mDaten, zeitraum) {
   sDiv.appendChild(btn(getFilterAktiv() ? "Alle" : "Filter", "filter_list", "nav-filter", () => { setFilterAktiv(!getFilterAktiv()); zeigeTermine("nav-filter"); }));
   sDiv.appendChild(btn("Laden", "refresh", "nav-load", neuLaden));
   
-  const brauchtSpeichern = (mDaten && (mDaten.Z1 === true || mDaten.Z2 === true));
-  const pdfBtnText = brauchtSpeichern ? "PDF Export & Speichern" : "PDF Export";
+  const pdfBtnText = (mDaten.Z1 === true || mDaten.Z2 === true) ? "PDF Export & Speichern" : "PDF Export";
 
   const pdfBtn = btn(pdfBtnText, "picture_as_pdf", "nav-pdf", async () => {
     const mitarbeiter = await ladeMitarbeiterId();
-    
-    // SPEICHERN Z1
-    if (mitarbeiter?.Z1 === true) {
+    if (!mitarbeiter) return;
+
+    if (mitarbeiter.Z1 === true) {
       const kw = berechneKalenderwoche(zeitraum.montag);
       const jahr = zeitraum.montag.getFullYear();
       const val = id => (document.getElementById(id)?.value || "0").replace(",", ".");
@@ -251,15 +245,13 @@ function renderSteuerung(container, mDaten, zeitraum) {
       mitarbeiter.z1Textbox = `Urlaub: ${uGes} Tage    Urlaub genommen: ${uGen} Tage    Krank: ${krank} Tage    Überstunden: ${ueber.replace(".",,")} Stunden    Bereitschaft: ${bereit} Tage    ${textFeld}`;
     }
 
-    // SPEICHERN Z2
-    if (mitarbeiter?.Z2 === true) {
+    if (mitarbeiter.Z2 === true) {
       const neuerText = document.getElementById("z2TextFeld")?.value || "";
       const { error } = await supa.from("mitarbeiter").update({ Text: neuerText }).eq("id", mitarbeiter.id);
       if (error) { alert("Fehler beim Speichern Z2: " + error.message); return; }
       mitarbeiter.Text = neuerText; 
     }
 
-    // Termine synchronisieren
     const tOriginal = getTermine();
     document.querySelectorAll("#termine > div[data-id]").forEach(block => {
       const ev = tOriginal.find(t => t.id === block.dataset.id);
@@ -273,9 +265,9 @@ function renderSteuerung(container, mDaten, zeitraum) {
     });
     setTermine(tOriginal);
     
-    exportierePdf(holeGefilterteTermine(zeitraum), mitarbeiter || {});
+    exportierePdf(holeGefilterteTermine(zeitraum), mitarbeiter);
 
-    if (mitarbeiter?.Z1 === true) await zeigeTermine("nav-pdf"); 
+    if (mitarbeiter.Z1 === true) await zeigeTermine("nav-pdf"); 
   }, SECONDARY, "#000");
   
   pdfBtn.style.gridColumn = "span 2";
@@ -287,19 +279,20 @@ function renderSteuerung(container, mDaten, zeitraum) {
    4. HELPER
    ========================================================================== */
 
-function aktualiseHeader({ montag, sonntag }) {
+function aktualisiereWochenHeader({ montag, sonntag }) {
   const info = document.getElementById("wocheninfo");
   if (!info) return;
   const f = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" });
   info.innerHTML = `KW ${berechneKalenderwoche(montag)}: ${f.format(montag)} – ${f.format(sonntag)}`;
 }
 
+// ⭐ HIER IST DIE ROBUSTE KORREKTUR FÜR DAS KÜRZEL
 async function ladeMitarbeiterId() {
-  const path = window.location.pathname;
-  const parts = path.split("/").filter(p => p.length > 0);
-  const kuerzelRaw = parts[parts.length - 1] || "";
-  const kuerzel = kuerzelRaw.trim().toUpperCase();
-
+  const pathParts = window.location.pathname.split("/");
+  // Letztes Element im Pfad nehmen, Leerzeichen weg und GROSS machen
+  const kuerzel = (pathParts.pop() || pathParts.pop() || "").trim().toUpperCase();
+  
+  // Falls keine Eingabe (index.html), brich ab
   if (!kuerzel || kuerzel === "INDEX.HTML") return null;
 
   const { data, error } = await supa.from("mitarbeiter").select("*").eq("kuerzel", kuerzel).single();
