@@ -36,7 +36,6 @@
       position: sticky; top: 0; z-index: 100; box-sizing: border-box;
     }
 
-    /* Fortschrittsbalken Design */
     #progress-container {
       display: none; 
       width: 100%; 
@@ -44,7 +43,7 @@
       padding: 8px 0; 
       border-bottom: 1px solid #ddd;
       position: sticky;
-      top: 85px; /* Direkt unter dem Header */
+      top: 85px; 
       z-index: 99;
       transition: opacity 0.4s ease;
     }
@@ -96,11 +95,10 @@
     button { font-family: 'Roboto', sans-serif; font-weight: 500; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
     .btn-primary { background-color: var(--primary-color); color: white; padding: 12px; width: 100%; margin-top: 15px; }
-    .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); padding: 6px 12px; font-size: 0.85rem; border-radius: 20px; margin-top: 10px; text-decoration: none; }
+    .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); padding: 6px 12px; font-size: 0.85rem; border-radius: 20px; margin-top: 10px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 
     #linkListe, #benutzerListe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-    .chip-link { background: #eee; color: var(--text-color); text-decoration: none; padding: 8px 14px; border-radius: 16px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; border: 1px solid #ddd; }
-
+    
     .hidden { display: none !important; }
 
     #debug-log { font-size: 0.7rem; color: #999; text-align: center; margin-top: 20px; font-family: monospace; }
@@ -145,13 +143,18 @@
     <div id="links-bereich" class="card">
       <div class="section-title"><span class="material-icons">link</span> Schnellzugriff</div>
       <div id="linkListe"></div>
+      
+      <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+        <a href="material/index.html" class="btn-outline" style="width: 100%;">
+          <span class="material-icons" style="font-size: 16px;">folder</span> Material Übersicht
+        </a>
+      </div>
     </div>
 
     <div id="debug-log"></div>
   </div>
 
   <script>
-    // Globale Funktion zur Steuerung des Balkens
     window.setLadePunkt = function(nummer) {
       const container = document.getElementById("progress-container");
       const bar = document.getElementById("progress-bar");
@@ -195,6 +198,7 @@
       const pathParts = window.location.pathname.split("/");
       const lastPart = pathParts.pop();
 
+      // Wenn die URL auf ein Kürzel endet (nicht index.html oder leer)
       if (lastPart && lastPart !== "index.html" && lastPart !== "") {
         document.getElementById("admin-bereich").classList.add("hidden");
         document.getElementById("links-bereich").classList.add("hidden");
