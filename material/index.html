@@ -118,7 +118,7 @@
     .btn-primary { background-color: var(--primary-color); color: white; }
     .btn-secondary { background-color: var(--secondary-color); color: black; }
     .btn-danger { background-color: #cf6679; color: white; }
-    .btn-outline { background-color: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); width: 100%; margin-bottom: 20px;}
+    .btn-outline { background-color: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); width: 100%; margin-bottom: 10px; text-decoration: none; }
 
     .grid-2 {
       display: grid;
@@ -143,6 +143,10 @@
 
   <div class="container">
     <h1>Kalender Dashboard</h1>
+
+    <button class="btn-outline" onclick="window.location.href='../index.html'">
+      <span class="material-icons">arrow_back</span> Zurück zum Kalender
+    </button>
 
     <button class="btn-outline" onclick="window.location.href='mitarbeiter.html'">
       <span class="material-icons">group</span> Mitarbeiter verwalten
