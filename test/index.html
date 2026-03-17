@@ -3,85 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supabase PDF Viewer</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Sicherer PDF Viewer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         body { font-family: sans-serif; margin: 0; padding: 10px; background: #f4f4f9; text-align: center; }
         .controls { margin-bottom: 10px; display: flex; justify-content: center; gap: 10px; }
         input { width: 60px; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }
-        button { padding: 12px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        #status { margin: 10px; color: #555; font-style: italic; }
-        #pdf-canvas { width: 100%; max-width: 800px; border: 1px solid #ccc; border-radius: 5px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: 10px; }
+        button { padding: 12px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #status-box { margin: 10px; padding: 10px; background: #eee; border-radius: 5px; font-size: 14px; min-height: 20px; }
+        #pdf-canvas { width: 100%; max-width: 600px; border: 1px solid #ccc; border-radius: 5px; background: white; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="controls">
         <input type="number" id="pageNumber" value="1" min="1">
-        <button onclick="loadPdf()">PDF LADEN</button>
+        <button onclick="startView()">PDF LADEN</button>
     </div>
 
-    <div id="status">Bereit.</div>
+    <div id="status-box">Bereit. Drücke den Button.</div>
     <canvas id="pdf-canvas"></canvas>
 
     <script>
-        // PDF.js Konfiguration
+        // PDF.js Worker initialisieren
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // Supabase Konfiguration
-        const supabaseUrl = 'https://hzsgocmulzcxllihkmmh.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
-        
-        // HIER war der Fehler: supabase.createClient korrigiert
-        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-        async function loadPdf() {
-            const status = document.getElementById('status');
-            status.innerText = "Lade Datei von Supabase...";
+        async function startView() {
+            const status = document.getElementById('status-box');
+            const projectID = 'hzsgocmulzcxllihkmmh';
+            const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
             
+            // Wir nutzen den direkten Pfad, der keine Preflight-OPTIONS-Anfrage erzwingt
+            const fileUrl = `https://${projectID}.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf`;
+
             try {
-                // 1. Datei als Blob herunterladen
-                const { data, error } = await _supabase
-                    .storage
-                    .from('test-pdfs')
-                    .download('test.pdf');
+                status.innerText = "Verbindung zu Supabase wird aufgebaut...";
+                
+                const response = await fetch(fileUrl, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': apiKey,
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
 
-                if (error) throw error;
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`Server-Antwort: ${response.status} - ${text}`);
+                }
 
-                status.innerText = "Datei geladen. Verarbeite PDF...";
+                status.innerText = "Datei empfangen. PDF wird verarbeitet...";
+                const arrayBuffer = await response.arrayBuffer();
 
-                // 2. Den Blob in ein ArrayBuffer umwandeln
-                const arrayBuffer = await data.arrayBuffer();
-
-                // 3. PDF rendern
                 const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
                 const pdf = await loadingTask.promise;
                 
-                status.innerText = `PDF erkannt (${pdf.numPages} Seiten). Rendere Seite...`;
+                status.innerText = `PDF geladen (${pdf.numPages} Seiten). Rendere Seite...`;
 
                 const pageNum = parseInt(document.getElementById('pageNumber').value);
                 const page = await pdf.getPage(pageNum);
                 
                 const canvas = document.getElementById('pdf-canvas');
                 const context = canvas.getContext('2d');
-                const viewport = page.getViewport({ scale: 1.5 });
+                const viewport = page.getViewport({ scale: 1.0 });
                 
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
 
-                await page.render({
-                    canvasContext: context,
-                    viewport: viewport
-                }).promise;
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
+                status.innerText = "Anzeige erfolgreich!";
 
-                status.innerText = "Fertig!";
-
-            } catch (error) {
-                console.error("Fehler:", error);
-                status.innerText = "Fehler: " + (error.message || "Unbekannter Fehler");
-                alert("Fehler: " + error.message);
+            } catch (err) {
+                console.error(err);
+                status.innerText = "FEHLER: " + err.message;
+                alert("Fehler-Details: " + err.message);
             }
         }
     </script>
