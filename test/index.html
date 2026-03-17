@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        iframe { width: 100%; height: 500px; margin-top: 10px; }
+        input, button { padding: 10px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h3>PDF Test</h3>
+    <input type="number" id="pageNumber" value="1">
+    <button onclick="loadPdf()">Anzeigen</button>
+    <iframe id="viewer"></iframe>
+
+    <script>
+        function loadPdf() {
+            const page = document.getElementById('pageNumber').value;
+            const id = 'hzsgocmulzcxllihkmmh';
+            // WICHTIG: Bucket muss "test-pdfs" heißen und Datei "test.pdf"
+            const url = `https://${id}.supabase.co/storage/v1/object/public/test-pdfs/test.pdf#page=${page}`;
+            document.getElementById('viewer').src = url;
+        }
+    </script>
+</body>
+</html>
