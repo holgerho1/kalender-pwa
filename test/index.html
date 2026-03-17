@@ -31,7 +31,7 @@
             const projectID = 'hzsgocmulzcxllihkmmh';
             const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
             
-            // 1. Schritt: Eine Signed URL von Supabase anfordern (gültig für 60 Sekunden)
+            // Endpunkt für die Signed URL
             const signUrlEndpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/test-pdfs/test.pdf`;
             
             try {
@@ -47,12 +47,15 @@
 
                 const data = await response.json();
                 
-                if (!response.ok) throw new Error(data.message || "Fehler beim Signieren");
+                if (!response.ok) {
+                    console.error("Supabase Fehler-Details:", data);
+                    throw new Error(data.error || data.message || "Fehler beim Signieren");
+                }
 
-                // Der temporäre Link von Supabase
+                // Die Signed URL zusammensetzen
                 const signedUrl = `https://${projectID}.supabase.co${data.signedURL}`;
 
-                // 2. Schritt: PDF mit der Signed URL rendern
+                // PDF laden und rendern
                 const loadingTask = pdfjsLib.getDocument(signedUrl);
                 const pdf = await loadingTask.promise;
                 const page = await pdf.getPage(pageNum);
@@ -70,8 +73,8 @@
                 }).promise;
                 
             } catch (error) {
-                console.error("Fehler:", error);
-                alert("Zugriff verweigert! Bitte prüfe die RLS-Policy im Supabase Storage.");
+                console.error("Vollständiger Fehler:", error);
+                alert("Fehler: " + error.message);
             }
         }
     </script>
