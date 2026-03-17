@@ -31,8 +31,8 @@
             const projectID = 'hzsgocmulzcxllihkmmh';
             const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
             
-            // Wichtig: Pfad ist 'authenticated'
-            const url = `https://${projectID}.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf`;
+            // Geänderte URL: Wir nutzen den Standard-Pfad, die Authentifizierung erfolgt über die Header
+            const url = `https://${projectID}.supabase.co/storage/v1/object/test-pdfs/test.pdf`;
 
             try {
                 const loadingTask = pdfjsLib.getDocument({
@@ -61,7 +61,7 @@
                 
             } catch (error) {
                 console.error("Fehler beim Laden:", error);
-                alert("Zugriff verweigert! Hast du die Policy auf 'anon' und 'authenticated' gestellt?");
+                alert("Fehler 400 oder Zugriff verweigert. Prüfe die URL und die RLS-Policy.");
             }
         }
     </script>
