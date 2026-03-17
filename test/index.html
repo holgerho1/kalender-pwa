@@ -17,7 +17,7 @@
 
     <div class="controls">
         <input type="number" id="pageNumber" value="1" min="1">
-        <button onclick="renderPdfPage()">Seite anzeigen</button>
+        <button onclick="loadAndRender()">Seite anzeigen</button>
     </div>
 
     <canvas id="pdf-canvas"></canvas>
@@ -26,42 +26,52 @@
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        async function renderPdfPage() {
+        async function loadAndRender() {
             const pageNum = parseInt(document.getElementById('pageNumber').value);
             const projectID = 'hzsgocmulzcxllihkmmh';
             const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
             
-            // Geänderte URL: Wir nutzen den Standard-Pfad, die Authentifizierung erfolgt über die Header
-            const url = `https://${projectID}.supabase.co/storage/v1/object/test-pdfs/test.pdf`;
-
+            // 1. Schritt: Eine Signed URL von Supabase anfordern (gültig für 60 Sekunden)
+            const signUrlEndpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/test-pdfs/test.pdf`;
+            
             try {
-                const loadingTask = pdfjsLib.getDocument({
-                    url: url,
-                    httpHeaders: {
+                const response = await fetch(signUrlEndpoint, {
+                    method: 'POST',
+                    headers: {
                         'apikey': apiKey,
-                        'Authorization': `Bearer ${apiKey}`
-                    }
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ expiresIn: 60 })
                 });
+
+                const data = await response.json();
                 
+                if (!response.ok) throw new Error(data.message || "Fehler beim Signieren");
+
+                // Der temporäre Link von Supabase
+                const signedUrl = `https://${projectID}.supabase.co${data.signedURL}`;
+
+                // 2. Schritt: PDF mit der Signed URL rendern
+                const loadingTask = pdfjsLib.getDocument(signedUrl);
                 const pdf = await loadingTask.promise;
                 const page = await pdf.getPage(pageNum);
                 
                 const canvas = document.getElementById('pdf-canvas');
                 const context = canvas.getContext('2d');
-                
                 const viewport = page.getViewport({ scale: 1.5 });
+                
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
 
-                const renderContext = {
+                await page.render({
                     canvasContext: context,
                     viewport: viewport
-                };
-                await page.render(renderContext).promise;
+                }).promise;
                 
             } catch (error) {
-                console.error("Fehler beim Laden:", error);
-                alert("Fehler 400 oder Zugriff verweigert. Prüfe die URL und die RLS-Policy.");
+                console.error("Fehler:", error);
+                alert("Zugriff verweigert! Bitte prüfe die RLS-Policy im Supabase Storage.");
             }
         }
     </script>
