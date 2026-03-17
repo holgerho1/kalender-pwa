@@ -32,12 +32,11 @@
             
             const bucket = 'test-pdfs'; 
             const file = 'test.pdf'; 
-            
-            // Der Endpunkt für die sichere URL
-            const endpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/${bucket}/${file}`;
+            const signUrlEndpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/${bucket}/${file}`;
 
             try {
-                const response = await fetch(endpoint, {
+                // 1. Signed URL holen
+                const response = await fetch(signUrlEndpoint, {
                     method: 'POST',
                     headers: {
                         'apikey': apiKey,
@@ -47,14 +46,22 @@
                     body: JSON.stringify({ expiresIn: 3600 })
                 });
 
-                const data = await response.json();
-
                 if (!response.ok) {
-                    throw new Error(`Supabase sagt: ${data.error || data.message}`);
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || "Fehler beim Signieren");
                 }
 
+                const data = await response.json();
                 const signedUrl = `https://${projectID}.supabase.co${data.signedURL}`;
-                const loadingTask = pdfjsLib.getDocument(signedUrl);
+
+                // 2. PDF als ArrayBuffer laden (umgeht PDF.js CORS Probleme)
+                const pdfRes = await fetch(signedUrl);
+                if (!pdfRes.ok) throw new Error("PDF-Download fehlgeschlagen (CORS?)");
+                
+                const pdfData = await pdfRes.arrayBuffer();
+
+                // 3. PDF rendern
+                const loadingTask = pdfjsLib.getDocument({data: pdfData});
                 const pdf = await loadingTask.promise;
                 
                 const pageNum = parseInt(document.getElementById('pageNumber').value);
