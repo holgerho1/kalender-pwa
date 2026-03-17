@@ -1,27 +1,44 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        iframe { width: 100%; height: 500px; margin-top: 10px; }
-        input, button { padding: 10px; font-size: 16px; }
+        body { font-family: sans-serif; margin: 0; padding: 15px; background: #f0f2f5; }
+        .controls { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 15px; display: flex; gap: 10px; align-items: center; }
+        input { width: 60px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        button { flex-grow: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; }
+        #viewer-container { width: 100%; height: calc(100vh - 120px); border-radius: 10px; overflow: hidden; background: #ddd; }
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
-    <h3>PDF Test</h3>
-    <input type="number" id="pageNumber" value="1">
-    <button onclick="loadPdf()">Anzeigen</button>
-    <iframe id="viewer"></iframe>
+
+    <div class="controls">
+        <input type="number" id="pageNumber" value="1" min="1">
+        <button onclick="loadPdf()">Seite anzeigen</button>
+    </div>
+
+    <div id="viewer-container">
+        <iframe id="viewer" src=""></iframe>
+    </div>
 
     <script>
         function loadPdf() {
             const page = document.getElementById('pageNumber').value;
-            const id = 'hzsgocmulzcxllihkmmh';
-            // WICHTIG: Bucket muss "test-pdfs" heißen und Datei "test.pdf"
-            const url = `https://${id}.supabase.co/storage/v1/object/public/test-pdfs/test.pdf#page=${page}`;
-            document.getElementById('viewer').src = url;
+            const projectID = 'hzsgocmulzcxllihkmmh';
+            
+            // Der direkte Link zu deiner Datei
+            const pdfUrl = `https://${projectID}.supabase.co/storage/v1/object/public/test-pdfs/test.pdf`;
+            
+            // Der Google-Viewer-Link (erzwingt das Rendern und Springen am Handy)
+            const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true#page=${page}`;
+            
+            console.log("Lade Seite:", page);
+            document.getElementById('viewer').src = googleViewerUrl;
         }
     </script>
+
 </body>
 </html>
