@@ -31,11 +31,12 @@
             const projectID = 'hzsgocmulzcxllihkmmh';
             const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
             
-            // WICHTIG: Pfad zum Sign-Endpunkt für private Dateien
-            const signUrlEndpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/test-pdfs/test.pdf`;
+            // Pfad: /bucket/file
+            const bucket = 'test-pdfs';
+            const file = 'test.pdf';
+            const signUrlEndpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/${bucket}/${file}`;
             
             try {
-                // 1. Erlaubnis (Signed URL) bei Supabase anfordern
                 const response = await fetch(signUrlEndpoint, {
                     method: 'POST',
                     headers: {
@@ -49,13 +50,13 @@
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(data.message || "Zugriff verweigert (Policy prüfen!)");
+                    // Wir geben hier die exakte Fehlermeldung von Supabase aus
+                    throw new Error(`Supabase sagt: ${data.error || data.message || "Unbekannter Fehler"}`);
                 }
 
-                // 2. Den erhaltenen Pfad zur vollständigen URL zusammensetzen
+                // Signed URL zusammensetzen
                 const signedUrl = `https://${projectID}.supabase.co${data.signedURL}`;
 
-                // 3. PDF laden und anzeigen
                 const loadingTask = pdfjsLib.getDocument(signedUrl);
                 const pdf = await loadingTask.promise;
                 const page = await pdf.getPage(pageNum);
@@ -73,8 +74,8 @@
                 }).promise;
                 
             } catch (error) {
-                console.error("Fehler:", error);
-                alert("Fehler: " + error.message);
+                console.error("Fehler-Details:", error);
+                alert(error.message);
             }
         }
     </script>
