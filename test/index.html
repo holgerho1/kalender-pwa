@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sicherer PDF Viewer - Diagnose</title>
+    <title>Sicherer PDF Viewer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         body { font-family: sans-serif; margin: 0; padding: 10px; background: #f4f4f9; text-align: center; }
@@ -11,80 +11,69 @@
         input { width: 50px; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }
         button { padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
         #pdf-canvas { width: 100%; border: 1px solid #ccc; border-radius: 5px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        #debug-info { margin-top: 20px; font-size: 12px; color: #666; text-align: left; background: #eee; padding: 10px; display: none; }
     </style>
 </head>
 <body>
 
     <div class="controls">
         <input type="number" id="pageNumber" value="1" min="1">
-        <button onclick="diagnoseAndLoad()">Seite anzeigen</button>
+        <button onclick="loadAndRender()">PDF laden</button>
     </div>
 
     <canvas id="pdf-canvas"></canvas>
-    <div id="debug-info"></div>
 
     <script>
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        async function diagnoseAndLoad() {
-            const debug = document.getElementById('debug-info');
-            debug.style.display = 'block';
-            debug.innerText = "Suche Datei...";
-
+        async function loadAndRender() {
             const projectID = 'hzsgocmulzcxllihkmmh';
             const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
-            const bucket = 'test-pdfs';
-            const file = 'test.pdf';
+            
+            const bucket = 'test-pdfs'; 
+            const file = 'test.pdf'; 
+            
+            // Der Endpunkt für die sichere URL
+            const endpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/${bucket}/${file}`;
 
             try {
-                // 1. Diagnose: Dateien im Bucket auflisten
-                const listUrl = `https://${projectID}.supabase.co/storage/v1/object/list/${bucket}`;
-                const listRes = await fetch(listUrl, {
+                const response = await fetch(endpoint, {
                     method: 'POST',
-                    headers: { 'apikey': apiKey, 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prefix: "" })
-                });
-                
-                const filesInBucket = await listRes.json();
-                console.log("Dateien gefunden:", filesInBucket);
-                
-                if (Array.isArray(filesInBucket)) {
-                    const names = filesInBucket.map(f => f.name).join(", ");
-                    debug.innerText = `Gefundene Dateien im Bucket: ${names || "KEINE"}`;
-                }
-
-                // 2. Den eigentlichen Sign-Link anfordern
-                const signUrlEndpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/${bucket}/${file}`;
-                const signRes = await fetch(signUrlEndpoint, {
-                    method: 'POST',
-                    headers: { 'apikey': apiKey, 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                    headers: {
+                        'apikey': apiKey,
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({ expiresIn: 3600 })
                 });
 
-                const signData = await signRes.json();
-                if (!signRes.ok) throw new Error(`Supabase Error: ${signData.error || signData.message}`);
+                const data = await response.json();
 
-                // 3. PDF Rendern
-                const signedUrl = `https://${projectID}.supabase.co${signData.signedURL}`;
+                if (!response.ok) {
+                    throw new Error(`Supabase sagt: ${data.error || data.message}`);
+                }
+
+                const signedUrl = `https://${projectID}.supabase.co${data.signedURL}`;
                 const loadingTask = pdfjsLib.getDocument(signedUrl);
                 const pdf = await loadingTask.promise;
+                
                 const pageNum = parseInt(document.getElementById('pageNumber').value);
                 const page = await pdf.getPage(pageNum);
                 
                 const canvas = document.getElementById('pdf-canvas');
                 const context = canvas.getContext('2d');
                 const viewport = page.getViewport({ scale: 1.5 });
+                
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
 
-                await page.render({ canvasContext: context, viewport: viewport }).promise;
-                debug.style.display = 'none';
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
 
             } catch (error) {
                 console.error(error);
-                debug.innerText = "Fehler: " + error.message;
                 alert(error.message);
             }
         }
