@@ -31,9 +31,13 @@
             const projectID = 'hzsgocmulzcxllihkmmh';
             const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
             
-            // Pfad zur Datei im Bucket
-            const filePath = 'test.pdf';
-            const signUrlEndpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/test-pdfs/${filePath}`;
+            // Bucket Name: test-pdfs
+            // Datei Name: test.pdf
+            const bucketName = 'test-pdfs';
+            const fileName = 'test.pdf';
+            
+            // Neuer Endpunkt-Pfad für Signed URLs
+            const signUrlEndpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/${bucketName}/${fileName}`;
             
             try {
                 const response = await fetch(signUrlEndpoint, {
@@ -43,22 +47,29 @@
                         'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ expiresIn: 60 })
+                    body: JSON.stringify({ expiresIn: 3600 }) // 1 Stunde gültig
                 });
 
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    // Zeigt uns genau, was Supabase bemängelt (z.B. "Object not found")
+                    console.error("Supabase Antwort:", data);
                     throw new Error(data.error || data.message || "Datei nicht gefunden");
                 }
 
+                // Die URL, die wir zurückbekommen, ist relativ. Wir machen sie absolut.
                 const signedUrl = `https://${projectID}.supabase.co${data.signedURL}`;
 
+                // PDF laden und mit PDF.js auf das Canvas zeichnen
                 const loadingTask = pdfjsLib.getDocument(signedUrl);
                 const pdf = await loadingTask.promise;
-                const page = await pdf.getPage(pageNum);
                 
+                if (pageNum > pdf.numPages || pageNum < 1) {
+                    alert(`Diese PDF hat nur ${pdf.numPages} Seiten.`);
+                    return;
+                }
+
+                const page = await pdf.getPage(pageNum);
                 const canvas = document.getElementById('pdf-canvas');
                 const context = canvas.getContext('2d');
                 const viewport = page.getViewport({ scale: 1.5 });
