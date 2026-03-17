@@ -23,7 +23,6 @@
     <canvas id="pdf-canvas"></canvas>
 
     <script>
-        // PDF.js initialisieren
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -32,16 +31,15 @@
             const projectID = 'hzsgocmulzcxllihkmmh';
             const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
             
-            // Wichtig: Pfad ist jetzt 'authenticated', nicht mehr 'public'
+            // Wichtig: Pfad ist 'authenticated'
             const url = `https://${projectID}.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf`;
 
             try {
-                // PDF mit Authentifizierungs-Headern laden
                 const loadingTask = pdfjsLib.getDocument({
                     url: url,
                     httpHeaders: {
-                        'Authorization': `Bearer ${apiKey}`,
-                        'apikey': apiKey
+                        'apikey': apiKey,
+                        'Authorization': `Bearer ${apiKey}`
                     }
                 });
                 
@@ -51,7 +49,6 @@
                 const canvas = document.getElementById('pdf-canvas');
                 const context = canvas.getContext('2d');
                 
-                // Skalierung für Mobilgeräte
                 const viewport = page.getViewport({ scale: 1.5 });
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
@@ -64,7 +61,7 @@
                 
             } catch (error) {
                 console.error("Fehler beim Laden:", error);
-                alert("Zugriff verweigert oder PDF nicht gefunden! Prüfe die Policy und den Key.");
+                alert("Zugriff verweigert! Hast du die Policy auf 'anon' und 'authenticated' gestellt?");
             }
         }
     </script>
