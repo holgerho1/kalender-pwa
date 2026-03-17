@@ -11,7 +11,8 @@
         .controls { margin-bottom: 10px; display: flex; justify-content: center; gap: 10px; }
         input { width: 60px; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }
         button { padding: 12px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        #pdf-canvas { width: 100%; max-width: 800px; border: 1px solid #ccc; border-radius: 5px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        #status { margin: 10px; color: #555; font-style: italic; }
+        #pdf-canvas { width: 100%; max-width: 800px; border: 1px solid #ccc; border-radius: 5px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -21,6 +22,7 @@
         <button onclick="loadPdf()">PDF LADEN</button>
     </div>
 
+    <div id="status">Bereit.</div>
     <canvas id="pdf-canvas"></canvas>
 
     <script>
@@ -31,26 +33,34 @@
         // Supabase Konfiguration
         const supabaseUrl = 'https://hzsgocmulzcxllihkmmh.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // HIER war der Fehler: supabase.createClient korrigiert
+        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
         async function loadPdf() {
+            const status = document.getElementById('status');
+            status.innerText = "Lade Datei von Supabase...";
+            
             try {
-                // 1. Datei als Blob direkt über das SDK herunterladen
-                // Das SDK kümmert sich um die korrekten Header und Berechtigungen
-                const { data, error } = await supabase
+                // 1. Datei als Blob herunterladen
+                const { data, error } = await _supabase
                     .storage
                     .from('test-pdfs')
                     .download('test.pdf');
 
                 if (error) throw error;
 
-                // 2. Den Blob in ein ArrayBuffer umwandeln für PDF.js
+                status.innerText = "Datei geladen. Verarbeite PDF...";
+
+                // 2. Den Blob in ein ArrayBuffer umwandeln
                 const arrayBuffer = await data.arrayBuffer();
 
                 // 3. PDF rendern
                 const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
                 const pdf = await loadingTask.promise;
                 
+                status.innerText = `PDF erkannt (${pdf.numPages} Seiten). Rendere Seite...`;
+
                 const pageNum = parseInt(document.getElementById('pageNumber').value);
                 const page = await pdf.getPage(pageNum);
                 
@@ -66,9 +76,12 @@
                     viewport: viewport
                 }).promise;
 
+                status.innerText = "Fertig!";
+
             } catch (error) {
                 console.error("Fehler:", error);
-                alert("Fehler: " + (error.message || "Datei konnte nicht geladen werden."));
+                status.innerText = "Fehler: " + (error.message || "Unbekannter Fehler");
+                alert("Fehler: " + error.message);
             }
         }
     </script>
