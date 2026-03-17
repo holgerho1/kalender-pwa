@@ -9,9 +9,9 @@
         body { font-family: sans-serif; margin: 0; padding: 10px; background: #f4f4f9; text-align: center; }
         .controls { margin-bottom: 10px; display: flex; justify-content: center; gap: 10px; }
         input { width: 60px; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }
-        button { padding: 12px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        #status-box { margin: 10px; padding: 10px; background: #eee; border-radius: 5px; font-size: 14px; min-height: 20px; }
-        #pdf-canvas { width: 100%; max-width: 600px; border: 1px solid #ccc; border-radius: 5px; background: white; margin-top: 10px; }
+        button { padding: 12px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #status-box { margin: 10px; padding: 10px; color: #666; font-size: 14px; }
+        #pdf-canvas { width: 100%; max-width: 800px; border: 1px solid #ccc; border-radius: 5px; background: white; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -21,11 +21,10 @@
         <button onclick="startView()">PDF LADEN</button>
     </div>
 
-    <div id="status-box">Bereit. Drücke den Button.</div>
+    <div id="status-box">Bereit.</div>
     <canvas id="pdf-canvas"></canvas>
 
     <script>
-        // PDF.js Worker initialisieren
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -33,12 +32,10 @@
             const status = document.getElementById('status-box');
             const projectID = 'hzsgocmulzcxllihkmmh';
             const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
-            
-            // Wir nutzen den direkten Pfad, der keine Preflight-OPTIONS-Anfrage erzwingt
             const fileUrl = `https://${projectID}.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf`;
 
             try {
-                status.innerText = "Verbindung zu Supabase wird aufgebaut...";
+                status.innerText = "Lade Daten...";
                 
                 const response = await fetch(fileUrl, {
                     method: 'GET',
@@ -48,36 +45,35 @@
                     }
                 });
 
-                if (!response.ok) {
-                    const text = await response.text();
-                    throw new Error(`Server-Antwort: ${response.status} - ${text}`);
-                }
+                if (!response.ok) throw new Error("Zugriff verweigert oder Datei nicht gefunden.");
 
-                status.innerText = "Datei empfangen. PDF wird verarbeitet...";
                 const arrayBuffer = await response.arrayBuffer();
-
                 const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
                 const pdf = await loadingTask.promise;
                 
-                status.innerText = `PDF geladen (${pdf.numPages} Seiten). Rendere Seite...`;
+                status.innerText = `Seite wird gerendert...`;
 
                 const pageNum = parseInt(document.getElementById('pageNumber').value);
+                // Sicherstellen, dass die Seitenzahl existiert
+                if (pageNum > pdf.numPages || pageNum < 1) {
+                    throw new Error(`Seite ${pageNum} existiert nicht. Max: ${pdf.numPages}`);
+                }
+
                 const page = await pdf.getPage(pageNum);
-                
                 const canvas = document.getElementById('pdf-canvas');
                 const context = canvas.getContext('2d');
-                const viewport = page.getViewport({ scale: 1.0 });
                 
+                // Skalierung für scharfe Darstellung
+                const viewport = page.getViewport({ scale: 2.0 });
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
 
                 await page.render({ canvasContext: context, viewport: viewport }).promise;
-                status.innerText = "Anzeige erfolgreich!";
+                status.innerText = `Seite ${pageNum} von ${pdf.numPages} geladen.`;
 
             } catch (err) {
                 console.error(err);
                 status.innerText = "FEHLER: " + err.message;
-                alert("Fehler-Details: " + err.message);
             }
         }
     </script>
