@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profi PDF Viewer</title>
+    <title>Sicherer PDF Viewer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         body { font-family: sans-serif; margin: 0; padding: 10px; background: #f4f4f9; text-align: center; }
@@ -30,25 +30,32 @@
         async function renderPdfPage() {
             const pageNum = parseInt(document.getElementById('pageNumber').value);
             const projectID = 'hzsgocmulzcxllihkmmh';
-            const url = `https://${projectID}.supabase.co/storage/v1/object/public/test-pdfs/test.pdf`;
+            const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
+            
+            // Wichtig: Pfad ist jetzt 'authenticated', nicht mehr 'public'
+            const url = `https://${projectID}.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf`;
 
             try {
-                // PDF laden
-                const loadingTask = pdfjsLib.getDocument(url);
-                const pdf = await loadingTask.promise;
+                // PDF mit Authentifizierungs-Headern laden
+                const loadingTask = pdfjsLib.getDocument({
+                    url: url,
+                    httpHeaders: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'apikey': apiKey
+                    }
+                });
                 
-                // Gewünschte Seite holen
+                const pdf = await loadingTask.promise;
                 const page = await pdf.getPage(pageNum);
                 
                 const canvas = document.getElementById('pdf-canvas');
                 const context = canvas.getContext('2d');
                 
-                // Ansicht für das Handy-Display anpassen
+                // Skalierung für Mobilgeräte
                 const viewport = page.getViewport({ scale: 1.5 });
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
 
-                // Die Seite auf das Canvas zeichnen
                 const renderContext = {
                     canvasContext: context,
                     viewport: viewport
@@ -57,7 +64,7 @@
                 
             } catch (error) {
                 console.error("Fehler beim Laden:", error);
-                alert("Fehler: Prüfe ob der Bucket 'Public' ist!");
+                alert("Zugriff verweigert oder PDF nicht gefunden! Prüfe die Policy und den Key.");
             }
         }
     </script>
