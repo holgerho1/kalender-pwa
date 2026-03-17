@@ -29,13 +29,12 @@
         async function loadAndRender() {
             const projectID = 'hzsgocmulzcxllihkmmh';
             const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
-            
             const bucket = 'test-pdfs'; 
             const file = 'test.pdf'; 
             const signUrlEndpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/${bucket}/${file}`;
 
             try {
-                // 1. Signed URL holen
+                // Erster Fetch: Signatur holen
                 const response = await fetch(signUrlEndpoint, {
                     method: 'POST',
                     headers: {
@@ -47,23 +46,21 @@
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || "Fehler beim Signieren");
+                    const errorMsg = await response.text();
+                    throw new Error("Signierung fehlgeschlagen: " + errorMsg);
                 }
 
                 const data = await response.json();
                 const signedUrl = `https://${projectID}.supabase.co${data.signedURL}`;
 
-                // 2. PDF als ArrayBuffer laden (umgeht PDF.js CORS Probleme)
+                // Zweiter Fetch: PDF laden
                 const pdfRes = await fetch(signedUrl);
-                if (!pdfRes.ok) throw new Error("PDF-Download fehlgeschlagen (CORS?)");
+                if (!pdfRes.ok) throw new Error("CORS Blockade beim PDF Download");
                 
                 const pdfData = await pdfRes.arrayBuffer();
 
-                // 3. PDF rendern
                 const loadingTask = pdfjsLib.getDocument({data: pdfData});
                 const pdf = await loadingTask.promise;
-                
                 const pageNum = parseInt(document.getElementById('pageNumber').value);
                 const page = await pdf.getPage(pageNum);
                 
@@ -74,14 +71,11 @@
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
 
-                await page.render({
-                    canvasContext: context,
-                    viewport: viewport
-                }).promise;
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
 
             } catch (error) {
                 console.error(error);
-                alert(error.message);
+                alert("Fehler: " + error.message);
             }
         }
     </script>
