@@ -31,8 +31,9 @@
             const projectID = 'hzsgocmulzcxllihkmmh';
             const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
             
-            // Endpunkt für die Signed URL
-            const signUrlEndpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/test-pdfs/test.pdf`;
+            // Pfad zur Datei im Bucket
+            const filePath = 'test.pdf';
+            const signUrlEndpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/test-pdfs/${filePath}`;
             
             try {
                 const response = await fetch(signUrlEndpoint, {
@@ -48,14 +49,12 @@
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    console.error("Supabase Fehler-Details:", data);
-                    throw new Error(data.error || data.message || "Fehler beim Signieren");
+                    // Zeigt uns genau, was Supabase bemängelt (z.B. "Object not found")
+                    throw new Error(data.error || data.message || "Datei nicht gefunden");
                 }
 
-                // Die Signed URL zusammensetzen
                 const signedUrl = `https://${projectID}.supabase.co${data.signedURL}`;
 
-                // PDF laden und rendern
                 const loadingTask = pdfjsLib.getDocument(signedUrl);
                 const pdf = await loadingTask.promise;
                 const page = await pdf.getPage(pageNum);
@@ -73,7 +72,7 @@
                 }).promise;
                 
             } catch (error) {
-                console.error("Vollständiger Fehler:", error);
+                console.error("Detail-Fehler:", error);
                 alert("Fehler: " + error.message);
             }
         }
