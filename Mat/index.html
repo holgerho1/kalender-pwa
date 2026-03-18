@@ -64,17 +64,14 @@
             background-color: #0056b3;
             transform: translateY(1px);
         }
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-        li {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            background: #fff;
-        }
         .hidden {
             display: none;
+        }
+        #statusMessage {
+            font-size: 0.75rem;
+            text-align: center;
+            margin-bottom: 10px;
+            color: #666;
         }
     </style>
 </head>
@@ -82,23 +79,20 @@
 
 <div class="container">
     <h1>Material-Manager</h1>
+    <div id="statusMessage">Verbindung wird initialisiert...</div>
     
     <div class="section" id="projectSection">
         <label for="projectSelect">Aktuelles Projekt wählen:</label>
         <select id="projectSelect" style="margin-bottom: 15px;">
-            <option value="">-- Projekt auswählen --</option>
+            <option value="">-- Lade Projekte... --</option>
             <option value="neu"> + Neues Projekt anlegen...</option>
         </select>
         
         <div id="newProjectDiv">
             <h3 style="font-size: 1rem; margin-top: 0;">Neues Projekt erstellen</h3>
             <div class="input-group">
-                <label for="projectName">Name des Projekts:</label>
-                <input type="text" id="projectName" placeholder="z.B. Renovierung Küche">
-                
-                <label for="projectNote">Notiz / Beschreibung:</label>
-                <textarea id="projectNote" placeholder="Was ist zu tun? (Optional)"></textarea>
-                
+                <input type="text" id="projectName" placeholder="Name des Projekts">
+                <textarea id="projectNote" placeholder="Notiz (Optional)"></textarea>
                 <button id="saveProjectBtn">Projekt speichern</button>
             </div>
         </div>
@@ -116,21 +110,35 @@
 </div>
 
 <script>
-    // Hier deine Daten einsetzen, falls window.supabaseClient nicht existiert
-    const SUPABASE_URL = 'DEINE_URL';
-    const SUPABASE_ANON_KEY = 'DEIN_KEY';
-    const _supabase = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Automatisches Finden des Supabase-Clients ohne Hardcoded Keys
+    let _supabase;
+    const statusMsg = document.getElementById('statusMessage');
+
+    function initSupabase() {
+        if (window.supabaseClient) {
+            _supabase = window.supabaseClient;
+            statusMsg.innerText = "Verbunden über globalen Client";
+        } else if (window.supabase && typeof window.supabase.createClient === 'function') {
+            // Falls Vercel die Variablen in das Fenster injiziert hat (z.B. über ein Script-Tag)
+            const url = window.NEXT_PUBLIC_SUPABASE_URL || window.ENV_SUPABASE_URL;
+            const key = window.NEXT_PUBLIC_SUPABASE_ANON_KEY || window.ENV_SUPABASE_KEY;
+            
+            if (url && key) {
+                _supabase = window.supabase.createClient(url, key);
+                statusMsg.innerText = "Verbunden über Umgebungsvariablen";
+            } else {
+                statusMsg.innerText = "Fehler: Keine API-Keys gefunden. Bitte in Vercel hinterlegen.";
+            }
+        }
+        if (_supabase) loadProjects();
+    }
 
     const projectSelect = document.getElementById('projectSelect');
     const newProjectDiv = document.getElementById('newProjectDiv');
     const saveProjectBtn = document.getElementById('saveProjectBtn');
     const projectNameInput = document.getElementById('projectName');
     const projectNoteInput = document.getElementById('projectNote');
-    const materialSection = document.getElementById('materialSection');
-    const materialInput = document.getElementById('materialInput');
-    const addMaterialBtn = document.getElementById('addMaterialBtn');
 
-    // Bestehende Projekte laden
     async function loadProjects() {
         try {
             const { data, error } = await _supabase
@@ -141,7 +149,6 @@
             if (error) throw error;
 
             projectSelect.innerHTML = '<option value="">-- Projekt auswählen --</option><option value="neu"> + Neues Projekt anlegen...</option>';
-            
             if (data) {
                 data.forEach(proj => {
                     const option = document.createElement('option');
@@ -151,50 +158,35 @@
                 });
             }
         } catch (err) {
-            console.error('Fehler:', err.message);
+            statusMsg.innerText = "Ladefehler: Tabelle 'projekte' vorhanden?";
+            console.error(err);
         }
     }
 
-    // Initialisierung
-    loadProjects();
+    // Sofortiger Start der Initialisierung
+    initSupabase();
 
-    // Logik für die Anzeige des "Neu"-Bereichs und Freischaltung der Materialien
     projectSelect.addEventListener('change', (e) => {
-        const val = e.target.value;
+        const isNew = (e.target.value === 'neu' || e.target.value === '');
+        newProjectDiv.style.display = isNew ? 'block' : 'none';
         
-        if (val === 'neu' || val === '') {
-            newProjectDiv.classList.remove('hidden');
-            materialSection.style.opacity = "0.5";
-            materialInput.disabled = true;
-            addMaterialBtn.disabled = true;
-            materialInput.placeholder = "Zuerst Projekt wählen...";
-        } else {
-            newProjectDiv.classList.add('hidden');
-            materialSection.style.opacity = "1";
-            materialInput.disabled = false;
-            addMaterialBtn.disabled = false;
-            materialInput.placeholder = "Materialname...";
-        }
+        const matSection = document.getElementById('materialSection');
+        matSection.style.opacity = isNew ? "0.5" : "1";
+        document.getElementById('materialInput').disabled = isNew;
+        document.getElementById('addMaterialBtn').disabled = isNew;
     });
 
-    // Projekt speichern
     saveProjectBtn.addEventListener('click', async () => {
         const name = projectNameInput.value;
         const note = projectNoteInput.value;
+        if (!name || !_supabase) return;
 
-        if (!name) return alert('Bitte gib einen Projektnamen ein!');
-
-        const { error } = await _supabase
-            .from('projekte')
-            .insert([{ projektname: name, notiz: note }]);
-
-        if (error) {
-            alert('Fehler: ' + error.message);
-        } else {
+        const { error } = await _supabase.from('projekte').insert([{ projektname: name, notiz: note }]);
+        if (error) alert('Fehler: ' + error.message);
+        else {
             projectNameInput.value = '';
             projectNoteInput.value = '';
-            await loadProjects();
-            alert('Projekt erfolgreich erstellt!');
+            loadProjects();
         }
     });
 </script>
