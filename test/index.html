@@ -3,62 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>PDF Archiv</title>
+    <title>PDF Archiv Hybrid</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root { --bg: #121212; --sidebar: #1e1e1e; --accent: #007bff; --text: #ffffff; --border: #333; }
         body { font-family: -apple-system, sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
+        /* Obere Leiste */
         .top-nav { 
             background: var(--sidebar); padding: 10px; border-bottom: 1px solid var(--border); 
             display: flex; justify-content: space-between; align-items: center; z-index: 20; 
         }
 
+        /* Hauptlayout */
         .main-layout { display: flex; flex: 1; overflow: hidden; }
 
+        /* Dateiliste links */
         #file-list { 
-            width: 150px; background: var(--sidebar); border-right: 1px solid var(--border); 
+            width: 140px; background: var(--sidebar); border-right: 1px solid var(--border); 
             overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px;
         }
         
-        @media (max-width: 600px) { #file-list { width: 90px; font-size: 11px; } }
+        @media (max-width: 600px) { #file-list { width: 95px; font-size: 11px; padding: 5px; } }
 
         .file-item { 
             padding: 10px; background: #2c2c2e; border-radius: 8px; cursor: pointer; 
-            font-size: 12px; word-break: break-all; border: 1px solid transparent;
+            font-size: 12px; word-break: break-all; border: 1px solid transparent; color: #ccc;
         }
-        .file-item.active { border-color: var(--accent); background: #3a3a3c; }
+        .file-item.active { border-color: var(--accent); background: #3a3a3c; color: white; font-weight: bold; }
 
+        /* Viewer Bereich */
         .viewer-area { flex: 1; display: flex; flex-direction: column; position: relative; background: #2c2c2e; }
         
         #viewer-container { 
             flex: 1; overflow: auto; display: flex; justify-content: center; 
-            align-items: flex-start; padding: 15px; -webkit-overflow-scrolling: touch;
+            align-items: flex-start; padding: 10px; -webkit-overflow-scrolling: touch;
         }
 
         canvas { background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.6); max-width: 100%; height: auto !important; }
 
-        .btn { background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; }
+        /* Buttons */
+        .btn { background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; }
+        .btn:disabled { background: #444; opacity: 0.5; }
         .btn-full { background: #28a745; }
-        #page-info { font-size: 12px; color: #888; }
-        #error-display { color: #ff4444; font-size: 12px; padding: 10px; display: none; }
+        
+        #page-info { font-size: 12px; color: #888; min-width: 50px; text-align: center; }
+        #error-display { color: #ff4444; font-size: 11px; padding: 10px; background: rgba(255,0,0,0.1); display: none; margin: 10px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
     <div class="top-nav">
-        <div style="display: flex; gap: 8px; align-items: center;">
-            <button class="btn" onclick="changePage(-1)"> < </button>
+        <div style="display: flex; gap: 6px; align-items: center;">
+            <button class="btn" onclick="changePage(-1)" id="prevBtn"> < </button>
             <span id="page-info">...</span>
-            <button class="btn" onclick="changePage(1)"> > </button>
+            <button class="btn" onclick="changePage(1)" id="nextBtn"> > </button>
         </div>
-        <button class="btn btn-full" onclick="openNativeViewer()">VOLLBILD</button>
+        <button class="btn btn-full" onclick="openNativeViewer()">VOLLBILD ↗</button>
     </div>
 
     <div class="main-layout">
         <div id="file-list">
-            <div style="font-size: 10px; color: #666;">LADE DATEIEN...</div>
-        </div>
+            <div style="font-size: 10px; color: #666; margin-bottom: 5px; letter-spacing: 1px;">DATEIEN</div>
+            </div>
 
         <div class="viewer-area">
             <div id="error-display"></div>
@@ -85,9 +92,10 @@
         function showError(msg) {
             const errDiv = document.getElementById('error-display');
             errDiv.style.display = 'block';
-            errDiv.innerText = msg;
+            errDiv.innerText = "Hinweis: " + msg;
         }
 
+        // 1. Liste laden
         async function fetchFiles() {
             const listContainer = document.getElementById('file-list');
             const url = `https://${config.id}.supabase.co/storage/v1/list/${config.bucket}`;
@@ -100,45 +108,56 @@
                         'Authorization': `Bearer ${config.key}`, 
                         'Content-Type': 'application/json' 
                     },
-                    body: JSON.stringify({ path: "", limit: 50, sortBy: { column: 'name', order: 'asc' } })
+                    body: JSON.stringify({ prefix: "" }) // Prefix "" lädt alle Dateien im Bucket
                 });
 
-                if (!res.ok) throw new Error("Kein Zugriff auf Bucket (Policy?)");
-                const files = await res.json();
+                if (!res.ok) {
+                    const errorMsg = await res.text();
+                    throw new Error(errorMsg || `Status ${res.status}`);
+                }
 
+                const files = await res.json();
                 listContainer.innerHTML = '<div style="font-size: 10px; color: #666; margin-bottom: 5px;">DATEIEN</div>';
 
-                if (!files || files.length === 0) {
-                    listContainer.innerHTML += '<div style="font-size:11px; color:#888;">Ordner leer</div>';
+                const pdfFiles = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
+
+                if (pdfFiles.length === 0) {
+                    listContainer.innerHTML += '<div style="font-size:11px; color:#888;">Keine PDFs gefunden.</div>';
                     return;
                 }
 
-                files.forEach((file, index) => {
-                    if (file.name && file.name.toLowerCase().endsWith('.pdf')) {
-                        const item = document.createElement('div');
-                        item.className = 'file-item';
-                        item.innerText = file.name;
-                        item.onclick = () => {
-                            document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
-                            item.classList.add('active');
-                            loadFile(file.name);
-                        };
-                        listContainer.appendChild(item);
-                        if (index === 0) item.click();
+                pdfFiles.forEach((file, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    item.innerText = file.name;
+                    item.onclick = () => {
+                        document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
+                        item.classList.add('active');
+                        loadFile(file.name);
+                    };
+                    listContainer.appendChild(item);
+                    // Erste Datei automatisch laden
+                    if (index === 0) {
+                        item.classList.add('active');
+                        loadFile(file.name);
                     }
                 });
             } catch (e) {
                 showError("Fehler beim Auflisten: " + e.message);
+                console.error(e);
             }
         }
 
+        // 2. Einzelne Datei laden
         async function loadFile(name) {
             const fileUrl = `https://${config.id}.supabase.co/storage/v1/object/authenticated/${config.bucket}/${name}`;
             try {
                 const res = await fetch(fileUrl, { headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}` } });
-                if (!res.ok) throw new Error("Datei nicht gefunden.");
+                if (!res.ok) throw new Error("Datei konnte nicht geladen werden.");
+                
                 const data = await res.arrayBuffer();
                 currentBlob = new Blob([data], { type: 'application/pdf' });
+                
                 pdfDoc = await pdfjsLib.getDocument({ data }).promise;
                 pageNum = 1;
                 renderPage(pageNum);
@@ -147,6 +166,7 @@
             }
         }
 
+        // 3. Seite anzeigen
         async function renderPage(num) {
             if (isRendering || !pdfDoc) return;
             isRendering = true;
@@ -157,6 +177,8 @@
                 canvas.width = viewport.width;
                 await page.render({ canvasContext: ctx, viewport: viewport }).promise;
                 document.getElementById('page-info').innerText = `${num} / ${pdfDoc.numPages}`;
+                document.getElementById('prevBtn').disabled = (num <= 1);
+                document.getElementById('nextBtn').disabled = (num >= pdfDoc.numPages);
             } catch (e) { console.error(e); }
             isRendering = false;
             pageNum = num;
@@ -170,14 +192,16 @@
             }
         }
 
+        // 4. Vollbild Modus (Nativ)
         function openNativeViewer() {
             if (currentBlob) {
                 const url = URL.createObjectURL(currentBlob);
                 window.location.href = url;
+            } else {
+                alert("Bitte erst eine Datei wählen.");
             }
         }
 
-        // Start erst wenn HTML fertig ist
         window.onload = fetchFiles;
     </script>
 </body>
