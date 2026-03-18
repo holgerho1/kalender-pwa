@@ -73,6 +73,9 @@
             border-bottom: 1px solid #eee;
             background: #fff;
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -82,29 +85,30 @@
     
     <div class="section" id="projectSection">
         <label for="projectSelect">Aktuelles Projekt wählen:</label>
-        <select id="projectSelect" style="margin-bottom: 10px;">
-            <option value="">-- Lade Projekte... --</option>
+        <select id="projectSelect" style="margin-bottom: 15px;">
+            <option value="">-- Projekt auswählen --</option>
             <option value="neu"> + Neues Projekt anlegen...</option>
         </select>
         
-        <div id="newProjectDiv" style="display: none;">
+        <div id="newProjectDiv">
+            <h3 style="font-size: 1rem; margin-top: 0;">Neues Projekt erstellen</h3>
             <div class="input-group">
-                <label for="projectName">Neuer Projektname:</label>
-                <input type="text" id="projectName" placeholder="z.B. Gartenhaus">
+                <label for="projectName">Name des Projekts:</label>
+                <input type="text" id="projectName" placeholder="z.B. Renovierung Küche">
                 
-                <label for="projectNote">Notiz:</label>
-                <textarea id="projectNote" placeholder="Optionale Notiz..."></textarea>
+                <label for="projectNote">Notiz / Beschreibung:</label>
+                <textarea id="projectNote" placeholder="Was ist zu tun? (Optional)"></textarea>
                 
                 <button id="saveProjectBtn">Projekt speichern</button>
             </div>
         </div>
     </div>
 
-    <div class="section" id="materialSection">
+    <div class="section" id="materialSection" style="opacity: 0.5;">
         <label for="materialInput">Material hinzufügen:</label>
         <div style="display: flex; gap: 10px;">
-            <input type="text" id="materialInput" placeholder="Materialname...">
-            <button id="addMaterialBtn">Hinzufügen</button>
+            <input type="text" id="materialInput" placeholder="Zuerst Projekt wählen..." disabled>
+            <button id="addMaterialBtn" disabled>Hinzufügen</button>
         </div>
     </div>
 
@@ -112,7 +116,7 @@
 </div>
 
 <script>
-    // Nutze den bestehenden Client oder erstelle einen neuen
+    // Hier deine Daten einsetzen, falls window.supabaseClient nicht existiert
     const SUPABASE_URL = 'DEINE_URL';
     const SUPABASE_ANON_KEY = 'DEIN_KEY';
     const _supabase = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -122,7 +126,11 @@
     const saveProjectBtn = document.getElementById('saveProjectBtn');
     const projectNameInput = document.getElementById('projectName');
     const projectNoteInput = document.getElementById('projectNote');
+    const materialSection = document.getElementById('materialSection');
+    const materialInput = document.getElementById('materialInput');
+    const addMaterialBtn = document.getElementById('addMaterialBtn');
 
+    // Bestehende Projekte laden
     async function loadProjects() {
         try {
             const { data, error } = await _supabase
@@ -132,7 +140,7 @@
 
             if (error) throw error;
 
-            projectSelect.innerHTML = '<option value="">-- Bitte wählen --</option><option value="neu"> + Neues Projekt anlegen...</option>';
+            projectSelect.innerHTML = '<option value="">-- Projekt auswählen --</option><option value="neu"> + Neues Projekt anlegen...</option>';
             
             if (data) {
                 data.forEach(proj => {
@@ -143,22 +151,38 @@
                 });
             }
         } catch (err) {
-            console.error('Fehler beim Laden:', err.message);
-            projectSelect.innerHTML = '<option value="">Fehler beim Laden</option>';
+            console.error('Fehler:', err.message);
         }
     }
 
+    // Initialisierung
     loadProjects();
 
+    // Logik für die Anzeige des "Neu"-Bereichs und Freischaltung der Materialien
     projectSelect.addEventListener('change', (e) => {
-        newProjectDiv.style.display = (e.target.value === 'neu') ? 'block' : 'none';
+        const val = e.target.value;
+        
+        if (val === 'neu' || val === '') {
+            newProjectDiv.classList.remove('hidden');
+            materialSection.style.opacity = "0.5";
+            materialInput.disabled = true;
+            addMaterialBtn.disabled = true;
+            materialInput.placeholder = "Zuerst Projekt wählen...";
+        } else {
+            newProjectDiv.classList.add('hidden');
+            materialSection.style.opacity = "1";
+            materialInput.disabled = false;
+            addMaterialBtn.disabled = false;
+            materialInput.placeholder = "Materialname...";
+        }
     });
 
+    // Projekt speichern
     saveProjectBtn.addEventListener('click', async () => {
         const name = projectNameInput.value;
         const note = projectNoteInput.value;
 
-        if (!name) return alert('Name fehlt!');
+        if (!name) return alert('Bitte gib einen Projektnamen ein!');
 
         const { error } = await _supabase
             .from('projekte')
@@ -169,8 +193,8 @@
         } else {
             projectNameInput.value = '';
             projectNoteInput.value = '';
-            newProjectDiv.style.display = 'none';
             await loadProjects();
+            alert('Projekt erfolgreich erstellt!');
         }
     });
 </script>
