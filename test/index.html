@@ -2,80 +2,129 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Sicherer PDF Viewer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 10px; background: #f4f4f9; text-align: center; }
-        .controls { margin-bottom: 10px; display: flex; justify-content: center; gap: 10px; }
-        input { width: 60px; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }
-        button { padding: 12px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        #status-box { margin: 10px; padding: 10px; color: #666; font-size: 14px; }
-        #pdf-canvas { width: 100%; max-width: 800px; border: 1px solid #ccc; border-radius: 5px; background: white; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #333; color: white; text-align: center; overflow-x: hidden; }
+        
+        /* Fixierte Steuerung oben */
+        .header { 
+            position: sticky; top: 0; z-index: 100; background: #222; 
+            padding: 15px; border-bottom: 1px solid #444; 
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        
+        input { width: 45px; padding: 8px; font-size: 16px; text-align: center; border-radius: 5px; border: none; }
+        button { padding: 10px 15px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:active { background: #0056b3; }
+        button:disabled { background: #555; cursor: not-allowed; }
+
+        #status-box { font-size: 12px; color: #aaa; margin: 5px; }
+
+        /* Container für flüssiges Scrollen/Zoomen */
+        #pdf-container { 
+            width: 100%; height: calc(100vh - 80px); 
+            overflow: auto; -webkit-overflow-scrolling: touch;
+            display: flex; justify-content: center; padding-top: 10px;
+        }
+
+        #pdf-canvas { 
+            background: white; max-width: 95%; height: auto; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5); margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
 
-    <div class="controls">
-        <input type="number" id="pageNumber" value="1" min="1">
-        <button onclick="startView()">PDF LADEN</button>
+    <div class="header">
+        <button onclick="changePage(-1)" id="prevBtn"> < </button>
+        <input type="number" id="pageNumber" value="1" min="1" readonly>
+        <button onclick="changePage(1)" id="nextBtn"> > </button>
     </div>
 
-    <div id="status-box">Bereit.</div>
-    <canvas id="pdf-canvas"></canvas>
+    <div id="status-box">Bereit. Lade PDF...</div>
+
+    <div id="pdf-container">
+        <canvas id="pdf-canvas"></canvas>
+    </div>
 
     <script>
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        async function startView() {
+        let pdfDoc = null;
+        let currentPage = 1;
+        let isRendering = false;
+
+        const projectID = 'hzsgocmulzcxllihkmmh';
+        const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
+        const fileUrl = `https://${projectID}.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf`;
+
+        // PDF initial laden
+        async function loadDocument() {
             const status = document.getElementById('status-box');
-            const projectID = 'hzsgocmulzcxllihkmmh';
-            const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
-            const fileUrl = `https://${projectID}.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf`;
-
             try {
-                status.innerText = "Lade Daten...";
-                
                 const response = await fetch(fileUrl, {
-                    method: 'GET',
-                    headers: {
-                        'apikey': apiKey,
-                        'Authorization': `Bearer ${apiKey}`
-                    }
+                    headers: { 'apikey': apiKey, 'Authorization': `Bearer ${apiKey}` }
                 });
-
-                if (!response.ok) throw new Error("Zugriff verweigert oder Datei nicht gefunden.");
+                if (!response.ok) throw new Error("Fehler beim Abrufen");
 
                 const arrayBuffer = await response.arrayBuffer();
-                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-                const pdf = await loadingTask.promise;
+                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                 
-                status.innerText = `Seite wird gerendert...`;
+                renderPage(currentPage);
+            } catch (err) {
+                status.innerText = "Fehler: " + err.message;
+            }
+        }
 
-                const pageNum = parseInt(document.getElementById('pageNumber').value);
-                // Sicherstellen, dass die Seitenzahl existiert
-                if (pageNum > pdf.numPages || pageNum < 1) {
-                    throw new Error(`Seite ${pageNum} existiert nicht. Max: ${pdf.numPages}`);
-                }
+        async function renderPage(num) {
+            if (isRendering) return;
+            isRendering = true;
+            
+            const status = document.getElementById('status-box');
+            const canvas = document.getElementById('pdf-canvas');
+            const ctx = canvas.getContext('2d');
 
-                const page = await pdf.getPage(pageNum);
-                const canvas = document.getElementById('pdf-canvas');
-                const context = canvas.getContext('2d');
+            try {
+                const page = await pdfDoc.getPage(num);
                 
-                // Skalierung für scharfe Darstellung
+                // Wir rendern mit 2.0 scale für Schärfe, 
+                // aber CSS begrenzt die Breite auf das Handy-Display
                 const viewport = page.getViewport({ scale: 2.0 });
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
 
-                await page.render({ canvasContext: context, viewport: viewport }).promise;
-                status.innerText = `Seite ${pageNum} von ${pdf.numPages} geladen.`;
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                
+                currentPage = num;
+                document.getElementById('pageNumber').value = num;
+                status.innerText = `Seite ${num} von ${pdfDoc.numPages}`;
+                
+                // Buttons steuern
+                document.getElementById('prevBtn').disabled = (num <= 1);
+                document.getElementById('nextBtn').disabled = (num >= pdfDoc.numPages);
 
             } catch (err) {
-                console.error(err);
-                status.innerText = "FEHLER: " + err.message;
+                status.innerText = "Render-Fehler";
+            } finally {
+                isRendering = false;
             }
         }
+
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= pdfDoc.numPages) {
+                renderPage(newPage);
+                // Scrollt zurück nach oben beim Umblättern
+                document.getElementById('pdf-container').scrollTop = 0;
+            }
+        }
+
+        // Direkt beim Start laden
+        loadDocument();
     </script>
 </body>
 </html>
