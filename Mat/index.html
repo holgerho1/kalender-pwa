@@ -9,59 +9,98 @@
             font-family: sans-serif;
             margin: 20px;
             background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
         }
         .container {
+            width: 100%;
             max-width: 500px;
-            margin: auto;
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         h1 {
             font-size: 1.5rem;
             text-align: center;
+            color: #333;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9rem;
         }
         .input-group {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
-        input {
+        input, select {
             flex-grow: 1;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #ccc;
             border-radius: 4px;
+            font-size: 1rem;
         }
         button {
-            padding: 10px 15px;
+            padding: 12px 15px;
             background-color: #007bff;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-weight: bold;
         }
-        button:hover {
+        button:active {
             background-color: #0056b3;
+            transform: translateY(1px);
         }
         ul {
             list-style: none;
             padding: 0;
         }
         li {
-            padding: 10px;
+            padding: 12px;
             border-bottom: 1px solid #eee;
+            background: #fff;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Materialliste</h1>
+    <h1>Material-Manager</h1>
     
-    <div class="input-group">
-        <input type="text" id="materialInput" placeholder="Material hinzufügen...">
-        <button id="addBtn">Hinzufügen</button>
+    <div class="section" id="projectSection">
+        <label for="projectSelect">Aktuelles Projekt wählen:</label>
+        <div class="input-group">
+            <select id="projectSelect">
+                <option value="">-- Bitte wählen --</option>
+                <option value="neu"> + Neues Projekt anlegen...</option>
+            </select>
+        </div>
+        
+        <div id="newProjectDiv" style="display: none;">
+            <label for="projectName">Neuer Projektname:</label>
+            <div class="input-group">
+                <input type="text" id="projectName" placeholder="z.B. Gartenhaus">
+                <button id="saveProjectBtn">Anlegen</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="materialSection">
+        <label for="materialInput">Material hinzufügen:</label>
+        <div class="input-group">
+            <input type="text" id="materialInput" placeholder="z.B. Schrauben M8">
+            <button id="addMaterialBtn">Hinzufügen</button>
+        </div>
     </div>
 
     <ul id="materialList">
@@ -69,7 +108,17 @@
 </div>
 
 <script>
-    // Logik folgt im nächsten Schritt
+    const projectSelect = document.getElementById('projectSelect');
+    const newProjectDiv = document.getElementById('newProjectDiv');
+
+    // Einfache Logik zum Einblenden des Feldes für neue Projekte
+    projectSelect.addEventListener('change', (e) => {
+        if (e.target.value === 'neu') {
+            newProjectDiv.style.display = 'block';
+        } else {
+            newProjectDiv.style.display = 'none';
+        }
+    });
 </script>
 
 </body>
