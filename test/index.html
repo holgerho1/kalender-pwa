@@ -3,110 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>PDF Hybrid Viewer</title>
+    <title>PDF Archiv</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        :root { --bg: #121212; --panel: #1e1e1e; --accent: #007bff; --text: #ffffff; }
+        :root { --bg: #121212; --sidebar: #1e1e1e; --accent: #007bff; --text: #ffffff; --border: #333; }
         body { font-family: -apple-system, sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Header mit Steuerung */
-        .header { 
-            background: var(--panel); padding: 12px; display: flex; 
-            justify-content: space-between; align-items: center; 
-            border-bottom: 1px solid #333; z-index: 10;
+        /* Obere Leiste */
+        .top-nav { 
+            background: var(--sidebar); padding: 10px; border-bottom: 1px solid var(--border); 
+            display: flex; justify-content: space-between; align-items: center; z-index: 20; 
         }
 
-        .btn { 
-            background: var(--accent); color: white; border: none; padding: 10px 15px; 
-            border-radius: 8px; font-weight: bold; font-size: 14px;
+        /* Layout Container */
+        .main-layout { display: flex; flex: 1; overflow: hidden; }
+
+        /* Seitenleiste / Dateiliste */
+        #file-list { 
+            width: 180px; background: var(--sidebar); border-right: 1px solid var(--border); 
+            overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px;
         }
-        .btn:disabled { background: #444; opacity: 0.5; }
-        .btn-full { background: #28a745; margin-left: 5px; } /* Grün für Vollbild */
+        
+        /* Mobile Anpassung für die Liste */
+        @media (max-width: 600px) {
+            #file-list { width: 100px; font-size: 12px; padding: 5px; }
+        }
 
-        #page-label { font-size: 14px; font-weight: 500; min-width: 70px; text-align: center; }
+        .file-item { 
+            padding: 10px; background: #2c2c2e; border-radius: 8px; cursor: pointer; 
+            font-size: 13px; word-break: break-all; border: 1px solid transparent;
+        }
+        .file-item.active { border-color: var(--accent); background: #3a3a3c; }
 
-        /* Vorschau-Bereich */
+        /* Anzeige-Bereich */
+        .viewer-area { flex: 1; display: flex; flex-direction: column; position: relative; }
+        
         #viewer-container { 
-            flex: 1; overflow: auto; display: flex; justify-content: center;
-            align-items: flex-start; padding: 15px; background: #2c2c2e;
-            -webkit-overflow-scrolling: touch;
+            flex: 1; overflow: auto; display: flex; justify-content: center; 
+            align-items: flex-start; padding: 15px; background: #2c2c2e; -webkit-overflow-scrolling: touch;
         }
 
-        canvas { 
-            background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.6); 
-            max-width: 100%; height: auto !important;
-            image-rendering: auto; transform: translateZ(0);
-        }
+        canvas { background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.6); max-width: 100%; height: auto !important; }
 
-        .loading-overlay { position: absolute; top: 50%; width: 100%; text-align: center; color: #888; pointer-events: none; }
+        .btn { background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; }
+        .btn-full { background: #28a745; }
+        #page-info { font-size: 12px; color: #888; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div style="display: flex; gap: 5px; align-items: center;">
-            <button class="btn" onclick="changePage(-1)" id="prev"> < </button>
-            <div id="page-label">...</div>
-            <button class="btn" onclick="changePage(1)" id="next"> > </button>
+    <div class="top-nav">
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn" onclick="changePage(-1)"> < </button>
+            <span id="page-info">Seite ...</span>
+            <button class="btn" onclick="changePage(1)"> > </button>
         </div>
-        
-        <button class="btn btn-full" onclick="openNativeViewer()">VOLLBILD ↗</button>
+        <button class="btn btn-full" onclick="openNativeViewer()">VOLLBILD</button>
     </div>
 
-    <div id="loading-msg" class="loading-overlay">Lade PDF-Vorschau...</div>
+    <div class="main-layout">
+        <div id="file-list">
+            <div style="font-size: 11px; color: #666; margin-bottom: 5px;">DATEIEN</div>
+            </div>
 
-    <div id="viewer-container">
-        <canvas id="pdf-render"></canvas>
+        <div class="viewer-area">
+            <div id="viewer-container">
+                <canvas id="pdf-render"></canvas>
+            </div>
+        </div>
     </div>
 
     <script>
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        let pdfDoc = null, pageNum = 1, isRendering = false, pdfBlob = null;
+        let pdfDoc = null, pageNum = 1, isRendering = false, currentBlob = null;
         const canvas = document.getElementById('pdf-render');
         const ctx = canvas.getContext('2d', { alpha: false });
 
         const config = {
-            url: 'https://hzsgocmulzcxllihkmmh.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf',
-            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw'
+            id: 'hzsgocmulzcxllihkmmh',
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw',
+            bucket: 'test-pdfs'
         };
 
-        // PDF initial laden
-        async function init() {
+        async function fetchFiles() {
+            const listContainer = document.getElementById('file-list');
+            const url = `https://${config.id}.supabase.co/storage/v1/list/${config.bucket}`;
+
             try {
-                const res = await fetch(config.url, { headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}` } });
-                const arrayBuffer = await res.arrayBuffer();
-                
-                // Wir speichern den Blob für den Vollbild-Modus, damit wir nicht neu laden müssen
-                pdfBlob = new Blob([arrayBuffer], { type: 'application/pdf' });
-                
-                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                document.getElementById('loading-msg').style.display = 'none';
-                renderPage(pageNum);
-            } catch (e) {
-                document.getElementById('loading-msg').innerText = "Fehler beim Laden!";
-            }
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ limit: 50, sortBy: { column: 'name', order: 'asc' } })
+                });
+                const files = await res.json();
+
+                files.forEach((file, index) => {
+                    if (file.name.toLowerCase().endsWith('.pdf')) {
+                        const item = document.createElement('div');
+                        item.className = 'file-item';
+                        item.innerText = file.name;
+                        item.onclick = () => {
+                            document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
+                            item.classList.add('active');
+                            loadFile(file.name);
+                        };
+                        listContainer.appendChild(item);
+                        if (index === 0) item.click(); // Erste Datei laden
+                    }
+                });
+            } catch (e) { console.error("Listen-Fehler", e); }
         }
 
-        // Seite in der App rendern
-        async function renderPage(num) {
-            if (isRendering) return;
-            isRendering = true;
+        async function loadFile(name) {
+            const url = `https://${config.id}.supabase.co/storage/v1/object/authenticated/${config.bucket}/${name}`;
+            try {
+                const res = await fetch(url, { headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}` } });
+                const data = await res.arrayBuffer();
+                currentBlob = new Blob([data], { type: 'application/pdf' });
+                pdfDoc = await pdfjsLib.getDocument({ data }).promise;
+                pageNum = 1;
+                renderPage(pageNum);
+            } catch (e) { alert("Ladefehler"); }
+        }
 
+        async function renderPage(num) {
+            if (isRendering || !pdfDoc) return;
+            isRendering = true;
             const page = await pdfDoc.getPage(num);
             const viewport = page.getViewport({ scale: 1.5 });
-            
             canvas.height = viewport.height;
             canvas.width = viewport.width;
-
             await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-            
             isRendering = false;
             pageNum = num;
-            document.getElementById('page-label').innerText = `${num} / ${pdfDoc.numPages}`;
-            document.getElementById('prev').disabled = (num <= 1);
-            document.getElementById('next').disabled = (num >= pdfDoc.numPages);
+            document.getElementById('page-info').innerText = `${num} / ${pdfDoc.numPages}`;
         }
 
         function changePage(delta) {
@@ -117,14 +149,11 @@
             }
         }
 
-        // Native Viewer Funktion
         function openNativeViewer() {
-            if (!pdfBlob) return;
-            const blobUrl = URL.createObjectURL(pdfBlob);
-            window.location.href = blobUrl;
+            if (currentBlob) window.location.href = URL.createObjectURL(currentBlob);
         }
 
-        init();
+        fetchFiles();
     </script>
 </body>
 </html>
