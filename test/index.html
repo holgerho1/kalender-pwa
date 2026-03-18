@@ -2,59 +2,55 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PDF Express Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Express</title>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background: #121212; font-family: sans-serif; overflow: hidden; }
-        
-        .toolbar { 
-            height: 50px; background: #1f1f1f; display: flex; 
-            align-items: center; justify-content: center; border-bottom: 1px solid #333;
+        body { 
+            font-family: -apple-system, sans-serif; 
+            margin: 0; padding: 0; 
+            height: 100vh; display: flex; 
+            flex-direction: column; justify-content: center; align-items: center;
+            background: #121212; color: white;
         }
+        
+        .card {
+            background: #1e1e1e; padding: 30px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center;
+            width: 80%; max-width: 300px;
+        }
+
+        .icon { font-size: 50px; margin-bottom: 20px; }
 
         button { 
-            padding: 8px 20px; background: #007bff; color: white; 
-            border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;
+            width: 100%; padding: 15px; background: #007bff; color: white; 
+            border: none; border-radius: 12px; font-weight: bold; 
+            font-size: 16px; cursor: pointer; transition: transform 0.1s;
         }
 
-        /* Der Container für die PDF */
-        #viewer-container { 
-            height: calc(100% - 50px); width: 100%; background: #121212;
-        }
+        button:active { transform: scale(0.95); background: #0056b3; }
 
-        object, embed, iframe { width: 100%; height: 100%; border: none; }
-        
-        .loading-overlay {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #888; text-align: center;
-        }
+        #status { margin-top: 15px; font-size: 13px; color: #888; }
     </style>
 </head>
 <body>
 
-    <div class="toolbar">
-        <button onclick="fetchAndDisplay()">DOKUMENT LADEN</button>
-    </div>
-
-    <div id="viewer-container">
-        <div class="loading-overlay" id="status">Klicke oben auf Laden</div>
+    <div class="card">
+        <div class="icon">📄</div>
+        <button onclick="openPdfNative()">DOKUMENT ÖFFNEN</button>
+        <div id="status">Bereit zum Laden</div>
     </div>
 
     <script>
-        async function fetchAndDisplay() {
+        async function openPdfNative() {
             const status = document.getElementById('status');
-            const container = document.getElementById('viewer-container');
-            
             const projectID = 'hzsgocmulzcxllihkmmh';
             const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
-            
-            // Pfad zur Datei
             const url = `https://${projectID}.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf`;
 
             try {
-                status.innerText = "Sichere Verbindung wird aufgebaut...";
-
-                // 1. Datei als BLOB (Binary Large Object) laden
+                status.innerText = "Wird sicher geladen...";
+                
+                // 1. Datei als Blob holen
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
@@ -63,26 +59,36 @@
                     }
                 });
 
-                if (!response.ok) throw new Error("Zugriff nicht möglich.");
+                if (!response.ok) throw new Error("Zugriff fehlgeschlagen.");
 
                 const blob = await response.blob();
                 
-                // 2. Eine lokale URL für diesen Blob erstellen
+                // 2. Blob-URL erstellen
                 const blobUrl = URL.createObjectURL(blob);
 
-                // 3. In einem <object> Tag anzeigen (besser als iframe für PDFs)
-                // Wir fügen '#toolbar=0&navpanes=0' hinzu, damit es auf dem Handy sauberer aussieht
-                container.innerHTML = `
-                    <object data="${blobUrl}#view=FitH" type="application/pdf">
-                        <iframe src="${blobUrl}#view=FitH"></iframe>
-                    </object>
-                `;
+                // 3. WICHTIG: Den Browser anweisen, die Datei zu öffnen
+                // Wir erstellen einen unsichtbaren Link und "klicken" ihn
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                
+                // Wir öffnen es in einem neuen Tab für volle Zoom-Funktionalität
+                link.target = '_blank';
+                
+                // Optional: Falls du es lieber als Download willst, aktiviere das:
+                // link.download = 'dokument.pdf'; 
 
-                status.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                status.innerText = "Geöffnet!";
+
+                // Speicher nach 1 Minute wieder freigeben
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
 
             } catch (err) {
                 status.innerText = "Fehler: " + err.message;
-                console.error(err);
+                alert("Fehler: " + err.message);
             }
         }
     </script>
