@@ -3,24 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>PDF Archiv Fix</title>
+    <title>PDF Archiv Complete</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root { --bg: #121212; --sidebar: #1e1e1e; --accent: #007bff; --text: #ffffff; --border: #333; }
         body { font-family: -apple-system, sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
         .top-nav { background: var(--sidebar); padding: 10px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; z-index: 20; }
+        
         .main-layout { display: flex; flex: 1; overflow: hidden; }
-        #file-list { width: 140px; background: var(--sidebar); border-right: 1px solid var(--border); overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-        @media (max-width: 600px) { #file-list { width: 95px; font-size: 11px; } }
-        .file-item { padding: 10px; background: #2c2c2e; border-radius: 8px; cursor: pointer; font-size: 12px; word-break: break-all; color: #ccc; border: 1px solid transparent; }
+        
+        /* Sidebar mit Upload unten */
+        #sidebar { 
+            width: 140px; background: var(--sidebar); border-right: 1px solid var(--border); 
+            display: flex; flex-direction: column; 
+        }
+        
+        #file-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        
+        .upload-section { padding: 10px; border-top: 1px solid var(--border); background: #181818; }
+        
+        @media (max-width: 600px) { #sidebar { width: 100px; } .btn-upload { font-size: 10px !important; } }
+
+        .file-item { padding: 10px; background: #2c2c2e; border-radius: 8px; cursor: pointer; font-size: 11px; word-break: break-all; color: #ccc; border: 1px solid transparent; }
         .file-item.active { border-color: var(--accent); background: #3a3a3c; color: white; }
+
         .viewer-area { flex: 1; display: flex; flex-direction: column; background: #2c2c2e; position: relative; }
         #viewer-container { flex: 1; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 10px; -webkit-overflow-scrolling: touch; }
         canvas { background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.6); max-width: 100%; height: auto !important; }
+
         .btn { background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; }
+        .btn-upload { background: #555; width: 100%; padding: 10px; font-size: 11px; }
         .btn-full { background: #28a745; }
+        
         #page-info { font-size: 12px; color: #888; }
-        #error-display { color: #ff4444; font-size: 11px; padding: 10px; background: rgba(255,0,0,0.1); display: none; margin: 10px; border-radius: 5px; }
+        #error-display { color: #ff4444; font-size: 11px; padding: 10px; background: rgba(255,0,0,0.1); display: none; }
     </style>
 </head>
 <body>
@@ -35,7 +52,15 @@
     </div>
 
     <div class="main-layout">
-        <div id="file-list"><div style="font-size: 10px; color: #666;">LADE...</div></div>
+        <div id="sidebar">
+            <div id="file-list"><div style="font-size: 10px; color: #666;">LADE...</div></div>
+            
+            <div class="upload-section">
+                <input type="file" id="fileInput" accept="application/pdf" style="display: none;" onchange="handleUpload(this)">
+                <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">+ PDF HOCHLADEN</button>
+            </div>
+        </div>
+
         <div class="viewer-area">
             <div id="error-display"></div>
             <div id="viewer-container"><canvas id="pdf-render"></canvas></div>
@@ -56,49 +81,9 @@
             bucket: 'test-pdfs'
         };
 
-        function showError(msg) {
-            const errDiv = document.getElementById('error-display');
-            errDiv.style.display = 'block';
-            errDiv.innerText = msg;
-        }
-
         async function fetchFiles() {
             const listContainer = document.getElementById('file-list');
-            // GEÄNDERT: Die Liste-URL ist jetzt allgemeiner gehalten
-            const url = `https://${config.id}.supabase.co/storage/v1/list/${config.bucket}`;
-
-            try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 
-                        'apikey': config.key, 
-                        'Authorization': `Bearer ${config.key}`, 
-                        'Content-Type': 'application/json' 
-                    },
-                    // GEÄNDERT: Manche Versionen brauchen ein leeres Objekt oder prefix
-                    body: JSON.stringify({ prefix: "", limit: 100 })
-                });
-
-                if (!res.ok) {
-                    // Falls /list/test-pdfs immer noch 404 wirft, versuchen wir die alternative Route
-                    if(res.status === 404) {
-                        return fetchFilesAlternative();
-                    }
-                    const err = await res.json();
-                    throw new Error(err.message || res.statusText);
-                }
-
-                const files = await res.json();
-                renderFileList(files);
-            } catch (e) {
-                showError("Fehler: " + e.message);
-            }
-        }
-
-        // Alternative Route falls die obige fehlschlägt
-        async function fetchFilesAlternative() {
-            const listContainer = document.getElementById('file-list');
-            const url = `https://${config.id}.supabase.co/storage/v1/object/list/test-pdfs`; // Andere Struktur
+            const url = `https://${config.id}.supabase.co/storage/v1/object/list/${config.bucket}`;
             try {
                 const res = await fetch(url, {
                     method: 'POST',
@@ -107,21 +92,13 @@
                 });
                 const files = await res.json();
                 renderFileList(files);
-            } catch(e) {
-                showError("Beide Routen fehlgeschlagen.");
-            }
+            } catch (e) { document.getElementById('error-display').innerText = "Fehler beim Laden der Liste."; }
         }
 
         function renderFileList(files) {
             const listContainer = document.getElementById('file-list');
             listContainer.innerHTML = '<div style="font-size: 10px; color: #666; margin-bottom: 5px;">DATEIEN</div>';
             const pdfs = files.filter(f => f.name && f.name.toLowerCase().endsWith('.pdf'));
-            
-            if (pdfs.length === 0) {
-                listContainer.innerHTML += '<div style="font-size:11px;">Keine PDFs</div>';
-                return;
-            }
-
             pdfs.forEach((file, index) => {
                 const item = document.createElement('div');
                 item.className = 'file-item';
@@ -132,7 +109,6 @@
                     loadFile(file.name);
                 };
                 listContainer.appendChild(item);
-                if (index === 0) item.click();
             });
         }
 
@@ -145,7 +121,30 @@
                 pdfDoc = await pdfjsLib.getDocument({ data }).promise;
                 pageNum = 1;
                 renderPage(pageNum);
-            } catch (e) { showError("Ladefehler"); }
+            } catch (e) { console.error("Ladefehler"); }
+        }
+
+        async function handleUpload(input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            const uploadUrl = `https://${config.id}.supabase.co/storage/v1/object/${config.bucket}/${file.name}`;
+            
+            const btn = document.querySelector('.btn-upload');
+            const oldText = btn.innerText;
+            btn.innerText = "LÄDT...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(uploadUrl, {
+                    method: 'POST',
+                    headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}` },
+                    body: file
+                });
+                if (!res.ok) throw new Error("Upload fehlgeschlagen");
+                await fetchFiles(); // Liste aktualisieren
+                alert("Erfolgreich hochgeladen!");
+            } catch (e) { alert(e.message); }
+            finally { btn.innerText = oldText; btn.disabled = false; input.value = ''; }
         }
 
         async function renderPage(num) {
