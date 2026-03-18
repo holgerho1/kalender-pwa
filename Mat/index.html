@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Materiallisten-Hilfe</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             font-family: sans-serif;
@@ -38,15 +39,17 @@
         }
         .input-group {
             display: flex;
+            flex-direction: column;
             gap: 10px;
             margin-bottom: 10px;
         }
-        input, select {
-            flex-grow: 1;
+        input, select, textarea {
             padding: 12px;
             border: 1px solid #ccc;
             border-radius: 4px;
             font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
         }
         button {
             padding: 12px 15px;
@@ -79,44 +82,106 @@
     
     <div class="section" id="projectSection">
         <label for="projectSelect">Aktuelles Projekt wählen:</label>
-        <div class="input-group">
-            <select id="projectSelect">
-                <option value="">-- Bitte wählen --</option>
-                <option value="neu"> + Neues Projekt anlegen...</option>
-            </select>
-        </div>
+        <select id="projectSelect" style="margin-bottom: 10px;">
+            <option value="">-- Lade Projekte... --</option>
+            <option value="neu"> + Neues Projekt anlegen...</option>
+        </select>
         
         <div id="newProjectDiv" style="display: none;">
-            <label for="projectName">Neuer Projektname:</label>
             <div class="input-group">
+                <label for="projectName">Neuer Projektname:</label>
                 <input type="text" id="projectName" placeholder="z.B. Gartenhaus">
-                <button id="saveProjectBtn">Anlegen</button>
+                
+                <label for="projectNote">Notiz:</label>
+                <textarea id="projectNote" placeholder="Optionale Notiz..."></textarea>
+                
+                <button id="saveProjectBtn">Projekt speichern</button>
             </div>
         </div>
     </div>
 
     <div class="section" id="materialSection">
         <label for="materialInput">Material hinzufügen:</label>
-        <div class="input-group">
-            <input type="text" id="materialInput" placeholder="z.B. Schrauben M8">
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="materialInput" placeholder="Materialname...">
             <button id="addMaterialBtn">Hinzufügen</button>
         </div>
     </div>
 
-    <ul id="materialList">
-        </ul>
+    <ul id="materialList"></ul>
 </div>
 
 <script>
+    // Falls der Supabase-Client bereits global existiert, nutzen wir diesen.
+    // Andernfalls musst du hier deine existierenden Daten eintragen.
+    let _supabase;
+    if (window.supabaseClient) {
+        _supabase = window.supabaseClient;
+    } else {
+        const SUPABASE_URL = 'DEINE_URL';
+        const SUPABASE_ANON_KEY = 'DEIN_KEY';
+        _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
     const projectSelect = document.getElementById('projectSelect');
     const newProjectDiv = document.getElementById('newProjectDiv');
+    const saveProjectBtn = document.getElementById('saveProjectBtn');
+    const projectNameInput = document.getElementById('projectName');
+    const projectNoteInput = document.getElementById('projectNote');
 
-    // Einfache Logik zum Einblenden des Feldes für neue Projekte
+    // Projekte aus Supabase laden
+    async function loadProjects() {
+        const { data, error } = await _supabase
+            .from('projekte')
+            .select('id, projektname')
+            .order('projektname', { ascending: true });
+
+        if (error) {
+            console.error('Fehler beim Laden:', error);
+            return;
+        }
+
+        // Dropdown leeren außer den Standard-Optionen
+        projectSelect.innerHTML = '<option value="">-- Bitte wählen --</option><option value="neu"> + Neues Projekt anlegen...</option>';
+        
+        data.forEach(proj => {
+            const option = document.createElement('option');
+            option.value = proj.id;
+            option.textContent = proj.projektname;
+            projectSelect.appendChild(option);
+        });
+    }
+
+    // Initiales Laden
+    loadProjects();
+
+    // UI Logik
     projectSelect.addEventListener('change', (e) => {
         if (e.target.value === 'neu') {
             newProjectDiv.style.display = 'block';
         } else {
             newProjectDiv.style.display = 'none';
+        }
+    });
+
+    // Projekt speichern
+    saveProjectBtn.addEventListener('click', async () => {
+        const name = projectNameInput.value;
+        const note = projectNoteInput.value;
+
+        if (!name) return alert('Name fehlt!');
+
+        const { error } = await _supabase
+            .from('projekte')
+            .insert([{ projektname: name, notiz: note }]);
+
+        if (error) {
+            alert('Fehler: ' + error.message);
+        } else {
+            projectNameInput.value = '';
+            projectNoteInput.value = '';
+            newProjectDiv.style.display = 'none';
+            loadProjects(); // Liste aktualisieren
         }
     });
 </script>
