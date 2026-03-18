@@ -112,16 +112,10 @@
 </div>
 
 <script>
-    // Falls der Supabase-Client bereits global existiert, nutzen wir diesen.
-    // Andernfalls musst du hier deine existierenden Daten eintragen.
-    let _supabase;
-    if (window.supabaseClient) {
-        _supabase = window.supabaseClient;
-    } else {
-        const SUPABASE_URL = 'DEINE_URL';
-        const SUPABASE_ANON_KEY = 'DEIN_KEY';
-        _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    }
+    // Nutze den bestehenden Client oder erstelle einen neuen
+    const SUPABASE_URL = 'DEINE_URL';
+    const SUPABASE_ANON_KEY = 'DEIN_KEY';
+    const _supabase = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const projectSelect = document.getElementById('projectSelect');
     const newProjectDiv = document.getElementById('newProjectDiv');
@@ -129,42 +123,37 @@
     const projectNameInput = document.getElementById('projectName');
     const projectNoteInput = document.getElementById('projectNote');
 
-    // Projekte aus Supabase laden
     async function loadProjects() {
-        const { data, error } = await _supabase
-            .from('projekte')
-            .select('id, projektname')
-            .order('projektname', { ascending: true });
+        try {
+            const { data, error } = await _supabase
+                .from('projekte')
+                .select('id, projektname')
+                .order('projektname', { ascending: true });
 
-        if (error) {
-            console.error('Fehler beim Laden:', error);
-            return;
+            if (error) throw error;
+
+            projectSelect.innerHTML = '<option value="">-- Bitte wählen --</option><option value="neu"> + Neues Projekt anlegen...</option>';
+            
+            if (data) {
+                data.forEach(proj => {
+                    const option = document.createElement('option');
+                    option.value = proj.id;
+                    option.textContent = proj.projektname;
+                    projectSelect.appendChild(option);
+                });
+            }
+        } catch (err) {
+            console.error('Fehler beim Laden:', err.message);
+            projectSelect.innerHTML = '<option value="">Fehler beim Laden</option>';
         }
-
-        // Dropdown leeren außer den Standard-Optionen
-        projectSelect.innerHTML = '<option value="">-- Bitte wählen --</option><option value="neu"> + Neues Projekt anlegen...</option>';
-        
-        data.forEach(proj => {
-            const option = document.createElement('option');
-            option.value = proj.id;
-            option.textContent = proj.projektname;
-            projectSelect.appendChild(option);
-        });
     }
 
-    // Initiales Laden
     loadProjects();
 
-    // UI Logik
     projectSelect.addEventListener('change', (e) => {
-        if (e.target.value === 'neu') {
-            newProjectDiv.style.display = 'block';
-        } else {
-            newProjectDiv.style.display = 'none';
-        }
+        newProjectDiv.style.display = (e.target.value === 'neu') ? 'block' : 'none';
     });
 
-    // Projekt speichern
     saveProjectBtn.addEventListener('click', async () => {
         const name = projectNameInput.value;
         const note = projectNoteInput.value;
@@ -181,7 +170,7 @@
             projectNameInput.value = '';
             projectNoteInput.value = '';
             newProjectDiv.style.display = 'none';
-            loadProjects(); // Liste aktualisieren
+            await loadProjects();
         }
     });
 </script>
