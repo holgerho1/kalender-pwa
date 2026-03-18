@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>PDF Archiv Hell</title>
+    <title>Hybrid Archiv Hell</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root { 
@@ -21,19 +21,16 @@
             height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
         }
         
-        /* Obere Leiste */
         .top-nav { 
-            background: rgba(255, 255, 255, 0.8); 
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px);
             padding: 8px 12px; border-bottom: 1px solid var(--border); 
             display: flex; justify-content: space-between; align-items: center; z-index: 20; 
         }
         
         .main-layout { display: flex; flex: 1; overflow: hidden; }
         
-        /* Sidebar */
         #sidebar { 
-            width: 160px; background: var(--sidebar); border-right: 1px solid var(--border); 
+            width: 170px; background: var(--sidebar); border-right: 1px solid var(--border); 
             display: flex; flex-direction: column; height: 100%; 
         }
         
@@ -44,24 +41,28 @@
             -webkit-overflow-scrolling: touch;
         }
         
-        @media (max-width: 600px) { #sidebar { width: 110px; } }
+        @media (max-width: 600px) { #sidebar { width: 120px; } }
 
         .file-item { 
             padding: 10px; background: var(--item-bg); border-radius: 8px; cursor: pointer; 
             font-size: 12px; word-break: break-all; color: var(--text); border: 1px solid transparent; 
-            transition: background 0.2s;
+            transition: background 0.2s; display: flex; align-items: center; gap: 6px;
         }
         .file-item.active { border-color: var(--accent); background: #e8f2ff; color: var(--accent); font-weight: 600; }
+        .file-icon { font-size: 1.2em; }
 
-        /* Viewer */
         .viewer-area { flex: 1; display: flex; flex-direction: column; background: #e5e5e5; position: relative; }
         #viewer-container { 
             flex: 1; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 15px; 
         }
         
-        canvas { background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.1); max-width: 100%; height: auto !important; border-radius: 4px; }
+        /* Styles für beide Viewer-Typen */
+        canvas, #image-render { background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.1); max-width: 100%; height: auto !important; border-radius: 4px; display: none; }
+        #image-render { display: none; object-fit: contain; max-height: 100%; }
 
-        /* Buttons */
+        /* Navigations-Container für PDFs (wird bei Bildern ausgeblendet) */
+        #pdf-nav { display: flex; gap: 8px; align-items: center; }
+
         .btn { border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: opacity 0.2s; }
         .btn-nav { background: #e8e8ed; color: var(--text); }
         .btn-primary { background: var(--accent); color: white; }
@@ -75,13 +76,15 @@
 <body>
 
     <div class="top-nav">
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div id="pdf-nav">
             <button class="btn btn-nav" id="prevBtn" onclick="changePage(-1)"> < </button>
             <span id="page-info">...</span>
             <button class="btn btn-nav" id="nextBtn" onclick="changePage(1)"> > </button>
         </div>
+        <div id="nav-placeholder" style="display: none; width: 120px;"></div>
+
         <div style="display: flex; gap: 8px;">
-            <input type="file" id="fileInput" accept="application/pdf" style="display: none;" onchange="handleUpload(this)">
+            <input type="file" id="fileInput" accept="application/pdf,image/jpeg,image/png" style="display: none;" onchange="handleUpload(this)">
             <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">+ UPLOAD</button>
             <button class="btn btn-success" onclick="openNativeViewer()">VOLLBILD</button>
         </div>
@@ -98,6 +101,7 @@
             <div id="error-display"></div>
             <div id="viewer-container">
                 <canvas id="pdf-render"></canvas>
+                <img id="image-render" alt="Vorschau">
             </div>
         </div>
     </div>
@@ -106,15 +110,26 @@
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        let pdfDoc = null, pageNum = 1, isRendering = false, currentBlob = null;
+        let pdfDoc = null, pageNum = 1, isRendering = false, currentBlob = null, currentFileType = null;
         const canvas = document.getElementById('pdf-render');
         const ctx = canvas.getContext('2d', { alpha: false });
+        const imgRender = document.getElementById('image-render');
+        const pdfNav = document.getElementById('pdf-nav');
+        const navPlaceholder = document.getElementById('nav-placeholder');
 
         const config = {
             id: 'hzsgocmulzcxllihkmmh',
             key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw',
             bucket: 'test-pdfs'
         };
+
+        // Hilfsfunktion zur Erkennung des Dateityps
+        function getFileType(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            if (ext === 'pdf') return 'pdf';
+            if (['jpg', 'jpeg', 'png'].includes(ext)) return 'image';
+            return 'unknown';
+        }
 
         async function fetchFiles() {
             const url = `https://${config.id}.supabase.co/storage/v1/object/list/${config.bucket}`;
@@ -132,11 +147,19 @@
         function renderFileList(files) {
             const listContainer = document.getElementById('file-list');
             listContainer.innerHTML = '';
-            const pdfs = (files || []).filter(f => f.name && f.name.toLowerCase().endsWith('.pdf'));
-            pdfs.forEach((file) => {
+            // Filtert PDFs und Bilder (JPG, PNG)
+            const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+            const allowedFiles = (files || []).filter(f => f.name && allowedExtensions.includes(f.name.split('.').pop().toLowerCase()));
+
+            allowedFiles.forEach((file) => {
                 const item = document.createElement('div');
                 item.className = 'file-item';
-                item.innerText = file.name;
+                
+                const type = getFileType(file.name);
+                const icon = type === 'pdf' ? '📄' : '🖼️';
+
+                item.innerHTML = `<span class="file-icon">${icon}</span><span class="file-name">${file.name}</span>`;
+                
                 item.onclick = () => {
                     document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
                     item.classList.add('active');
@@ -168,38 +191,75 @@
 
         async function loadFile(name) {
             const fileUrl = `https://${config.id}.supabase.co/storage/v1/object/authenticated/${config.bucket}/${name}`;
+            currentFileType = getFileType(name);
+
+            // Viewer zurücksetzen
+            canvas.style.display = 'none';
+            imgRender.style.display = 'none';
+            showError(''); // Alte Fehler löschen
+
             try {
                 const res = await fetch(fileUrl, { headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}` } });
                 const data = await res.arrayBuffer();
-                currentBlob = new Blob([data], { type: 'application/pdf' });
-                pdfDoc = await pdfjsLib.getDocument({ data }).promise;
-                pageNum = 1; renderPage(pageNum);
-            } catch (e) { console.error("Ladefehler"); }
+                currentBlob = new Blob([data]); // Typ wird später beim Erstellen der URL festgelegt
+
+                if (currentFileType === 'pdf') {
+                    // PDF-Spezifisches Laden
+                    pdfNav.style.display = 'flex';
+                    navPlaceholder.style.display = 'none';
+                    canvas.style.display = 'block';
+                    
+                    pdfDoc = await pdfjsLib.getDocument({ data }).promise;
+                    pageNum = 1; renderPage(pageNum);
+                } else if (currentFileType === 'image') {
+                    // Bild-Spezifisches Laden
+                    pdfNav.style.display = 'none';
+                    navPlaceholder.style.display = 'block';
+                    imgRender.style.display = 'block';
+                    
+                    // Bild-URL erstellen und dem img-Tag zuweisen
+                    const objectUrl = URL.createObjectURL(currentBlob);
+                    imgRender.src = objectUrl;
+                    // Wichtig: Die URL nach dem Laden freigeben, um Speicherlecks zu vermeiden
+                    imgRender.onload = () => URL.revokeObjectURL(objectUrl);
+                }
+            } catch (e) { console.error("Ladefehler", e); showError("Datei konnte nicht geladen werden."); }
         }
 
         async function renderPage(num) {
-            if (isRendering || !pdfDoc) return;
+            if (isRendering || !pdfDoc || currentFileType !== 'pdf') return;
             isRendering = true;
-            const page = await pdfDoc.getPage(num);
-            const viewport = page.getViewport({ scale: 1.5 });
-            canvas.height = viewport.height; canvas.width = viewport.width;
-            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-            document.getElementById('page-info').innerText = `${num} / ${pdfDoc.numPages}`;
+            try {
+                const page = await pdfDoc.getPage(num);
+                const viewport = page.getViewport({ scale: 1.5 });
+                canvas.height = viewport.height; canvas.width = viewport.width;
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                document.getElementById('page-info').innerText = `${num} / ${pdfDoc.numPages}`;
+                document.getElementById('prevBtn').disabled = (num <= 1);
+                document.getElementById('nextBtn').disabled = (num >= pdfDoc.numPages);
+            } catch (e) { console.error("Render-Fehler", e); }
             isRendering = false; pageNum = num;
         }
 
         function changePage(delta) {
+            if (currentFileType !== 'pdf') return;
             const next = pageNum + delta;
             if (pdfDoc && next >= 1 && next <= pdfDoc.numPages) renderPage(next);
         }
 
         function openNativeViewer() {
-            if (currentBlob) window.location.href = URL.createObjectURL(currentBlob);
+            if (currentBlob) {
+                // Den richtigen MIME-Type für die Vollbild-Ansicht setzen
+                const mimeType = currentFileType === 'pdf' ? 'application/pdf' : 'image/jpeg';
+                const finalBlob = new Blob([currentBlob], { type: mimeType });
+                window.location.href = URL.createObjectURL(finalBlob);
+            }
         }
 
         function showError(msg) {
             const errDiv = document.getElementById('error-display');
-            errDiv.style.display = 'block'; errDiv.innerText = msg;
+            if(msg) { errDiv.style.display = 'block'; errDiv.innerText = msg; }
+            else { errDiv.style.display = 'none'; }
         }
 
         window.onload = fetchFiles;
