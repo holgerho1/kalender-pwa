@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Materiallisten - Projekte</title>
+    <title>Material - Projekte</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1 { font-size: 1.2rem; text-align: center; }
-        .section { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .section { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
         label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; }
-        input, select, textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:active { background: #0056b3; }
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .hidden { display: none; }
         #status { font-size: 0.7rem; color: #666; text-align: center; margin-bottom: 10px; }
     </style>
@@ -20,95 +20,25 @@
 <body>
 
 <div class="container">
-    <h1>Material: Projektzuordnung</h1>
-    <div id="status">Suche Datenbank-Verbindung...</div>
+    <h1>Projekt-Verwaltung</h1>
+    <div id="status">Initialisiere...</div>
 
     <div class="section">
-        <label for="projectSelect">Projekt auswählen</label>
+        <label for="projectSelect">Vorhandenes Projekt</label>
         <select id="projectSelect">
-            <option value="">-- Bitte wählen --</option>
-            <option value="neu">+ Neues Projekt anlegen...</option>
+            <option value="">-- Laden... --</option>
         </select>
-
-        <div id="newProjectFields" class="hidden">
-            <input type="text" id="newProjectName" placeholder="Projektname (z.B. Hausbau)">
-            <textarea id="newProjectNote" placeholder="Notiz (Optional)"></textarea>
-            <button id="btnSaveProject">Projekt speichern</button>
-        </div>
     </div>
 
-    <div id="materialInputSection" class="section" style="opacity: 0.5; pointer-events: none;">
-        <label for="matInput">Material für gewähltes Projekt</label>
-        <input type="text" id="matInput" placeholder="Materialname...">
-        <button id="btnAddMat">Hinzufügen</button>
+    <div class="section" id="newProjectSection">
+        <label>Neues Projekt anlegen</label>
+        <input type="text" id="newProjectName" placeholder="Name (z.B. Baustelle A)">
+        <textarea id="newProjectNote" placeholder="Notiz (Optional)"></textarea>
+        <button id="btnSaveProject">Projekt speichern</button>
     </div>
 </div>
 
-<script type="module">
-    // Wir importieren den Client direkt aus deiner app.js, 
-    // falls diese den Client exportiert. 
-    // Falls nicht, müssen wir config.js direkt nutzen:
-    import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
-    
-    // Initialisierung des Clients (nur einmalig hier für diesen Unterordner)
-    const _supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const status = document.getElementById('status');
-
-    const projectSelect = document.getElementById('projectSelect');
-    const newProjectFields = document.getElementById('newProjectFields');
-    const matSection = document.getElementById('materialInputSection');
-
-    // Projekte aus der neuen Tabelle laden
-    async function loadProjects() {
-        status.innerText = "Lade Projekte...";
-        const { data, error } = await _supa
-            .from('projekte')
-            .select('*')
-            .order('projektname');
-
-        if (error) {
-            status.innerText = "Fehler: Tabelle 'projekte' fehlt?";
-            console.error(error);
-            return;
-        }
-
-        status.innerText = "Datenbank bereit";
-        projectSelect.innerHTML = '<option value="">-- Bitte wählen --</option><option value="neu">+ Neues Projekt anlegen...</option>';
-        data.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = p.projektname;
-            projectSelect.appendChild(opt);
-        });
-    }
-
-    projectSelect.addEventListener('change', (e) => {
-        const val = e.target.value;
-        newProjectFields.className = (val === 'neu') ? '' : 'hidden';
-        matSection.style.opacity = (val !== '' && val !== 'neu') ? "1" : "0.5";
-        matSection.style.pointerEvents = (val !== '' && val !== 'neu') ? "auto" : "none";
-    });
-
-    document.getElementById('btnSaveProject').addEventListener('click', async () => {
-        const name = document.getElementById('newProjectName').value;
-        const note = document.getElementById('newProjectNote').value;
-        if (!name) return alert("Name erforderlich");
-
-        const { error } = await _supa.from('projekte').insert([{ projektname: name, notiz: note }]);
-        if (error) alert("Fehler: " + error.message);
-        else {
-            document.getElementById('newProjectName').value = "";
-            document.getElementById('newProjectNote').value = "";
-            newProjectFields.className = "hidden";
-            await loadProjects();
-        }
-    });
-
-    // Start
-    loadProjects();
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module" src="projekte.js"></script>
 
 </body>
 </html>
