@@ -2,78 +2,78 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>PDF Viewer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Native Viewer</title>
     <style>
-        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; }
+        body { 
+            font-family: -apple-system, sans-serif; 
+            margin: 0; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; 
+            height: 100vh; background: #121212; color: white;
+        }
         
-        .header { 
-            position: sticky; top: 0; background: #222; padding: 10px; 
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 100; border-bottom: 1px solid #333;
+        .card {
+            background: #1e1e1e; padding: 40px; border-radius: 24px;
+            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 80%; max-width: 320px;
         }
 
-        .btn { background: #007aff; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; }
-        
-        /* Der Viewport lässt natürliches Scrollen und Zoomen zu */
-        #viewport { 
-            width: 100%; display: flex; justify-content: center; padding-top: 10px;
+        .icon { font-size: 60px; margin-bottom: 20px; }
+
+        button { 
+            width: 100%; padding: 18px; background: #007bff; color: white; 
+            border: none; border-radius: 14px; font-weight: bold; 
+            font-size: 18px; cursor: pointer;
         }
 
-        canvas { 
-            background: white; max-width: 95%; height: auto !important; 
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-        }
+        button:active { background: #0056b3; transform: scale(0.98); }
+
+        #status { margin-top: 20px; font-size: 14px; color: #888; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <button class="btn" onclick="changePage(-1)">Zurück</button>
-        <span id="page-info">Lädt...</span>
-        <button class="btn" onclick="changePage(1)">Weiter</button>
-    </div>
-
-    <div id="viewport">
-        <canvas id="pdf-render"></canvas>
+    <div class="card">
+        <div class="icon">📄</div>
+        <button onclick="viewPdfNative()">PDF ANZEIGEN</button>
+        <div id="status">Bereit</div>
     </div>
 
     <script>
-        const pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        async function viewPdfNative() {
+            const status = document.getElementById('status');
+            const projectID = 'hzsgocmulzcxllihkmmh';
+            const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
+            const url = `https://${projectID}.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf`;
 
-        let pdfDoc = null, pageNum = 1;
-        const canvas = document.getElementById('pdf-render');
-        const ctx = canvas.getContext('2d');
+            try {
+                status.innerText = "Lade Dokument...";
+                
+                // 1. Datei von Supabase holen
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': apiKey,
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
 
-        const url = 'https://hzsgocmulzcxllihkmmh.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf';
-        const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
+                if (!response.ok) throw new Error("Fehler beim Abrufen.");
 
-        async function renderPage(num) {
-            const page = await pdfDoc.getPage(num);
-            // Hohe Auflösung (2.0) direkt beim Laden, damit der Browser-Zoom scharf bleibt
-            const viewport = page.getViewport({ scale: 2.0 });
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
+                const blob = await response.blob();
+                
+                // 2. WICHTIG: Blob-Typ explizit auf PDF setzen
+                const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+                const blobUrl = URL.createObjectURL(pdfBlob);
 
-            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-            document.getElementById('page-info').innerText = `Seite ${num} / ${pdfDoc.numPages}`;
-        }
+                // 3. Den Browser anweisen, die Datei im aktuellen Fenster zu öffnen
+                // Das löst auf fast allen Handys den internen PDF-Viewer aus
+                window.location.href = blobUrl;
 
-        function changePage(delta) {
-            const next = pageNum + delta;
-            if (pdfDoc && next >= 1 && next <= pdfDoc.numPages) {
-                pageNum = next;
-                renderPage(pageNum);
-                window.scrollTo(0, 0);
+            } catch (err) {
+                status.innerText = "Fehler: " + err.message;
             }
         }
-
-        fetch(url, { headers: { 'apikey': key, 'Authorization': `Bearer ${key}` } })
-            .then(res => res.arrayBuffer())
-            .then(data => pdfjsLib.getDocument({ data }).promise)
-            .then(doc => { pdfDoc = doc; renderPage(pageNum); });
     </script>
 </body>
 </html>
