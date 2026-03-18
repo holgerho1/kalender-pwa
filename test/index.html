@@ -2,107 +2,78 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
-    <title>Sicherer PDF Viewer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profi PDF Viewer</title>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; background: #2c2c2e; color: white; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #1a1a1a; font-family: sans-serif; }
         
-        .header { 
-            background: #1c1c1e; padding: 10px; border-bottom: 1px solid #3a3a3c; 
-            display: flex; justify-content: space-between; align-items: center; z-index: 10;
+        .nav { 
+            height: 60px; background: #222; display: flex; 
+            align-items: center; justify-content: center; border-bottom: 1px solid #333;
         }
+
+        button { 
+            padding: 12px 24px; background: #007bff; color: white; 
+            border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+
+        /* Das PDF füllt den restlichen Platz komplett aus */
+        #viewer-container { 
+            height: calc(100% - 60px); width: 100%; border: none; 
+        }
+
+        iframe { width: 100%; height: 100%; border: none; }
         
-        .nav-group { display: flex; align-items: center; gap: 8px; }
-        input { width: 40px; background: #3a3a3c; color: white; border: none; padding: 8px; text-align: center; border-radius: 4px; font-size: 14px; }
-        button { padding: 8px 16px; font-size: 16px; background: #007aff; color: white; border: none; border-radius: 6px; font-weight: 600; transition: opacity 0.2s; }
-        button:disabled { background: #444; opacity: 0.5; }
-
-        /* Der Container erlaubt natürliches Scrollen und Pinch-to-Zoom */
-        #viewport { 
-            flex: 1; overflow: auto; display: flex; justify-content: center; align-items: flex-start;
-            padding: 10px; -webkit-overflow-scrolling: touch; 
-        }
-
-        /* Canvas-Styling für korrektes Seitenverhältnis */
-        canvas { 
-            background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            max-width: 100%; height: auto !important; /* Erzwingt Seitenverhältnis */
-            display: block; transform-origin: top center;
-        }
-
-        #info { font-size: 11px; color: #8e8e93; margin-top: 4px; }
+        #status { color: #888; font-size: 14px; text-align: center; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <button onclick="changePage(-1)" id="prevBtn">Zurück</button>
-        <div class="nav-group">
-            <input type="number" id="pageNumber" value="1" readonly>
-            <div id="info">Lädt...</div>
-        </div>
-        <button onclick="changePage(1)" id="nextBtn">Weiter</button>
+    <div class="nav">
+        <button onclick="getAccessAndShow()">PDF ÖFFNEN</button>
     </div>
 
-    <div id="viewport">
-        <canvas id="pdf-canvas"></canvas>
+    <div id="viewer-container">
+        <div id="status">Klicke auf den Button, um das Dokument sicher zu laden.</div>
     </div>
 
     <script>
-        const pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-        let pdfDoc = null, pageNum = 1, isRendering = false;
-        const canvas = document.getElementById('pdf-canvas');
-        const ctx = canvas.getContext('2d', { alpha: false }); // Performance-Boost
-
-        const projectID = 'hzsgocmulzcxllihkmmh';
-        const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
-        const fileUrl = `https://${projectID}.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf`;
-
-        async function init() {
-            try {
-                const res = await fetch(fileUrl, { headers: { 'apikey': apiKey, 'Authorization': `Bearer ${apiKey}` } });
-                const data = await res.arrayBuffer();
-                pdfDoc = await pdfjsLib.getDocument({ data }).promise;
-                renderPage(pageNum);
-            } catch (e) { document.getElementById('info').innerText = "Fehler!"; }
-        }
-
-        async function renderPage(num) {
-            if (isRendering) return;
-            isRendering = true;
+        async function getAccessAndShow() {
+            const status = document.getElementById('status');
+            const container = document.getElementById('viewer-container');
             
+            const projectID = 'hzsgocmulzcxllihkmmh';
+            const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
+            
+            const endpoint = `https://${projectID}.supabase.co/storage/v1/object/sign/test-pdfs/test.pdf`;
+
             try {
-                const page = await pdfDoc.getPage(num);
-                // 1.5 ist der "Sweet Spot" für Handys
-                const viewport = page.getViewport({ scale: 1.5 });
-                
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
+                status.innerText = "Autorisierung läuft...";
 
-                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-                
-                pageNum = num;
-                document.getElementById('pageNumber').value = num;
-                document.getElementById('info').innerText = `${num} / ${pdfDoc.numPages}`;
-                document.getElementById('prevBtn').disabled = (num <= 1);
-                document.getElementById('nextBtn').disabled = (num >= pdfDoc.numPages);
-            } finally {
-                isRendering = false;
+                // Wir holen uns eine temporäre URL (gültig für 15 Minuten)
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': apiKey,
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ expiresIn: 900 })
+                });
+
+                if (!response.ok) throw new Error("Zugriff verweigert");
+
+                const data = await response.json();
+                const signedUrl = `https://${projectID}.supabase.co${data.signedURL}`;
+
+                // Jetzt betten wir die PDF direkt ein. 
+                // Moderne Handy-Browser öffnen hier ihren nativen, super-flüssigen Viewer.
+                container.innerHTML = `<iframe src="${signedUrl}#view=FitH"></iframe>`;
+
+            } catch (err) {
+                status.innerText = "Fehler: " + err.message;
             }
         }
-
-        function changePage(delta) {
-            const next = pageNum + delta;
-            if (pdfDoc && next >= 1 && next <= pdfDoc.numPages) {
-                renderPage(next);
-                document.getElementById('viewport').scrollTo(0,0);
-            }
-        }
-
-        init();
     </script>
 </body>
 </html>
