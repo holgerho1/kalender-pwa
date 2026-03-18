@@ -2,78 +2,129 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Native Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>PDF Hybrid Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        body { 
-            font-family: -apple-system, sans-serif; 
-            margin: 0; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; 
-            height: 100vh; background: #121212; color: white;
-        }
+        :root { --bg: #121212; --panel: #1e1e1e; --accent: #007bff; --text: #ffffff; }
+        body { font-family: -apple-system, sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        .card {
-            background: #1e1e1e; padding: 40px; border-radius: 24px;
-            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            width: 80%; max-width: 320px;
+        /* Header mit Steuerung */
+        .header { 
+            background: var(--panel); padding: 12px; display: flex; 
+            justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid #333; z-index: 10;
         }
 
-        .icon { font-size: 60px; margin-bottom: 20px; }
+        .btn { 
+            background: var(--accent); color: white; border: none; padding: 10px 15px; 
+            border-radius: 8px; font-weight: bold; font-size: 14px;
+        }
+        .btn:disabled { background: #444; opacity: 0.5; }
+        .btn-full { background: #28a745; margin-left: 5px; } /* Grün für Vollbild */
 
-        button { 
-            width: 100%; padding: 18px; background: #007bff; color: white; 
-            border: none; border-radius: 14px; font-weight: bold; 
-            font-size: 18px; cursor: pointer;
+        #page-label { font-size: 14px; font-weight: 500; min-width: 70px; text-align: center; }
+
+        /* Vorschau-Bereich */
+        #viewer-container { 
+            flex: 1; overflow: auto; display: flex; justify-content: center;
+            align-items: flex-start; padding: 15px; background: #2c2c2e;
+            -webkit-overflow-scrolling: touch;
         }
 
-        button:active { background: #0056b3; transform: scale(0.98); }
+        canvas { 
+            background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.6); 
+            max-width: 100%; height: auto !important;
+            image-rendering: auto; transform: translateZ(0);
+        }
 
-        #status { margin-top: 20px; font-size: 14px; color: #888; }
+        .loading-overlay { position: absolute; top: 50%; width: 100%; text-align: center; color: #888; pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <div class="icon">📄</div>
-        <button onclick="viewPdfNative()">PDF ANZEIGEN</button>
-        <div id="status">Bereit</div>
+    <div class="header">
+        <div style="display: flex; gap: 5px; align-items: center;">
+            <button class="btn" onclick="changePage(-1)" id="prev"> < </button>
+            <div id="page-label">...</div>
+            <button class="btn" onclick="changePage(1)" id="next"> > </button>
+        </div>
+        
+        <button class="btn btn-full" onclick="openNativeViewer()">VOLLBILD ↗</button>
+    </div>
+
+    <div id="loading-msg" class="loading-overlay">Lade PDF-Vorschau...</div>
+
+    <div id="viewer-container">
+        <canvas id="pdf-render"></canvas>
     </div>
 
     <script>
-        async function viewPdfNative() {
-            const status = document.getElementById('status');
-            const projectID = 'hzsgocmulzcxllihkmmh';
-            const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw';
-            const url = `https://${projectID}.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf`;
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+        let pdfDoc = null, pageNum = 1, isRendering = false, pdfBlob = null;
+        const canvas = document.getElementById('pdf-render');
+        const ctx = canvas.getContext('2d', { alpha: false });
+
+        const config = {
+            url: 'https://hzsgocmulzcxllihkmmh.supabase.co/storage/v1/object/authenticated/test-pdfs/test.pdf',
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6c2dvY211bHpjeGxsaWhrbW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTM0MDIsImV4cCI6MjA4Nzc4OTQwMn0.-A9neQ2MqCyYYDsyGMTrOjdjBk_UrKKP5BQIs17UFJw'
+        };
+
+        // PDF initial laden
+        async function init() {
             try {
-                status.innerText = "Lade Dokument...";
+                const res = await fetch(config.url, { headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}` } });
+                const arrayBuffer = await res.arrayBuffer();
                 
-                // 1. Datei von Supabase holen
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'apikey': apiKey,
-                        'Authorization': `Bearer ${apiKey}`
-                    }
-                });
-
-                if (!response.ok) throw new Error("Fehler beim Abrufen.");
-
-                const blob = await response.blob();
+                // Wir speichern den Blob für den Vollbild-Modus, damit wir nicht neu laden müssen
+                pdfBlob = new Blob([arrayBuffer], { type: 'application/pdf' });
                 
-                // 2. WICHTIG: Blob-Typ explizit auf PDF setzen
-                const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-                const blobUrl = URL.createObjectURL(pdfBlob);
-
-                // 3. Den Browser anweisen, die Datei im aktuellen Fenster zu öffnen
-                // Das löst auf fast allen Handys den internen PDF-Viewer aus
-                window.location.href = blobUrl;
-
-            } catch (err) {
-                status.innerText = "Fehler: " + err.message;
+                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                document.getElementById('loading-msg').style.display = 'none';
+                renderPage(pageNum);
+            } catch (e) {
+                document.getElementById('loading-msg').innerText = "Fehler beim Laden!";
             }
         }
+
+        // Seite in der App rendern
+        async function renderPage(num) {
+            if (isRendering) return;
+            isRendering = true;
+
+            const page = await pdfDoc.getPage(num);
+            const viewport = page.getViewport({ scale: 1.5 });
+            
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            
+            isRendering = false;
+            pageNum = num;
+            document.getElementById('page-label').innerText = `${num} / ${pdfDoc.numPages}`;
+            document.getElementById('prev').disabled = (num <= 1);
+            document.getElementById('next').disabled = (num >= pdfDoc.numPages);
+        }
+
+        function changePage(delta) {
+            const next = pageNum + delta;
+            if (pdfDoc && next >= 1 && next <= pdfDoc.numPages) {
+                renderPage(next);
+                document.getElementById('viewer-container').scrollTo(0, 0);
+            }
+        }
+
+        // Native Viewer Funktion
+        function openNativeViewer() {
+            if (!pdfBlob) return;
+            const blobUrl = URL.createObjectURL(pdfBlob);
+            window.location.href = blobUrl;
+        }
+
+        init();
     </script>
 </body>
 </html>
