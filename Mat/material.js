@@ -4,75 +4,109 @@ const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const urlParams = new URLSearchParams(window.location.search);
 const projektId = urlParams.get('id');
 
-// DOM Elemente
-const katSel = document.getElementById('katSelect'); // Neu: Dropdown für Kategorien
-const matSel = document.getElementById('matSelect'); // Neu: Dropdown für Katalog-Materialien
-const mengeInp = document.getElementById('mengeInput'); // Neu: Input für Menge
-const einheitDisplay = document.getElementById('einheitDisplay'); // Anzeige der Einheit
+const katSel = document.getElementById('katSelect');
+const matSel = document.getElementById('matSelect');
+const mengeInp = document.getElementById('mengeInput');
+const einheitDisplay = document.getElementById('einheitDisplay');
 const listEl = document.getElementById('materialList');
 const status = document.getElementById('status');
-
-let katalogDaten = [];
+const titleEl = document.getElementById('projectTitle');
 
 /**
- * Initialisiert die Seite: Lädt Kategorien und Projektdaten
+ * Initialisiert die Seite
  */
 async function init() {
-    if (!projektId) return status.innerText = "Kein Projekt!";
-    
-    // 1. Kategorien laden
-    const { data: kats } = await supa.from('material_kategorien').select('*').order('name');
+    if (!projektId) {
+        status.innerText = "Fehler: Keine Projekt-ID gefunden!";
+        return;
+    }
+
+    // 1. Projektdaten laden
+    const { data: proj } = await supa.from('projekte').select('projektname').eq('id', projektId).single();
+    if (proj) titleEl.innerText = `Projekt: ${proj.projektname}`;
+
+    // 2. Kategorien laden
+    const { data: kats, error: katErr } = await supa.from('material_kategorien').select('*').order('name');
+    if (katErr) {
+        status.innerText = "Fehler beim Laden der Kategorien";
+        return;
+    }
+
     katSel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
-    kats?.forEach(k => katSel.innerHTML += `<option value="${k.id}">${k.name}</option>`);
+    kats.forEach(k => katSel.innerHTML += `<option value="${k.id}">${k.name}</option>`);
 
-    // 2. Gesamten Katalog in den Speicher laden (für schnelles Filtern ohne DB-Request)
-    const { data: kat } = await supa.from('material_katalog').select('*');
-    katalogDaten = kat || [];
-
+    status.innerText = "Bereit";
     ladeMaterialListe();
 }
 
 /**
- * Filtert den Material-Katalog basierend auf der gewählten Kategorie
+ * Lädt Materialien, die der gewählten Kategorie zugeordnet sind
  */
-katSel.addEventListener('change', () => {
+katSel.addEventListener('change', async () => {
     const katId = katSel.value;
-    const gefiltert = katalogDaten.filter(m => m.kategorie_id === katId);
+    if (!katId) {
+        matSel.disabled = true;
+        return;
+    }
+
+    status.innerText = "Suche Materialien...";
     
+    // Wir holen uns alle Materialien über die Verknüpfungstabelle
+    const { data, error } = await supa
+        .from('material_katalog_kategorien')
+        .select(`
+            material_katalog ( id, name, einheit )
+        `)
+        .eq('kategorie_id', katId);
+
+    if (error) {
+        status.innerText = "Fehler beim Filtern";
+        return;
+    }
+
     matSel.innerHTML = '<option value="">-- Material wählen --</option>';
-    gefiltert.forEach(m => matSel.innerHTML += `<option value="${m.id}" data-unit="${m.einheit}">${m.name}</option>`);
-    einheitDisplay.innerText = "";
+    data.forEach(item => {
+        const m = item.material_katalog;
+        matSel.innerHTML += `<option value="${m.id}" data-unit="${m.einheit}">${m.name}</option>`;
+    });
+
+    matSel.disabled = false;
+    status.innerText = "Bereit";
 });
 
 /**
- * Zeigt die Einheit an, wenn ein Material gewählt wird
+ * Einheit anzeigen bei Materialwahl
  */
 matSel.addEventListener('change', () => {
     const opt = matSel.options[matSel.selectedIndex];
-    einheitDisplay.innerText = opt.dataset.unit || "";
+    einheitDisplay.innerText = opt.dataset.unit || "---";
 });
 
 /**
- * Speichert die Auswahl mit Menge im Projekt
+ * Material zum Projekt hinzufügen
  */
 async function addToList() {
     const matId = matSel.value;
     const menge = parseFloat(mengeInp.value);
-    
-    if (!matId || isNaN(menge)) return alert("Material und Menge prüfen!");
+    if (!matId || isNaN(menge)) return alert("Bitte Material und Menge wählen");
 
-    await supa.from('materialien').insert([{
+    status.innerText = "Speichere...";
+    const { error } = await supa.from('materialien').insert([{
         projekt_id: projektId,
         katalog_id: matId,
         menge: menge
     }]);
 
-    mengeInp.value = "1";
-    ladeMaterialListe();
+    if (error) alert("Fehler: " + error.message);
+    else {
+        mengeInp.value = "1";
+        ladeMaterialListe();
+    }
+    status.innerText = "Bereit";
 }
 
 /**
- * Zeigt die Liste der Materialien für das aktuelle Projekt an
+ * Die Liste der bereits erfassten Materialien laden
  */
 async function ladeMaterialListe() {
     const { data, error } = await supa
@@ -84,16 +118,20 @@ async function ladeMaterialListe() {
     data?.forEach(m => {
         const li = document.createElement('li');
         li.innerHTML = `
-            <span><b>${m.menge} ${m.material_katalog.einheit}</b> ${m.material_katalog.name}</span>
-            <span class="delete-link" onclick="deleteEntry('${m.id}')">löschen</span>
+            <div class="mat-info">
+                <span class="mat-name">${m.material_katalog.name}</span>
+                <span class="mat-details">${m.menge} ${m.material_katalog.einheit}</span>
+            </div>
+            <span class="delete-btn" onclick="deleteEntry('${m.id}')">löschen</span>
         `;
         listEl.appendChild(li);
     });
 }
 
-// Global verfügbar machen für die HTML-Buttons
+// Global machen für HTML Buttons
 window.addToList = addToList;
 window.deleteEntry = async (id) => {
+    if (!confirm("Eintrag löschen?")) return;
     await supa.from('materialien').delete().eq('id', id);
     ladeMaterialListe();
 };
