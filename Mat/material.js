@@ -4,6 +4,7 @@ const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const urlParams = new URLSearchParams(window.location.search);
 const projektId = urlParams.get('id');
 
+// DOM Elemente
 const katSel = document.getElementById('katSelect');
 const matSel = document.getElementById('matSelect');
 const mengeInp = document.getElementById('mengeInput');
@@ -13,45 +14,47 @@ const status = document.getElementById('status');
 const titleEl = document.getElementById('projectTitle');
 
 /**
- * Initialisiert die Seite
+ * Initialisiert die Seite: Lädt Projektdaten und Kategorien
  */
 async function init() {
     if (!projektId) {
-        status.innerText = "Fehler: Keine Projekt-ID gefunden!";
+        status.innerText = "Fehler: Kein Projekt gewählt!";
         return;
     }
 
-    // 1. Projektdaten laden
+    // 1. Projektname abrufen
     const { data: proj } = await supa.from('projekte').select('projektname').eq('id', projektId).single();
-    if (proj) titleEl.innerText = `Projekt: ${proj.projektname}`;
+    if (proj) titleEl.innerText = proj.projektname;
 
-    // 2. Kategorien laden
+    // 2. Kategorien für das Dropdown laden
     const { data: kats, error: katErr } = await supa.from('material_kategorien').select('*').order('name');
+    
     if (katErr) {
         status.innerText = "Fehler beim Laden der Kategorien";
         return;
     }
 
     katSel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
-    kats.forEach(k => katSel.innerHTML += `<option value="${k.id}">${k.name}</option>`);
+    kats.forEach(k => {
+        katSel.innerHTML += `<option value="${k.id}">${k.name}</option>`;
+    });
 
     status.innerText = "Bereit";
     ladeMaterialListe();
 }
 
 /**
- * Lädt Materialien, die der gewählten Kategorie zugeordnet sind
+ * Filtert Materialien basierend auf der gewählten Kategorie
  */
 katSel.addEventListener('change', async () => {
     const katId = katSel.value;
-    if (!katId) {
-        matSel.disabled = true;
-        return;
-    }
+    matSel.innerHTML = '<option value="">-- Lädt... --</option>';
+    matSel.disabled = true;
+    einheitDisplay.innerText = "---";
 
-    status.innerText = "Suche Materialien...";
-    
-    // Wir holen uns alle Materialien über die Verknüpfungstabelle
+    if (!katId) return;
+
+    // Abfrage über die Verknüpfungstabelle 'material_katalog_kategorien'
     const { data, error } = await supa
         .from('material_katalog_kategorien')
         .select(`
@@ -67,15 +70,20 @@ katSel.addEventListener('change', async () => {
     matSel.innerHTML = '<option value="">-- Material wählen --</option>';
     data.forEach(item => {
         const m = item.material_katalog;
-        matSel.innerHTML += `<option value="${m.id}" data-unit="${m.einheit}">${m.name}</option>`;
+        if (m) {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = m.name;
+            opt.dataset.unit = m.einheit;
+            matSel.appendChild(opt);
+        }
     });
 
     matSel.disabled = false;
-    status.innerText = "Bereit";
 });
 
 /**
- * Einheit anzeigen bei Materialwahl
+ * Zeigt die Einheit an, wenn ein Material gewählt wird
  */
 matSel.addEventListener('change', () => {
     const opt = matSel.options[matSel.selectedIndex];
@@ -83,22 +91,28 @@ matSel.addEventListener('change', () => {
 });
 
 /**
- * Material zum Projekt hinzufügen
+ * Speichert das gewählte Material mit Menge im aktuellen Projekt
  */
 async function addToList() {
     const matId = matSel.value;
     const menge = parseFloat(mengeInp.value);
-    if (!matId || isNaN(menge)) return alert("Bitte Material und Menge wählen");
+
+    if (!matId || isNaN(menge) || menge <= 0) {
+        alert("Bitte Material wählen und eine gültige Menge eingeben!");
+        return;
+    }
 
     status.innerText = "Speichere...";
+
     const { error } = await supa.from('materialien').insert([{
         projekt_id: projektId,
         katalog_id: matId,
         menge: menge
     }]);
 
-    if (error) alert("Fehler: " + error.message);
-    else {
+    if (error) {
+        alert("Fehler beim Speichern: " + error.message);
+    } else {
         mengeInp.value = "1";
         ladeMaterialListe();
     }
@@ -106,16 +120,25 @@ async function addToList() {
 }
 
 /**
- * Die Liste der bereits erfassten Materialien laden
+ * Lädt die Liste der bereits hinzugefügten Materialien für dieses Projekt
  */
 async function ladeMaterialListe() {
     const { data, error } = await supa
         .from('materialien')
-        .select(`id, menge, material_katalog(name, einheit)`)
+        .select(`
+            id, 
+            menge, 
+            material_katalog ( name, einheit )
+        `)
         .eq('projekt_id', projektId);
 
+    if (error) {
+        console.error("Fehler beim Laden der Liste:", error);
+        return;
+    }
+
     listEl.innerHTML = "";
-    data?.forEach(m => {
+    data.forEach(m => {
         const li = document.createElement('li');
         li.innerHTML = `
             <div class="mat-info">
@@ -128,12 +151,19 @@ async function ladeMaterialListe() {
     });
 }
 
-// Global machen für HTML Buttons
-window.addToList = addToList;
+/**
+ * Löscht einen Eintrag aus der Projekt-Materialliste
+ */
 window.deleteEntry = async (id) => {
-    if (!confirm("Eintrag löschen?")) return;
-    await supa.from('materialien').delete().eq('id', id);
-    ladeMaterialListe();
+    if (!confirm("Materialeintrag wirklich löschen?")) return;
+    
+    const { error } = await supa.from('materialien').delete().eq('id', id);
+    if (error) alert("Fehler beim Löschen: " + error.message);
+    else ladeMaterialListe();
 };
 
+// Event-Listener für den Hinzufügen-Button
+document.getElementById('btnAddMaterial').addEventListener('click', addToList);
+
+// Start
 init();
