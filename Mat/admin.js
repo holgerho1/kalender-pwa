@@ -2,30 +2,69 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// DOM Elemente
 const status = document.getElementById('status');
 const katContainer = document.getElementById('katCheckboxContainer');
 const katalogListe = document.getElementById('katalogListe');
 const unitSelect = document.getElementById('unitSelect');
 const unitInput = document.getElementById('newMatUnit');
 
-// Modal Elemente
+// Modal Elemente (Kategorie)
 const katModal = document.getElementById('katModal');
 const editKatInput = document.getElementById('editKatName');
 let currentEditKatId = null;
 
+// Modal Elemente (Material)
 const matModal = document.getElementById('matEditModal');
 const editMatNameInp = document.getElementById('editMatName');
-const editMatUnitInp = document.getElementById('editMatUnit');
 const editMatKatContainer = document.getElementById('editMatKatContainer');
 let currentEditMatId = null;
 
+// Wir definieren die Modal-Einheiten-Felder global
+let editMatUnitSelect;
+let editMatUnitCustom;
+
 async function init() {
     status.innerText = "Lade Daten...";
+    setupModalUnits(); // Erstellt die Auswahlfelder im Modal
     await ladeKategorien();
     await ladeKatalogAnzeige();
     status.innerText = "Bereit";
 }
 
+/**
+ * Erstellt die Einheiten-Auswahl im Bearbeitungs-Modal basierend auf der Haupt-Auswahl
+ */
+function setupModalUnits() {
+    const modalContent = document.querySelector('#matEditModal .modal-content');
+    const oldInput = document.getElementById('editMatUnit');
+    
+    // 1. Select-Box erstellen und Optionen kopieren
+    editMatUnitSelect = document.createElement('select');
+    editMatUnitSelect.innerHTML = unitSelect.innerHTML;
+    editMatUnitSelect.style = "width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;";
+    
+    // 2. Custom-Input für "Andere" erstellen
+    editMatUnitCustom = document.createElement('input');
+    editMatUnitCustom.type = "text";
+    editMatUnitCustom.placeholder = "Eigene Einheit eingeben...";
+    editMatUnitCustom.style = "width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; display: none;";
+
+    // 3. Altes Input-Feld ersetzen
+    if (oldInput) {
+        oldInput.parentNode.replaceChild(editMatUnitSelect, oldInput);
+        editMatUnitSelect.parentNode.insertBefore(editMatUnitCustom, editMatUnitSelect.nextSibling);
+    }
+
+    // 4. Event-Listener für "Andere"
+    editMatUnitSelect.addEventListener('change', () => {
+        editMatUnitCustom.style.display = editMatUnitSelect.value === "Andere" ? "block" : "none";
+    });
+}
+
+/**
+ * Einheiten-Umschalter für Neuanlage (Hauptseite)
+ */
 unitSelect.addEventListener('change', () => {
     unitInput.style.display = unitSelect.value === "Andere" ? "block" : "none";
 });
@@ -92,7 +131,17 @@ async function ladeKatalogAnzeige() {
 window.openMatModal = async (id, name, unit, activeKatIds) => {
     currentEditMatId = id;
     editMatNameInp.value = name;
-    editMatUnitInp.value = unit;
+    
+    // Prüfen, ob die Einheit in den Standard-Optionen ist
+    const options = Array.from(editMatUnitSelect.options).map(o => o.value);
+    if (options.includes(unit)) {
+        editMatUnitSelect.value = unit;
+        editMatUnitCustom.style.display = "none";
+    } else {
+        editMatUnitSelect.value = "Andere";
+        editMatUnitCustom.value = unit;
+        editMatUnitCustom.style.display = "block";
+    }
     
     const { data: allKats } = await supa.from('material_kategorien').select('*').order('name');
     editMatKatContainer.innerHTML = "";
@@ -112,13 +161,10 @@ window.closeMatModal = () => { matModal.style.display = "none"; };
 
 document.getElementById('btnUpdateMat').addEventListener('click', async () => {
     const newName = editMatNameInp.value.trim();
-    const newUnit = editMatUnitInp.value.trim();
+    const newUnit = editMatUnitSelect.value === "Andere" ? editMatUnitCustom.value.trim() : editMatUnitSelect.value;
     const newKats = Array.from(document.querySelectorAll('.edit-mat-kat-cb:checked')).map(cb => cb.value);
 
-    // 1. Stammdaten updaten
     await supa.from('material_katalog').update({ name: newName, einheit: newUnit }).eq('id', currentEditMatId);
-
-    // 2. Kategorien neu verknüpfen (Löschen & Neu anlegen)
     await supa.from('material_katalog_kategorien').delete().eq('material_id', currentEditMatId);
     const links = newKats.map(katId => ({ material_id: currentEditMatId, kategorie_id: katId }));
     if (links.length > 0) await supa.from('material_katalog_kategorien').insert(links);
@@ -159,6 +205,7 @@ async function saveMaterial() {
     unitSelect.selectedIndex = 0;
     document.querySelectorAll('input[name="kat"]:checked').forEach(cb => cb.checked = false);
     ladeKatalogAnzeige();
+    status.innerText = "Material gespeichert!";
 }
 
 document.getElementById('btnSaveKat').addEventListener('click', saveKategorie);
