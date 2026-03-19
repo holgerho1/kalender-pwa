@@ -15,10 +15,9 @@
         
         input, select { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; background: white; }
         
-        /* Einheiten-Zeile */
         .unit-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
         .unit-row select { margin-bottom: 0; flex: 2; }
-        .unit-row input { margin-bottom: 0; flex: 1; display: none; } /* Standardmäßig versteckt */
+        .unit-row input { margin-bottom: 0; flex: 1; display: none; }
 
         #katCheckboxContainer { 
             background: #fafafa; 
@@ -31,21 +30,41 @@
         }
         
         .check-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .check-item:last-child { border-bottom: none; }
-
+        
         button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1rem; }
         .btn-save-mat { background: #28a745; margin-top: 5px; }
         .btn-back { background: #6c757d; margin-bottom: 15px; width: auto; font-size: 0.85rem; padding: 8px 15px; }
         
         #status { font-size: 0.8rem; text-align: center; color: #007bff; margin-bottom: 15px; font-weight: bold; min-height: 1.2em; }
         
-        /* Katalog-Liste */
         .katalog-view { margin-top: 30px; border-top: 2px solid #eee; padding-top: 15px; }
         .katalog-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: white; }
         .katalog-item b { font-size: 0.95rem; color: #333; }
         .katalog-item span { font-size: 0.75rem; color: #777; display: block; }
         
         .del-btn { width: auto; padding: 6px 10px; background: #fff5f5; border: 1px solid #ffcccc; color: #dc3545; font-size: 0.7rem; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        /* Modal Styles */
+        #katModal {
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); 
+            z-index: 1000; 
+            justify-content: center; 
+            align-items: center;
+        }
+        .modal-content {
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            width: 85%; 
+            max-width: 350px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .modal-content h3 { margin-top: 0; font-size: 1.1rem; color: #333; }
+        .modal-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -61,15 +80,15 @@
         <div id="katCheckboxContainer">
             <span style="color:#999; font-size:0.8rem;">Lade Kategorien...</span>
         </div>
-        <input type="text" id="newKatName" placeholder="Neue Kategorie (z.B. Elektro)">
+        <input type="text" id="newKatName" placeholder="Neue Kategorie">
         <button id="btnSaveKat">Kategorie hinzufügen</button>
     </div>
 
     <div class="section">
         <label>Neues Material im Katalog</label>
-        <input type="text" id="newMatName" placeholder="Name (z.B. KG-Rohr DN110)">
+        <input type="text" id="newMatName" placeholder="Name">
         
-        <label>Einheit wählen</label>
+        <label>Einheit</label>
         <div class="unit-row">
             <select id="unitSelect">
                 <option value="Stk">Stück (Stk)</option>
@@ -77,24 +96,31 @@
                 <option value="Sack">Sack</option>
                 <option value="Eimer">Eimer</option>
                 <option value="Rolle">Rolle</option>
-                <option value="Paar">Paar</option>
                 <option value="Set">Set</option>
                 <option value="Andere">-- Eigene --</option>
             </select>
-            <input type="text" id="newMatUnit" placeholder="z.B. Liter">
+            <input type="text" id="newMatUnit" placeholder="Einheit">
         </div>
-        
-        <p style="font-size: 0.7rem; color: #888; margin-top: -5px; margin-bottom: 10px;">
-            Wähle oben in der Liste die Kategorien aus, denen dieses Material angehören soll.
-        </p>
-        
-        <button id="btnSaveMat" class="btn-save-mat">Material im Katalog speichern</button>
+        <button id="btnSaveMat" class="btn-save-mat">Material speichern</button>
     </div>
 
     <div class="katalog-view">
-        <label>Bestehender Material-Katalog</label>
-        <div id="katalogListe">
-            </div>
+        <label>Material-Katalog</label>
+        <div id="katalogListe"></div>
+    </div>
+</div>
+
+<div id="katModal">
+    <div class="modal-content">
+        <h3>Kategorie bearbeiten</h3>
+        <label>Name ändern:</label>
+        <input type="text" id="editKatName">
+        
+        <div class="modal-btns">
+            <button id="btnUpdateKat" style="background:#28a745;">Speichern</button>
+            <button id="btnDeleteKat" style="background:#dc3545;">Löschen</button>
+            <button onclick="closeKatModal()" style="background:#6c757d;">Abbrechen</button>
+        </div>
     </div>
 </div>
 

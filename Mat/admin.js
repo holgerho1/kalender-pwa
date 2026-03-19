@@ -2,14 +2,20 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// DOM Elemente
 const status = document.getElementById('status');
 const katContainer = document.getElementById('katCheckboxContainer');
 const katalogListe = document.getElementById('katalogListe');
 const unitSelect = document.getElementById('unitSelect');
 const unitInput = document.getElementById('newMatUnit');
 
+// Modal Elemente
+const katModal = document.getElementById('katModal');
+const editKatInput = document.getElementById('editKatName');
+let currentEditKatId = null;
+
 /**
- * Initialisierung beim Laden der Seite
+ * Initialisierung
  */
 async function init() {
     status.innerText = "Lade Daten...";
@@ -19,7 +25,7 @@ async function init() {
 }
 
 /**
- * Steuerung der Einheiten-Anzeige
+ * Einheiten-Umschalter
  */
 unitSelect.addEventListener('change', () => {
     if (unitSelect.value === "Andere") {
@@ -31,7 +37,7 @@ unitSelect.addEventListener('change', () => {
 });
 
 /**
- * Lädt Kategorien und erstellt die Liste mit Checkboxen und Lösch-Buttons
+ * Kategorien laden & Checkboxen mit Einstellungs-Button erstellen
  */
 async function ladeKategorien() {
     const { data, error } = await supa.from('material_kategorien').select('*').order('name');
@@ -43,7 +49,7 @@ async function ladeKategorien() {
 
     katContainer.innerHTML = ''; 
     if (!data || data.length === 0) {
-        katContainer.innerHTML = '<span style="color:#999; font-size:0.8rem;">Noch keine Kategorien angelegt.</span>';
+        katContainer.innerHTML = '<span style="color:#999; font-size:0.8rem;">Keine Kategorien vorhanden.</span>';
     } else {
         data.forEach(k => {
             const div = document.createElement('div');
@@ -53,7 +59,10 @@ async function ladeKategorien() {
                     <input type="checkbox" name="kat" value="${k.id}" id="kat_${k.id}" style="width:24px; height:24px; margin-right:12px; cursor:pointer;">
                     <label for="kat_${k.id}" style="font-size:1rem; cursor:pointer;">${k.name}</label>
                 </div>
-                <button onclick="deleteKategorie('${k.id}', '${k.name}')" class="del-btn">Kat. löschen</button>
+                <button onclick="openKatModal('${k.id}', '${k.name}')" 
+                        style="width:auto; padding:5px 10px; background:#f8f9fa; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:0.9rem;">
+                    ⚙️
+                </button>
             `;
             katContainer.appendChild(div);
         });
@@ -61,39 +70,80 @@ async function ladeKategorien() {
 }
 
 /**
- * Zeigt alle bereits im Katalog vorhandenen Materialien an
+ * Modal Funktionen
+ */
+window.openKatModal = (id, name) => {
+    currentEditKatId = id;
+    editKatInput.value = name;
+    katModal.style.display = "flex";
+};
+
+window.closeKatModal = () => {
+    katModal.style.display = "none";
+    currentEditKatId = null;
+};
+
+// Kategorie Name aktualisieren
+document.getElementById('btnUpdateKat').addEventListener('click', async () => {
+    const newName = editKatInput.value.trim();
+    if (!newName || !currentEditKatId) return;
+
+    status.innerText = "Aktualisiere...";
+    const { error } = await supa.from('material_kategorien').update({ name: newName }).eq('id', currentEditKatId);
+    
+    if (error) {
+        alert("Fehler beim Umbenennen: " + error.message);
+    } else {
+        closeKatModal();
+        await ladeKategorien();
+        await ladeKatalogAnzeige();
+        status.innerText = "Kategorie umbenannt!";
+    }
+});
+
+// Kategorie löschen (via Modal)
+document.getElementById('btnDeleteKat').addEventListener('click', async () => {
+    if (!confirm("Diese Kategorie wirklich löschen? Alle Verknüpfungen gehen verloren!")) return;
+    
+    status.innerText = "Lösche Kategorie...";
+    const { error } = await supa.from('material_kategorien').delete().eq('id', currentEditKatId);
+    
+    if (error) {
+        alert("Fehler beim Löschen: " + error.message);
+    } else {
+        closeKatModal();
+        await ladeKategorien();
+        await ladeKatalogAnzeige();
+        status.innerText = "Kategorie gelöscht.";
+    }
+});
+
+/**
+ * Katalog-Anzeige
  */
 async function ladeKatalogAnzeige() {
     const { data, error } = await supa
         .from('material_katalog')
         .select(`
-            id, 
-            name, 
-            einheit, 
-            material_katalog_kategorien (
-                material_kategorien ( name )
-            )
+            id, name, einheit, 
+            material_katalog_kategorien ( material_kategorien ( name ) )
         `)
         .order('name');
 
-    if (error) {
-        console.error("Katalog-Fehler:", error);
-        return;
-    }
+    if (error) return;
 
     katalogListe.innerHTML = "";
     data.forEach(m => {
-        const katNamen = m.material_katalog_kategorien
+        const kats = m.material_katalog_kategorien
             .map(kk => kk.material_kategorien?.name)
-            .filter(n => n)
-            .join(', ');
+            .filter(n => n).join(', ');
 
         const div = document.createElement('div');
         div.className = "katalog-item";
         div.innerHTML = `
             <div>
                 <b>${m.name}</b>
-                <span>${m.einheit} | Kat: ${katNamen || 'keine'}</span>
+                <span>${m.einheit} | Kat: ${kats || 'keine'}</span>
             </div>
             <button onclick="deleteFromKatalog('${m.id}', '${m.name}')" class="del-btn">löschen</button>
         `;
@@ -102,109 +152,50 @@ async function ladeKatalogAnzeige() {
 }
 
 /**
- * Speichert eine neue Kategorie
+ * Speichern
  */
 async function saveKategorie() {
-    const input = document.getElementById('newKatName');
-    const name = input.value.trim();
+    const name = document.getElementById('newKatName').value.trim();
     if (!name) return;
-
-    status.innerText = "Speichere Kategorie...";
-    const { error } = await supa.from('material_kategorien').insert([{ name }]);
-    
-    if (error) {
-        alert("Fehler: " + error.message);
-    } else {
-        input.value = "";
-        await ladeKategorien();
-        status.innerText = "Kategorie erstellt!";
-    }
+    await supa.from('material_kategorien').insert([{ name }]);
+    document.getElementById('newKatName').value = "";
+    ladeKategorien();
 }
 
-/**
- * Speichert ein neues Material im Katalog und verknüpft es
- */
 async function saveMaterial() {
     const nameInp = document.getElementById('newMatName');
     const name = nameInp.value.trim();
-    
-    // Einheit bestimmen (Dropdown oder Textfeld)
-    let unit = unitSelect.value;
-    if (unit === "Andere") {
-        unit = unitInput.value.trim();
-    }
-    
-    const gewaehlteKats = Array.from(document.querySelectorAll('input[name="kat"]:checked'))
-                               .map(cb => cb.value);
+    let unit = (unitSelect.value === "Andere") ? unitInput.value.trim() : unitSelect.value;
+    const kats = Array.from(document.querySelectorAll('input[name="kat"]:checked')).map(cb => cb.value);
 
-    if (!name || !unit || gewaehlteKats.length === 0) {
-        alert("Bitte Name, Einheit und mindestens eine Kategorie wählen!");
+    if (!name || !unit || kats.length === 0) {
+        alert("Bitte Name, Einheit und Kategorien wählen!");
         return;
     }
 
-    status.innerText = "Speichere Material...";
+    const { data: neuMat, error: matErr } = await supa.from('material_katalog').insert([{ name, einheit: unit }]).select();
+    if (matErr) return alert(matErr.message);
 
-    // 1. Material im Katalog anlegen
-    const { data: neuMat, error: matErr } = await supa
-        .from('material_katalog')
-        .insert([{ name, einheit: unit }])
-        .select();
+    const links = kats.map(katId => ({ material_id: neuMat[0].id, kategorie_id: katId }));
+    await supa.from('material_katalog_kategorien').insert(links);
 
-    if (matErr) return alert("Fehler: " + matErr.message);
-
-    // 2. Verknüpfungen zur Zwischentabelle erstellen
-    const links = gewaehlteKats.map(katId => ({
-        material_id: neuMat[0].id,
-        kategorie_id: katId
-    }));
-
-    const { error: linkErr } = await supa.from('material_katalog_kategorien').insert(links);
-
-    if (linkErr) {
-        alert("Fehler bei Kategorien-Zuordnung: " + linkErr.message);
-    } else {
-        // UI zurücksetzen
-        nameInp.value = "";
-        unitInput.value = "";
-        unitInput.style.display = "none";
-        unitSelect.selectedIndex = 0;
-        document.querySelectorAll('input[name="kat"]:checked').forEach(cb => cb.checked = false);
-        
-        await ladeKatalogAnzeige();
-        status.innerText = "Material erfolgreich gespeichert!";
-    }
+    nameInp.value = "";
+    unitInput.value = "";
+    unitInput.style.display = "none";
+    unitSelect.selectedIndex = 0;
+    document.querySelectorAll('input[name="kat"]:checked').forEach(cb => cb.checked = false);
+    ladeKatalogAnzeige();
+    status.innerText = "Material gespeichert!";
 }
 
-/**
- * Löscht eine Kategorie (erfordert ON DELETE CASCADE in der DB)
- */
-window.deleteKategorie = async (id, name) => {
-    if (!confirm(`Kategorie '${name}' wirklich löschen?`)) return;
-    const { error } = await supa.from('material_kategorien').delete().eq('id', id);
-    if (error) alert("Fehler: " + error.message);
-    else {
-        await ladeKategorien();
-        await ladeKatalogAnzeige();
-        status.innerText = "Kategorie gelöscht.";
-    }
-};
-
-/**
- * Löscht ein Material aus dem Katalog (erfordert ON DELETE CASCADE in der DB)
- */
 window.deleteFromKatalog = async (id, name) => {
-    if (!confirm(`Material '${name}' wirklich löschen?`)) return;
-    const { error } = await supa.from('material_katalog').delete().eq('id', id);
-    if (error) alert("Fehler: " + error.message);
-    else {
-        await ladeKatalogAnzeige();
-        status.innerText = "Material gelöscht.";
+    if (confirm(`Material '${name}' aus Katalog löschen?`)) {
+        await supa.from('material_katalog').delete().eq('id', id);
+        ladeKatalogAnzeige();
     }
 };
 
-// Event-Listener für Buttons
 document.getElementById('btnSaveKat').addEventListener('click', saveKategorie);
 document.getElementById('btnSaveMat').addEventListener('click', saveMaterial);
 
-// Start
 init();
