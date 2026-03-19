@@ -17,7 +17,7 @@ async function init() {
 }
 
 /**
- * Erstellt die Checkboxen für die Kategorien
+ * Lädt Kategorien, erstellt Checkboxen UND zeigt eine Liste zum Löschen an
  */
 async function ladeKategorien() {
     const { data, error } = await supa.from('material_kategorien').select('*').order('name');
@@ -28,16 +28,22 @@ async function ladeKategorien() {
     }
 
     katContainer.innerHTML = ''; 
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
         katContainer.innerHTML = '<span style="color:#999; font-size:0.8rem;">Noch keine Kategorien angelegt.</span>';
     } else {
         data.forEach(k => {
             const div = document.createElement('div');
-            div.className = "check-item";
-            div.style = "display: flex; align-items: center; margin-bottom: 10px;";
+            div.style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 5px; border-bottom: 1px solid #f0f0f0;";
+            
             div.innerHTML = `
-                <input type="checkbox" name="kat" value="${k.id}" id="kat_${k.id}" style="width:22px; height:22px; margin-right:12px;">
-                <label for="kat_${k.id}" style="font-size:1rem;">${k.name}</label>
+                <div style="display: flex; align-items: center;">
+                    <input type="checkbox" name="kat" value="${k.id}" id="kat_${k.id}" style="width:24px; height:24px; margin-right:12px; cursor:pointer;">
+                    <label for="kat_${k.id}" style="font-size:1.1rem; cursor:pointer;">${k.name}</label>
+                </div>
+                <button onclick="deleteKategorie('${k.id}', '${k.name}')" 
+                        style="width:auto; padding:4px 8px; background:#fff5f5; border:1px solid #ffcccc; color:#dc3545; font-size:0.65rem; border-radius:4px; cursor:pointer;">
+                    Kat. löschen
+                </button>
             `;
             katContainer.appendChild(div);
         });
@@ -45,7 +51,7 @@ async function ladeKategorien() {
 }
 
 /**
- * Zeigt alle bereits im Katalog vorhandenen Materialien an (mit dem neuen Lösch-Button)
+ * Zeigt alle bereits im Katalog vorhandenen Materialien an
  */
 async function ladeKatalogAnzeige() {
     const { data, error } = await supa
@@ -81,7 +87,7 @@ async function ladeKatalogAnzeige() {
                 <div style="font-size:0.75rem; color:#777;">Einheit: ${m.einheit} | Kat: ${katNamen || 'keine'}</div>
             </div>
             <button onclick="deleteFromKatalog('${m.id}', '${m.name}')" 
-                    style="width:auto; padding:5px 10px; background:#fff5f5; border:1px solid #ffcccc; color:#dc3545; font-size:0.7rem; border-radius:4px; cursor:pointer; font-weight:bold;">
+                    style="width:auto; padding:6px 12px; background:#fff5f5; border:1px solid #ffcccc; color:#dc3545; font-size:0.7rem; border-radius:4px; cursor:pointer; font-weight:bold;">
                 löschen
             </button>
         `;
@@ -97,12 +103,15 @@ async function saveKategorie() {
     const name = input.value.trim();
     if (!name) return;
 
+    status.innerText = "Speichere...";
     const { error } = await supa.from('material_kategorien').insert([{ name }]);
-    if (error) alert("Fehler: " + error.message);
-    else {
+    
+    if (error) {
+        alert("Fehler: " + error.message);
+    } else {
         input.value = "";
         await ladeKategorien();
-        status.innerText = "Kategorie erstellt!";
+        status.innerText = "Kategorie '" + name + "' erstellt!";
     }
 }
 
@@ -123,7 +132,7 @@ async function saveMaterial() {
         return;
     }
 
-    status.innerText = "Speichere...";
+    status.innerText = "Speichere Material...";
 
     const { data: neuMat, error: matErr } = await supa
         .from('material_katalog')
@@ -145,20 +154,37 @@ async function saveMaterial() {
         unitInp.value = "";
         document.querySelectorAll('input[name="kat"]:checked').forEach(cb => cb.checked = false);
         await ladeKatalogAnzeige();
-        status.innerText = "Material im Katalog gespeichert!";
+        status.innerText = "Material '" + name + "' gespeichert!";
     }
 }
 
 /**
- * Löscht ein Material komplett aus dem Katalog
+ * Löscht eine Kategorie (inkl. Verknüpfungen)
+ */
+window.deleteKategorie = async (id, name) => {
+    if (!confirm(`Kategorie '${name}' wirklich löschen?`)) return;
+    
+    const { error } = await supa.from('material_kategorien').delete().eq('id', id);
+    if (error) {
+        alert("Fehler beim Löschen: " + error.message);
+    } else {
+        await ladeKategorien();
+        await ladeKatalogAnzeige(); // Katalog neu laden, da Kategorienamen verschwinden könnten
+        status.innerText = "Kategorie entfernt.";
+    }
+};
+
+/**
+ * Löscht ein Material aus dem Katalog
  */
 window.deleteFromKatalog = async (id, name) => {
-    if (!confirm(`Möchtest du '${name}' wirklich aus dem Katalog löschen? Dies entfernt es auch aus allen Kategorien!`)) return;
+    if (!confirm(`Material '${name}' wirklich löschen?`)) return;
     
     const { error } = await supa.from('material_katalog').delete().eq('id', id);
-    if (error) alert("Fehler beim Löschen: " + error.message);
-    else {
-        ladeKatalogAnzeige();
+    if (error) {
+        alert("Fehler: " + error.message);
+    } else {
+        await ladeKatalogAnzeige();
         status.innerText = "Eintrag gelöscht.";
     }
 };
