@@ -12,7 +12,8 @@
         .section { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
         label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; }
         input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 5px; }
+        .btn-delete { background: #dc3545; margin-top: 10px; }
         .hidden { display: none; }
         #status { font-size: 0.7rem; color: #666; text-align: center; margin-bottom: 10px; }
     </style>
@@ -24,17 +25,25 @@
     <div id="status">Initialisiere...</div>
 
     <div class="section">
-        <label for="projectSelect">Vorhandenes Projekt</label>
+        <label for="projectSelect">Vorhandenes Projekt wählen</label>
         <select id="projectSelect">
             <option value="">-- Laden... --</option>
         </select>
+
+        <div id="editSection" class="hidden">
+            <label>Projekt bearbeiten</label>
+            <input type="text" id="editProjectName">
+            <textarea id="editProjectNote"></textarea>
+            <button id="btnUpdateProject">Änderungen speichern</button>
+            <button id="btnDeleteProject" class="btn-delete">Projekt löschen</button>
+        </div>
     </div>
 
     <div class="section" id="newProjectSection">
         <label>Neues Projekt anlegen</label>
-        <input type="text" id="newProjectName" placeholder="Name (z.B. Baustelle A)">
-        <textarea id="newProjectNote" placeholder="Notiz (Optional)"></textarea>
-        <button id="btnSaveProject">Projekt speichern</button>
+        <input type="text" id="newProjectName" placeholder="Name">
+        <textarea id="newProjectNote" placeholder="Notiz"></textarea>
+        <button id="btnSaveProject">Neu anlegen</button>
     </div>
 </div>
 
