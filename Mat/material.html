@@ -25,8 +25,22 @@
         .btn-add { background: #28a745; color: white; flex: 1; }
         .btn-back { background: #6c757d; color: white; width: auto; padding: 8px 15px; font-size: 0.8rem; margin-bottom: 10px; }
         
+        /* Neu: Gruppierungs-Toggle */
+        .view-control { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 12px; 
+            background: #eef2f7; 
+            border-radius: 6px; 
+            margin-top: 20px;
+            border: 1px solid #d1d9e6;
+        }
+        .view-control label { margin-bottom: 0; text-transform: none; font-size: 0.85rem; color: #333; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .view-control input { width: 20px; height: 20px; margin: 0; cursor: pointer; }
+
         /* Liste der bereits vorhandenen Materialien */
-        #materialList { list-style: none; padding: 0; margin-top: 20px; border-top: 2px solid #eee; }
+        #materialList { list-style: none; padding: 0; margin-top: 10px; }
         .list-item { 
             padding: 12px; 
             border-bottom: 1px solid #eee; 
@@ -68,10 +82,17 @@
         </div>
     </div>
 
-    <div id="status">Verbindung wird geprüft...</div>
-    
+    <div class="view-control">
+        <label>
+            <input type="checkbox" id="toggleGroup">
+            Gleiche zusammenrechnen (∑)
+        </label>
+    </div>
+
     <div id="materialList">
         </div>
+
+    <div id="status">Verbindung wird geprüft...</div>
 </div>
 
 <script type="module" src="material.js"></script>

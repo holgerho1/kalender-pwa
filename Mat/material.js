@@ -11,6 +11,7 @@ const einheitDisplay = document.getElementById('einheitDisplay');
 const listEl = document.getElementById('materialList');
 const status = document.getElementById('status');
 const titleEl = document.getElementById('projectTitle');
+const toggleGroup = document.getElementById('toggleGroup');
 
 async function init() {
     if (!projektId) return status.innerText = "Fehler: Kein Projekt!";
@@ -25,6 +26,9 @@ async function init() {
     status.innerText = "Bereit";
     ladeMaterialListe();
 }
+
+// Event-Listener für den Ansichts-Umschalter
+toggleGroup?.addEventListener('change', ladeMaterialListe);
 
 katSel.addEventListener('change', async () => {
     const katId = katSel.value;
@@ -60,7 +64,7 @@ matSel.addEventListener('change', () => {
 
 async function addToList() {
     const matId = matSel.value;
-    const katId = katSel.value; // Die gewählte Kategorie merken!
+    const katId = katSel.value;
     const menge = parseFloat(mengeInp.value);
     
     if (!matId || !katId || isNaN(menge)) {
@@ -72,7 +76,7 @@ async function addToList() {
     const { error } = await supa.from('materialien').insert([{
         projekt_id: projektId,
         katalog_id: matId,
-        kategorie_id: katId, // Hier wird die Auswahl fixiert
+        kategorie_id: katId,
         menge: menge
     }]);
 
@@ -90,6 +94,7 @@ async function ladeMaterialListe() {
         .select(`
             id, 
             menge, 
+            katalog_id,
             material_katalog ( name, einheit ),
             material_kategorien ( name )
         `)
@@ -103,7 +108,9 @@ async function ladeMaterialListe() {
         return;
     }
 
-    // Gruppierung nach der beim Speichern gewählten Kategorie
+    const sollGruppieren = toggleGroup?.checked;
+
+    // 1. Daten nach Kategorien sortieren
     const gruppen = {};
     data.forEach(m => {
         const katName = m.material_kategorien?.name || "Sonstiges";
@@ -113,21 +120,44 @@ async function ladeMaterialListe() {
 
     const sortierteKats = Object.keys(gruppen).sort();
 
+    // 2. Anzeige rendern
     sortierteKats.forEach(katName => {
         const header = document.createElement('div');
         header.style = "background:#eee; padding:8px 10px; font-size:0.75rem; font-weight:bold; color:#555; margin-top:20px; border-radius:4px; border-left: 5px solid #007bff;";
         header.innerText = katName;
         listEl.appendChild(header);
 
-        gruppen[katName].forEach(m => {
+        let materialAnzeigeListe = gruppen[katName];
+
+        if (sollGruppieren) {
+            // Logik für das Zusammenrechnen innerhalb der Kategorie
+            const zusammengefasst = {};
+            materialAnzeigeListe.forEach(m => {
+                const matName = m.material_katalog?.name;
+                if (!zusammengefasst[matName]) {
+                    zusammengefasst[matName] = { ...m, summe: m.menge, anzahl: 1 };
+                } else {
+                    zusammengefasst[matName].summe += m.menge;
+                    zusammengefasst[matName].anzahl += 1;
+                }
+            });
+            materialAnzeigeListe = Object.values(zusammengefasst);
+        }
+
+        materialAnzeigeListe.forEach(m => {
             const itemDiv = document.createElement('div');
             itemDiv.style = "padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background:white;";
+            
+            const mengeText = sollGruppieren ? m.summe : m.menge;
+            const subText = sollGruppieren ? `Summe aus ${m.anzahl} Einträgen` : "";
+
             itemDiv.innerHTML = `
                 <div>
-                    <div style="font-weight:bold;">${m.material_katalog?.name}</div>
-                    <div style="font-size:0.85rem; color:#666;">${m.menge} ${m.material_katalog?.einheit}</div>
+                    <div style="font-weight:bold;">${sollGruppieren ? '∑ ' : ''}${m.material_katalog?.name}</div>
+                    <div style="font-size:0.85rem; color:#666;">${mengeText} ${m.material_katalog?.einheit}</div>
+                    ${subText ? `<div style="font-size:0.65rem; color:#007bff; font-style:italic;">${subText}</div>` : ''}
                 </div>
-                <button onclick="deleteEntry('${m.id}')" style="width:auto; padding:6px 10px; background:#fff; border:1px solid #ffcccc; color:#dc3545; font-size:0.7rem; border-radius:4px; cursor:pointer;">löschen</button>
+                ${!sollGruppieren ? `<button onclick="deleteEntry('${m.id}')" style="width:auto; padding:6px 10px; background:#fff; border:1px solid #ffcccc; color:#dc3545; font-size:0.7rem; border-radius:4px; cursor:pointer;">löschen</button>` : ''}
             `;
             listEl.appendChild(itemDiv);
         });
