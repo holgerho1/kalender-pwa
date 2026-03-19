@@ -3,21 +3,27 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const status = document.getElementById('status');
-const katSel = document.getElementById('katSelectAdmin');
+const katContainer = document.getElementById('katCheckboxContainer');
 
 /**
- * Lädt die Kategorien für das Dropdown
+ * Lädt Kategorien und erstellt Checkboxen im Admin-Bereich
  */
 async function ladeKategorien() {
     const { data, error } = await supa.from('material_kategorien').select('*').order('name');
-    if (error) return;
+    if (error) {
+        status.innerText = "Fehler beim Laden der Kategorien";
+        return;
+    }
 
-    katSel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
+    katContainer.innerHTML = ''; 
     data.forEach(k => {
-        const opt = document.createElement('option');
-        opt.value = k.id;
-        opt.textContent = k.name;
-        katSel.appendChild(opt);
+        const div = document.createElement('div');
+        div.style.marginBottom = "5px";
+        div.innerHTML = `
+            <input type="checkbox" name="kat" value="${k.id}" id="kat_${k.id}" style="width:auto; margin-right:8px;">
+            <label style="display:inline; font-weight:normal;" for="kat_${k.id}">${k.name}</label>
+        `;
+        katContainer.appendChild(div);
     });
 }
 
@@ -25,42 +31,74 @@ async function ladeKategorien() {
  * Speichert eine neue Kategorie
  */
 async function saveKategorie() {
-    const name = document.getElementById('newKatName').value.trim();
+    const nameInput = document.getElementById('newKatName');
+    const name = nameInput.value.trim();
     if (!name) return;
 
     status.innerText = "Speichere Kategorie...";
     const { error } = await supa.from('material_kategorien').insert([{ name }]);
     
-    if (error) alert("Fehler: " + error.message);
-    else {
-        document.getElementById('newKatName').value = "";
+    if (error) {
+        alert("Fehler: " + error.message);
+    } else {
+        nameInput.value = "";
         await ladeKategorien();
-        status.innerText = "Kategorie gespeichert!";
+        status.innerText = "Kategorie '" + name + "' erstellt!";
     }
 }
 
 /**
- * Speichert ein neues Material im Katalog
+ * Hauptfunktion: Material im Katalog speichern + Kategorien zuordnen
  */
 async function saveMaterial() {
-    const katId = katSel.value;
-    const name = document.getElementById('newMatName').value.trim();
-    const unit = document.getElementById('newMatUnit').value.trim();
+    const nameInput = document.getElementById('newMatName');
+    const unitInput = document.getElementById('newMatUnit');
+    const name = nameInput.value.trim();
+    const unit = unitInput.value.trim();
+    
+    // Checkbox-Werte sammeln
+    const gewaehlteKats = Array.from(document.querySelectorAll('input[name="kat"]:checked'))
+                               .map(cb => cb.value);
 
-    if (!katId || !name || !unit) return alert("Bitte alle Felder ausfüllen");
+    if (!name || !unit || gewaehlteKats.length === 0) {
+        alert("Bitte Name, Einheit und mindestens eine Kategorie wählen!");
+        return;
+    }
 
-    status.innerText = "Speichere Material...";
-    const { error } = await supa.from('material_katalog').insert([{
-        name: name,
-        einheit: unit,
+    status.innerText = "Speichere im Katalog...";
+
+    // SCHRITT 1: Material im Katalog anlegen
+    // .select() ist zwingend erforderlich, um die ID für Schritt 2 zu erhalten
+    const { data: neuMat, error: matErr } = await supa
+        .from('material_katalog')
+        .insert([{ name: name, einheit: unit }])
+        .select(); 
+
+    if (matErr) {
+        alert("Fehler beim Material-Insert: " + matErr.message);
+        return;
+    }
+
+    const materialId = neuMat[0].id;
+
+    // SCHRITT 2: Verknüpfungen in der Zwischentabelle anlegen
+    const verknuepfungen = gewaehlteKats.map(katId => ({
+        material_id: materialId,
         kategorie_id: katId
-    }]);
+    }));
 
-    if (error) alert("Fehler: " + error.message);
-    else {
-        document.getElementById('newMatName').value = "";
-        document.getElementById('newMatUnit').value = "";
-        status.innerText = "Material zum Katalog hinzugefügt!";
+    const { error: linkErr } = await supa
+        .from('material_katalog_kategorien')
+        .insert(verknuepfungen);
+
+    if (linkErr) {
+        alert("Material erstellt, aber Kategorie-Zuordnung schlug fehl: " + linkErr.message);
+    } else {
+        // UI zurücksetzen
+        nameInput.value = "";
+        unitInput.value = "";
+        document.querySelectorAll('input[name="kat"]:checked').forEach(cb => cb.checked = false);
+        status.innerText = "Erfolgreich: " + name + " im Katalog gespeichert!";
     }
 }
 
@@ -68,5 +106,5 @@ async function saveMaterial() {
 document.getElementById('btnSaveKat').addEventListener('click', saveKategorie);
 document.getElementById('btnSaveMat').addEventListener('click', saveMaterial);
 
-// Initialisierung
+// Start
 ladeKategorien();
