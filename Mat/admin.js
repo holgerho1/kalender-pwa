@@ -7,7 +7,7 @@ const katContainer = document.getElementById('katCheckboxContainer');
 const katalogListe = document.getElementById('katalogListe');
 
 /**
- * Initialisierung: Lädt Kategorien und den bestehenden Katalog
+ * Initialisierung
  */
 async function init() {
     status.innerText = "Lade Daten...";
@@ -34,9 +34,10 @@ async function ladeKategorien() {
         data.forEach(k => {
             const div = document.createElement('div');
             div.className = "check-item";
+            div.style = "display: flex; align-items: center; margin-bottom: 10px;";
             div.innerHTML = `
-                <input type="checkbox" name="kat" value="${k.id}" id="kat_${k.id}">
-                <label for="kat_${k.id}">${k.name}</label>
+                <input type="checkbox" name="kat" value="${k.id}" id="kat_${k.id}" style="width:22px; height:22px; margin-right:12px;">
+                <label for="kat_${k.id}" style="font-size:1rem;">${k.name}</label>
             `;
             katContainer.appendChild(div);
         });
@@ -44,10 +45,9 @@ async function ladeKategorien() {
 }
 
 /**
- * Zeigt alle bereits im Katalog vorhandenen Materialien an
+ * Zeigt alle bereits im Katalog vorhandenen Materialien an (mit dem neuen Lösch-Button)
  */
 async function ladeKatalogAnzeige() {
-    // Diese Abfrage holt das Material UND die Namen der zugehörigen Kategorien
     const { data, error } = await supa
         .from('material_katalog')
         .select(`
@@ -67,18 +67,23 @@ async function ladeKatalogAnzeige() {
 
     katalogListe.innerHTML = "";
     data.forEach(m => {
-        // Kategorienamen aus dem verschachtelten Objekt extrahieren
         const katNamen = m.material_katalog_kategorien
             .map(kk => kk.material_kategorien?.name)
             .filter(n => n)
             .join(', ');
 
         const div = document.createElement('div');
-        div.className = "katalog-item";
+        div.style = "padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: white;";
+        
         div.innerHTML = `
-            <span class="del-kat-btn" onclick="deleteFromKatalog('${m.id}', '${m.name}')">löschen</span>
-            <b>${m.name}</b> (${m.einheit})
-            <span>Kategorien: ${katNamen || 'keine'}</span>
+            <div>
+                <div style="font-weight:bold; font-size:0.95rem;">${m.name}</div>
+                <div style="font-size:0.75rem; color:#777;">Einheit: ${m.einheit} | Kat: ${katNamen || 'keine'}</div>
+            </div>
+            <button onclick="deleteFromKatalog('${m.id}', '${m.name}')" 
+                    style="width:auto; padding:5px 10px; background:#fff5f5; border:1px solid #ffcccc; color:#dc3545; font-size:0.7rem; border-radius:4px; cursor:pointer; font-weight:bold;">
+                löschen
+            </button>
         `;
         katalogListe.appendChild(div);
     });
@@ -120,7 +125,6 @@ async function saveMaterial() {
 
     status.innerText = "Speichere...";
 
-    // 1. Material anlegen
     const { data: neuMat, error: matErr } = await supa
         .from('material_katalog')
         .insert([{ name, einheit: unit }])
@@ -128,7 +132,6 @@ async function saveMaterial() {
 
     if (matErr) return alert("Fehler: " + matErr.message);
 
-    // 2. Verknüpfungen anlegen
     const links = gewaehlteKats.map(katId => ({
         material_id: neuMat[0].id,
         kategorie_id: katId
@@ -150,7 +153,7 @@ async function saveMaterial() {
  * Löscht ein Material komplett aus dem Katalog
  */
 window.deleteFromKatalog = async (id, name) => {
-    if (!confirm(`Möchtest du '${name}' wirklich aus dem Katalog löschen?`)) return;
+    if (!confirm(`Möchtest du '${name}' wirklich aus dem Katalog löschen? Dies entfernt es auch aus allen Kategorien!`)) return;
     
     const { error } = await supa.from('material_katalog').delete().eq('id', id);
     if (error) alert("Fehler beim Löschen: " + error.message);
