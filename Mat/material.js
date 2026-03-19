@@ -30,6 +30,7 @@ katSel.addEventListener('change', async () => {
     const katId = katSel.value;
     if (!katId) {
         matSel.disabled = true;
+        matSel.innerHTML = '<option value="">-- Erst Kategorie wählen --</option>';
         return;
     }
 
@@ -59,13 +60,19 @@ matSel.addEventListener('change', () => {
 
 async function addToList() {
     const matId = matSel.value;
+    const katId = katSel.value; // Die gewählte Kategorie merken!
     const menge = parseFloat(mengeInp.value);
-    if (!matId || isNaN(menge)) return;
+    
+    if (!matId || !katId || isNaN(menge)) {
+        alert("Bitte Kategorie, Material und Menge wählen!");
+        return;
+    }
 
     status.innerText = "Speichere...";
     const { error } = await supa.from('materialien').insert([{
         projekt_id: projektId,
         katalog_id: matId,
+        kategorie_id: katId, // Hier wird die Auswahl fixiert
         menge: menge
     }]);
 
@@ -77,23 +84,14 @@ async function addToList() {
     status.innerText = "Bereit";
 }
 
-/**
- * Verbesserte Gruppierung: Wir holen alle Kategorien pro Material 
- * und ordnen es der ersten zu, die wir finden.
- */
 async function ladeMaterialListe() {
     const { data, error } = await supa
         .from('materialien')
         .select(`
             id, 
             menge, 
-            material_katalog ( 
-                name, 
-                einheit,
-                material_katalog_kategorien (
-                    material_kategorien ( name )
-                )
-            )
+            material_katalog ( name, einheit ),
+            material_kategorien ( name )
         `)
         .eq('projekt_id', projektId);
 
@@ -105,33 +103,22 @@ async function ladeMaterialListe() {
         return;
     }
 
-    // Gruppierung vorbereiten
+    // Gruppierung nach der beim Speichern gewählten Kategorie
     const gruppen = {};
-
     data.forEach(m => {
-        // Wir suchen die Kategorien des Materials aus den Katalog-Stammdaten
-        const katArray = m.material_katalog?.material_katalog_kategorien || [];
-        
-        // Falls ein Material mehrere Kategorien hat, nehmen wir die erste für die Anzeige
-        const katName = katArray.length > 0 
-            ? katArray[0].material_kategorien.name 
-            : "Sonstiges";
-
+        const katName = m.material_kategorien?.name || "Sonstiges";
         if (!gruppen[katName]) gruppen[katName] = [];
         gruppen[katName].push(m);
     });
 
-    // Alphabetisch sortierte Kategorien ausgeben
     const sortierteKats = Object.keys(gruppen).sort();
 
     sortierteKats.forEach(katName => {
-        // Header
         const header = document.createElement('div');
         header.style = "background:#eee; padding:8px 10px; font-size:0.75rem; font-weight:bold; color:#555; margin-top:20px; border-radius:4px; border-left: 5px solid #007bff;";
         header.innerText = katName;
         listEl.appendChild(header);
 
-        // Items
         gruppen[katName].forEach(m => {
             const itemDiv = document.createElement('div');
             itemDiv.style = "padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background:white;";
@@ -140,7 +127,7 @@ async function ladeMaterialListe() {
                     <div style="font-weight:bold;">${m.material_katalog?.name}</div>
                     <div style="font-size:0.85rem; color:#666;">${m.menge} ${m.material_katalog?.einheit}</div>
                 </div>
-                <button onclick="deleteEntry('${m.id}')" style="width:auto; padding:6px 10px; background:#fff; border:1px solid #ffcccc; color:#dc3545; font-size:0.7rem; border-radius:4px;">löschen</button>
+                <button onclick="deleteEntry('${m.id}')" style="width:auto; padding:6px 10px; background:#fff; border:1px solid #ffcccc; color:#dc3545; font-size:0.7rem; border-radius:4px; cursor:pointer;">löschen</button>
             `;
             listEl.appendChild(itemDiv);
         });
