@@ -24,7 +24,7 @@
             border: 1px solid #ccc; 
             border-radius: 4px; 
             padding: 10px; 
-            max-height: 250px; 
+            max-height: 200px; 
             overflow-y: auto; 
             margin-bottom: 15px; 
         }
@@ -42,10 +42,8 @@
         .katalog-item b { font-size: 0.95rem; color: #333; }
         .katalog-item span { font-size: 0.75rem; color: #777; display: block; }
         
-        .del-btn { width: auto; padding: 6px 10px; background: #fff5f5; border: 1px solid #ffcccc; color: #dc3545; font-size: 0.7rem; border-radius: 4px; cursor: pointer; font-weight: bold; }
-
         /* Modal Styles */
-        #katModal {
+        .modal {
             display: none; 
             position: fixed; 
             top: 0; left: 0; 
@@ -62,9 +60,21 @@
             width: 85%; 
             max-width: 350px; 
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
         }
         .modal-content h3 { margin-top: 0; font-size: 1.1rem; color: #333; }
-        .modal-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .modal-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+
+        .edit-kat-scroll {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -110,16 +120,36 @@
     </div>
 </div>
 
-<div id="katModal">
+<div id="katModal" class="modal">
     <div class="modal-content">
         <h3>Kategorie bearbeiten</h3>
         <label>Name ändern:</label>
         <input type="text" id="editKatName">
-        
         <div class="modal-btns">
             <button id="btnUpdateKat" style="background:#28a745;">Speichern</button>
             <button id="btnDeleteKat" style="background:#dc3545;">Löschen</button>
             <button onclick="closeKatModal()" style="background:#6c757d;">Abbrechen</button>
+        </div>
+    </div>
+</div>
+
+<div id="matEditModal" class="modal">
+    <div class="modal-content">
+        <h3>Material bearbeiten</h3>
+        <label>Name:</label>
+        <input type="text" id="editMatName">
+        
+        <label>Einheit:</label>
+        <input type="text" id="editMatUnit">
+
+        <label>Kategorien zuordnen:</label>
+        <div id="editMatKatContainer" class="edit-kat-scroll">
+            </div>
+        
+        <div class="modal-btns">
+            <button id="btnUpdateMat" style="background:#28a745;">Änderungen speichern</button>
+            <button id="btnDeleteMat" style="background:#dc3545;">Aus Katalog löschen</button>
+            <button onclick="closeMatModal()" style="background:#6c757d;">Abbrechen</button>
         </div>
     </div>
 </div>

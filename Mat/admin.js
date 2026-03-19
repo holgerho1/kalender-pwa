@@ -2,7 +2,6 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// DOM Elemente
 const status = document.getElementById('status');
 const katContainer = document.getElementById('katCheckboxContainer');
 const katalogListe = document.getElementById('katalogListe');
@@ -14,9 +13,12 @@ const katModal = document.getElementById('katModal');
 const editKatInput = document.getElementById('editKatName');
 let currentEditKatId = null;
 
-/**
- * Initialisierung
- */
+const matModal = document.getElementById('matEditModal');
+const editMatNameInp = document.getElementById('editMatName');
+const editMatUnitInp = document.getElementById('editMatUnit');
+const editMatKatContainer = document.getElementById('editMatKatContainer');
+let currentEditMatId = null;
+
 async function init() {
     status.innerText = "Lade Daten...";
     await ladeKategorien();
@@ -24,176 +26,140 @@ async function init() {
     status.innerText = "Bereit";
 }
 
-/**
- * Einheiten-Umschalter
- */
 unitSelect.addEventListener('change', () => {
-    if (unitSelect.value === "Andere") {
-        unitInput.style.display = "block";
-        unitInput.focus();
-    } else {
-        unitInput.style.display = "none";
-    }
+    unitInput.style.display = unitSelect.value === "Andere" ? "block" : "none";
 });
 
-/**
- * Kategorien laden & Checkboxen mit Einstellungs-Button erstellen
- */
+/** KATEGORIEN VERWALTEN **/
 async function ladeKategorien() {
-    const { data, error } = await supa.from('material_kategorien').select('*').order('name');
-    
-    if (error) {
-        status.innerText = "Fehler: " + error.message;
-        return;
-    }
-
+    const { data } = await supa.from('material_kategorien').select('*').order('name');
     katContainer.innerHTML = ''; 
-    if (!data || data.length === 0) {
-        katContainer.innerHTML = '<span style="color:#999; font-size:0.8rem;">Keine Kategorien vorhanden.</span>';
-    } else {
-        data.forEach(k => {
-            const div = document.createElement('div');
-            div.className = "check-item";
-            div.innerHTML = `
-                <div style="display: flex; align-items: center;">
-                    <input type="checkbox" name="kat" value="${k.id}" id="kat_${k.id}" style="width:24px; height:24px; margin-right:12px; cursor:pointer;">
-                    <label for="kat_${k.id}" style="font-size:1rem; cursor:pointer;">${k.name}</label>
-                </div>
-                <button onclick="openKatModal('${k.id}', '${k.name}')" 
-                        style="width:auto; padding:5px 10px; background:#f8f9fa; border:1px solid #ccc; border-radius:4px; cursor:pointer; font-size:0.9rem;">
-                    ⚙️
-                </button>
-            `;
-            katContainer.appendChild(div);
-        });
-    }
+    data?.forEach(k => {
+        const div = document.createElement('div');
+        div.className = "check-item";
+        div.innerHTML = `
+            <div style="display: flex; align-items: center;">
+                <input type="checkbox" name="kat" value="${k.id}" id="kat_${k.id}" style="width:24px; height:24px; margin-right:12px;">
+                <label for="kat_${k.id}" style="font-size:1rem;">${k.name}</label>
+            </div>
+            <button onclick="openKatModal('${k.id}', '${k.name}')" style="width:auto; padding:5px 10px; background:#f8f9fa; border:1px solid #ccc; border-radius:4px; font-size:0.9rem;">⚙️</button>
+        `;
+        katContainer.appendChild(div);
+    });
 }
 
-/**
- * Modal Funktionen
- */
 window.openKatModal = (id, name) => {
     currentEditKatId = id;
     editKatInput.value = name;
     katModal.style.display = "flex";
 };
 
-window.closeKatModal = () => {
-    katModal.style.display = "none";
-    currentEditKatId = null;
-};
+window.closeKatModal = () => { katModal.style.display = "none"; };
 
-// Kategorie Name aktualisieren
 document.getElementById('btnUpdateKat').addEventListener('click', async () => {
-    const newName = editKatInput.value.trim();
-    if (!newName || !currentEditKatId) return;
-
-    status.innerText = "Aktualisiere...";
-    const { error } = await supa.from('material_kategorien').update({ name: newName }).eq('id', currentEditKatId);
-    
-    if (error) {
-        alert("Fehler beim Umbenennen: " + error.message);
-    } else {
-        closeKatModal();
-        await ladeKategorien();
-        await ladeKatalogAnzeige();
-        status.innerText = "Kategorie umbenannt!";
-    }
+    await supa.from('material_kategorien').update({ name: editKatInput.value.trim() }).eq('id', currentEditKatId);
+    closeKatModal();
+    ladeKategorien();
+    ladeKatalogAnzeige();
 });
 
-// Kategorie löschen (via Modal)
 document.getElementById('btnDeleteKat').addEventListener('click', async () => {
-    if (!confirm("Diese Kategorie wirklich löschen? Alle Verknüpfungen gehen verloren!")) return;
-    
-    status.innerText = "Lösche Kategorie...";
-    const { error } = await supa.from('material_kategorien').delete().eq('id', currentEditKatId);
-    
-    if (error) {
-        alert("Fehler beim Löschen: " + error.message);
-    } else {
+    if (confirm("Kategorie löschen?")) {
+        await supa.from('material_kategorien').delete().eq('id', currentEditKatId);
         closeKatModal();
-        await ladeKategorien();
-        await ladeKatalogAnzeige();
-        status.innerText = "Kategorie gelöscht.";
+        ladeKategorien();
+        ladeKatalogAnzeige();
     }
 });
 
-/**
- * Katalog-Anzeige
- */
+/** MATERIAL-KATALOG BEARBEITEN **/
 async function ladeKatalogAnzeige() {
-    const { data, error } = await supa
-        .from('material_katalog')
-        .select(`
-            id, name, einheit, 
-            material_katalog_kategorien ( material_kategorien ( name ) )
-        `)
-        .order('name');
-
-    if (error) return;
-
+    const { data } = await supa.from('material_katalog').select(`id, name, einheit, material_katalog_kategorien ( kategorie_id, material_kategorien ( name ) )`).order('name');
     katalogListe.innerHTML = "";
-    data.forEach(m => {
-        const kats = m.material_katalog_kategorien
-            .map(kk => kk.material_kategorien?.name)
-            .filter(n => n).join(', ');
-
+    data?.forEach(m => {
+        const katIds = m.material_katalog_kategorien.map(kk => kk.kategorie_id);
+        const katNamen = m.material_katalog_kategorien.map(kk => kk.material_kategorien?.name).filter(n => n).join(', ');
         const div = document.createElement('div');
         div.className = "katalog-item";
         div.innerHTML = `
-            <div>
-                <b>${m.name}</b>
-                <span>${m.einheit} | Kat: ${kats || 'keine'}</span>
-            </div>
-            <button onclick="deleteFromKatalog('${m.id}', '${m.name}')" class="del-btn">löschen</button>
+            <div><b>${m.name}</b><span>${m.einheit} | Kat: ${katNamen || 'keine'}</span></div>
+            <button onclick='openMatModal("${m.id}", "${m.name}", "${m.einheit}", ${JSON.stringify(katIds)})' style="width:auto; padding:5px 10px; background:#f8f9fa; border:1px solid #ccc; border-radius:4px; font-size:0.9rem;">⚙️</button>
         `;
         katalogListe.appendChild(div);
     });
 }
 
-/**
- * Speichern
- */
+window.openMatModal = async (id, name, unit, activeKatIds) => {
+    currentEditMatId = id;
+    editMatNameInp.value = name;
+    editMatUnitInp.value = unit;
+    
+    const { data: allKats } = await supa.from('material_kategorien').select('*').order('name');
+    editMatKatContainer.innerHTML = "";
+    allKats?.forEach(k => {
+        const checked = activeKatIds.includes(k.id) ? "checked" : "";
+        editMatKatContainer.innerHTML += `
+            <div style="display:flex; align-items:center; margin-bottom:5px;">
+                <input type="checkbox" class="edit-mat-kat-cb" value="${k.id}" ${checked} style="width:18px; height:18px; margin-right:8px;">
+                <span style="font-size:0.9rem;">${k.name}</span>
+            </div>
+        `;
+    });
+    matModal.style.display = "flex";
+};
+
+window.closeMatModal = () => { matModal.style.display = "none"; };
+
+document.getElementById('btnUpdateMat').addEventListener('click', async () => {
+    const newName = editMatNameInp.value.trim();
+    const newUnit = editMatUnitInp.value.trim();
+    const newKats = Array.from(document.querySelectorAll('.edit-mat-kat-cb:checked')).map(cb => cb.value);
+
+    // 1. Stammdaten updaten
+    await supa.from('material_katalog').update({ name: newName, einheit: newUnit }).eq('id', currentEditMatId);
+
+    // 2. Kategorien neu verknüpfen (Löschen & Neu anlegen)
+    await supa.from('material_katalog_kategorien').delete().eq('material_id', currentEditMatId);
+    const links = newKats.map(katId => ({ material_id: currentEditMatId, kategorie_id: katId }));
+    if (links.length > 0) await supa.from('material_katalog_kategorien').insert(links);
+
+    closeMatModal();
+    ladeKatalogAnzeige();
+});
+
+document.getElementById('btnDeleteMat').addEventListener('click', async () => {
+    if (confirm("Material komplett aus Katalog löschen?")) {
+        await supa.from('material_katalog').delete().eq('id', currentEditMatId);
+        closeMatModal();
+        ladeKatalogAnzeige();
+    }
+});
+
+/** NEU ANLEGEN **/
 async function saveKategorie() {
     const name = document.getElementById('newKatName').value.trim();
-    if (!name) return;
-    await supa.from('material_kategorien').insert([{ name }]);
+    if (name) await supa.from('material_kategorien').insert([{ name }]);
     document.getElementById('newKatName').value = "";
     ladeKategorien();
 }
 
 async function saveMaterial() {
-    const nameInp = document.getElementById('newMatName');
-    const name = nameInp.value.trim();
-    let unit = (unitSelect.value === "Andere") ? unitInput.value.trim() : unitSelect.value;
+    const name = document.getElementById('newMatName').value.trim();
+    let unit = unitSelect.value === "Andere" ? unitInput.value.trim() : unitSelect.value;
     const kats = Array.from(document.querySelectorAll('input[name="kat"]:checked')).map(cb => cb.value);
 
-    if (!name || !unit || kats.length === 0) {
-        alert("Bitte Name, Einheit und Kategorien wählen!");
-        return;
-    }
+    if (!name || !unit || kats.length === 0) return alert("Bitte alles ausfüllen!");
 
-    const { data: neuMat, error: matErr } = await supa.from('material_katalog').insert([{ name, einheit: unit }]).select();
-    if (matErr) return alert(matErr.message);
-
+    const { data: neuMat } = await supa.from('material_katalog').insert([{ name, einheit: unit }]).select();
     const links = kats.map(katId => ({ material_id: neuMat[0].id, kategorie_id: katId }));
     await supa.from('material_katalog_kategorien').insert(links);
 
-    nameInp.value = "";
+    document.getElementById('newMatName').value = "";
     unitInput.value = "";
-    unitInput.style.display = "none";
     unitSelect.selectedIndex = 0;
     document.querySelectorAll('input[name="kat"]:checked').forEach(cb => cb.checked = false);
     ladeKatalogAnzeige();
-    status.innerText = "Material gespeichert!";
 }
-
-window.deleteFromKatalog = async (id, name) => {
-    if (confirm(`Material '${name}' aus Katalog löschen?`)) {
-        await supa.from('material_katalog').delete().eq('id', id);
-        ladeKatalogAnzeige();
-    }
-};
 
 document.getElementById('btnSaveKat').addEventListener('click', saveKategorie);
 document.getElementById('btnSaveMat').addEventListener('click', saveMaterial);
