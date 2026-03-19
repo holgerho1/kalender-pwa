@@ -4,7 +4,6 @@ const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const urlParams = new URLSearchParams(window.location.search);
 const projektId = urlParams.get('id');
 
-// DOM Elemente
 const katSel = document.getElementById('katSelect');
 const matSel = document.getElementById('matSelect');
 const mengeInp = document.getElementById('mengeInput');
@@ -13,62 +12,34 @@ const listEl = document.getElementById('materialList');
 const status = document.getElementById('status');
 const titleEl = document.getElementById('projectTitle');
 
-/**
- * Initialisiert die Seite: Lädt Projektdaten und Kategorien
- */
 async function init() {
-    if (!projektId) {
-        status.innerText = "Fehler: Kein Projekt gewählt!";
-        return;
-    }
-
-    // 1. Projektname abrufen
+    if (!projektId) return status.innerText = "Fehler: Kein Projekt!";
+    
+    // Projektname laden
     const { data: proj } = await supa.from('projekte').select('projektname').eq('id', projektId).single();
     if (proj) titleEl.innerText = proj.projektname;
 
-    // 2. Kategorien für das Dropdown laden
-    const { data: kats, error: katErr } = await supa.from('material_kategorien').select('*').order('name');
-    
-    if (katErr) {
-        status.innerText = "Fehler beim Laden der Kategorien";
-        return;
-    }
-
+    // Kategorien laden
+    const { data: kats } = await supa.from('material_kategorien').select('*').order('name');
     katSel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
-    kats.forEach(k => {
-        katSel.innerHTML += `<option value="${k.id}">${k.name}</option>`;
-    });
+    kats?.forEach(k => katSel.innerHTML += `<option value="${k.id}">${k.name}</option>`);
 
     status.innerText = "Bereit";
     ladeMaterialListe();
 }
 
-/**
- * Filtert Materialien basierend auf der gewählten Kategorie
- */
+// Filter Logik
 katSel.addEventListener('change', async () => {
     const katId = katSel.value;
-    matSel.innerHTML = '<option value="">-- Lädt... --</option>';
-    matSel.disabled = true;
-    einheitDisplay.innerText = "---";
-
     if (!katId) return;
 
-    // Abfrage über die Verknüpfungstabelle 'material_katalog_kategorien'
-    const { data, error } = await supa
+    const { data } = await supa
         .from('material_katalog_kategorien')
-        .select(`
-            material_katalog ( id, name, einheit )
-        `)
+        .select('material_katalog ( id, name, einheit )')
         .eq('kategorie_id', katId);
 
-    if (error) {
-        status.innerText = "Fehler beim Filtern";
-        return;
-    }
-
     matSel.innerHTML = '<option value="">-- Material wählen --</option>';
-    data.forEach(item => {
+    data?.forEach(item => {
         const m = item.material_katalog;
         if (m) {
             const opt = document.createElement('option');
@@ -78,31 +49,18 @@ katSel.addEventListener('change', async () => {
             matSel.appendChild(opt);
         }
     });
-
     matSel.disabled = false;
 });
 
-/**
- * Zeigt die Einheit an, wenn ein Material gewählt wird
- */
 matSel.addEventListener('change', () => {
     const opt = matSel.options[matSel.selectedIndex];
     einheitDisplay.innerText = opt.dataset.unit || "---";
 });
 
-/**
- * Speichert das gewählte Material mit Menge im aktuellen Projekt
- */
 async function addToList() {
     const matId = matSel.value;
     const menge = parseFloat(mengeInp.value);
-
-    if (!matId || isNaN(menge) || menge <= 0) {
-        alert("Bitte Material wählen und eine gültige Menge eingeben!");
-        return;
-    }
-
-    status.innerText = "Speichere...";
+    if (!matId || isNaN(menge)) return;
 
     const { error } = await supa.from('materialien').insert([{
         projekt_id: projektId,
@@ -110,17 +68,15 @@ async function addToList() {
         menge: menge
     }]);
 
-    if (error) {
-        alert("Fehler beim Speichern: " + error.message);
-    } else {
+    if (error) alert("Fehler: " + error.message);
+    else {
         mengeInp.value = "1";
         ladeMaterialListe();
     }
-    status.innerText = "Bereit";
 }
 
 /**
- * Lädt die Liste der bereits hinzugefügten Materialien für dieses Projekt
+ * WICHTIG: Diese Funktion baut die Liste auf
  */
 async function ladeMaterialListe() {
     const { data, error } = await supa
@@ -133,37 +89,39 @@ async function ladeMaterialListe() {
         .eq('projekt_id', projektId);
 
     if (error) {
-        console.error("Fehler beim Laden der Liste:", error);
+        console.error(error);
         return;
     }
 
-    listEl.innerHTML = "";
+    listEl.innerHTML = ""; // Liste leeren
+    
+    if (!data || data.length === 0) {
+        listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:0.8rem;">Noch kein Material erfasst.</p>';
+        return;
+    }
+
     data.forEach(m => {
-        const li = document.createElement('li');
-        li.innerHTML = `
+        const itemDiv = document.createElement('div');
+        itemDiv.className = "list-item"; // Muss zum CSS in der HTML passen
+        itemDiv.style = "padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;";
+        
+        itemDiv.innerHTML = `
             <div class="mat-info">
-                <span class="mat-name">${m.material_katalog.name}</span>
-                <span class="mat-details">${m.menge} ${m.material_katalog.einheit}</span>
+                <div class="mat-name" style="font-weight:bold;">${m.material_katalog?.name || 'Unbekannt'}</div>
+                <div class="mat-details" style="font-size:0.85rem; color:#666;">${m.menge} ${m.material_katalog?.einheit || ''}</div>
             </div>
-            <span class="delete-btn" onclick="deleteEntry('${m.id}')">löschen</span>
+            <button class="delete-btn" onclick="deleteEntry('${m.id}')" style="width:auto; padding:5px 10px; background:#fff5f5; border:1px solid #ffcccc; color:#dc3545; font-size:0.75rem;">löschen</button>
         `;
-        listEl.appendChild(li);
+        listEl.appendChild(itemDiv);
     });
 }
 
-/**
- * Löscht einen Eintrag aus der Projekt-Materialliste
- */
 window.deleteEntry = async (id) => {
-    if (!confirm("Materialeintrag wirklich löschen?")) return;
-    
-    const { error } = await supa.from('materialien').delete().eq('id', id);
-    if (error) alert("Fehler beim Löschen: " + error.message);
-    else ladeMaterialListe();
+    if (!confirm("Löschen?")) return;
+    await supa.from('materialien').delete().eq('id', id);
+    ladeMaterialListe();
 };
 
-// Event-Listener für den Hinzufügen-Button
 document.getElementById('btnAddMaterial').addEventListener('click', addToList);
 
-// Start
 init();
