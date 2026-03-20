@@ -27,7 +27,7 @@ async function init() {
     const { data: proj } = await supa.from('projekte').select('projektname').eq('id', projektId).single();
     if (proj) titleEl.innerText = proj.projektname;
 
-    // Kategorien laden
+    // Kategorien für die Select-Boxen laden
     const { data: kats } = await supa.from('material_kategorien').select('*').order('name');
     katSel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
     editKatSel.innerHTML = "";
@@ -37,16 +37,13 @@ async function init() {
         editKatSel.innerHTML += opt;
     });
 
-    // Alle Nennweiten für das Edit-Modal vorladen
-    const { data: allDns } = await supa.from('nennweiten').select('*').order('wert');
-    editDnSel.innerHTML = '<option value="">-- Ohne DN --</option>';
-    allDns?.forEach(d => editDnSel.innerHTML += `<option value="${d.id}">${d.wert}</option>`);
-
     status.innerText = "Bereit";
     ladeMaterialListe();
 }
 
-// 1. KATEGORIE GEWÄHLT -> MATERIALIEN LADEN
+// --- LOGIK FÜR NEUANLAGE ---
+
+// 1. Kategorie wählen -> Materialien filtern
 katSel.addEventListener('change', async () => {
     const katId = katSel.value;
     dnSel.disabled = true;
@@ -71,7 +68,7 @@ katSel.addEventListener('change', async () => {
     matSel.disabled = false;
 });
 
-// 2. MATERIAL GEWÄHLT -> NENNWEITEN FILTERN
+// 2. Material wählen -> Nennweiten filtern
 matSel.addEventListener('change', async () => {
     const matId = matSel.value;
     const opt = matSel.options[matSel.selectedIndex];
@@ -82,7 +79,6 @@ matSel.addEventListener('change', async () => {
         return;
     }
 
-    // Lade nur Nennweiten, die im Admin für dieses Material verknüpft wurden
     const { data } = await supa
         .from('material_katalog_nennweiten')
         .select('nennweiten ( id, wert )')
@@ -100,7 +96,7 @@ matSel.addEventListener('change', async () => {
     }
 });
 
-// --- SPEICHERN ---
+// 3. Speichern
 async function addToList() {
     const matId = matSel.value;
     const katId = katSel.value;
@@ -123,13 +119,37 @@ async function addToList() {
     status.innerText = "Bereit";
 }
 
-// --- BEARBEITEN & LÖSCHEN ---
-window.openEditModal = (id, menge, katId, dnId) => {
+// --- BEARBEITUNGS-LOGIK (MODAL) ---
+
+window.openEditModal = async (id, menge, katId, dnId, katalogId) => {
     if (toggleGroup?.checked) return;
+    
     currentEditId = id;
+    status.innerText = "Lade Nennweiten...";
+
+    // Nur erlaubte Nennweiten für dieses Material laden
+    const { data: erlaubteDns } = await supa
+        .from('material_katalog_nennweiten')
+        .select('nennweiten ( id, wert )')
+        .eq('katalog_id', katalogId);
+
+    editDnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
+    erlaubteDns?.forEach(item => {
+        const d = item.nennweiten;
+        if (d) {
+            const opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = d.wert;
+            editDnSel.appendChild(opt);
+        }
+    });
+
+    // Werte im Modal setzen
     editMengeInp.value = menge;
     editKatSel.value = katId;
-    editDnSel.value = dnId || "";
+    editDnSel.value = dnId || ""; 
+    
+    status.innerText = "Bereit";
     editModal.style.display = "flex";
 };
 
@@ -146,13 +166,16 @@ document.getElementById('btnSaveEdit').onclick = async () => {
 };
 
 document.getElementById('btnDeleteEntry').onclick = async () => {
-    if (!confirm("Löschen?")) return;
+    if (!confirm("Diesen Eintrag wirklich löschen?")) return;
+    status.innerText = "Lösche...";
     await supa.from('materialien').delete().eq('id', currentEditId);
     editModal.style.display = "none";
     ladeMaterialListe();
+    status.innerText = "Bereit";
 };
 
 // --- LISTE RENDERN ---
+
 async function ladeMaterialListe() {
     const { data, error } = await supa
         .from('materialien')
@@ -186,7 +209,6 @@ async function ladeMaterialListe() {
         if (sollGruppieren) {
             const zusammengefasst = {};
             materialAnzeigeListe.forEach(m => {
-                // Key aus Material + Nennweite bilden (damit DN 110 nicht mit DN 160 addiert wird)
                 const key = `${m.katalog_id}_${m.nennweite_id || 'noDN'}`;
                 if (!zusammengefasst[key]) {
                     zusammengefasst[key] = { ...m, summe: m.menge, anzahl: 1 };
@@ -201,8 +223,12 @@ async function ladeMaterialListe() {
         materialAnzeigeListe.forEach(m => {
             const itemDiv = document.createElement('div');
             itemDiv.className = "list-item";
+            
+            // Klick-Logik: katalog_id wird für die NW-Filterung im Modal mitgegeben
             if (!sollGruppieren) {
-                itemDiv.onclick = () => openEditModal(m.id, m.menge, m.kategorie_id, m.nennweite_id);
+                itemDiv.onclick = () => openEditModal(m.id, m.menge, m.kategorie_id, m.nennweite_id, m.katalog_id);
+            } else {
+                itemDiv.style.cursor = "default";
             }
 
             const dnText = m.nennweiten?.wert ? `<span class="mat-dn">${m.nennweiten.wert}</span>` : '';
