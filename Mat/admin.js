@@ -2,10 +2,12 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// DOM Elemente
 const katList = document.getElementById('katList');
 const matList = document.getElementById('matList');
 const dnList = document.getElementById('dnList');
 
+// Modals
 const matModal = document.getElementById('matEditModal');
 const katModal = document.getElementById('katEditModal');
 const dnModal = document.getElementById('dnEditModal');
@@ -64,7 +66,7 @@ window.saveDNChanges = async () => {
 };
 
 window.deleteDNFull = async () => {
-    if (!confirm("Diese Nennweite wirklich löschen?")) return;
+    if (!confirm("Nennweite wirklich löschen?")) return;
     await supa.from('nennweiten').delete().eq('id', currentEditDNId);
     closeDNModal();
     ladeNennweitenStamm();
@@ -139,6 +141,15 @@ async function ladeKatalog() {
 
 window.openMaterialEdit = async (id) => {
     currentEditMatId = id;
+    
+    // Kategorien für das Dropdown laden
+    const { data: alleKat } = await supa.from('material_kategorien').select('*').order('name');
+    const katSelect = document.getElementById('editMatKategorie');
+    katSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    alleKat?.forEach(k => {
+        katSelect.innerHTML += `<option value="${k.id}">${k.name}</option>`;
+    });
+
     const { data: alleDN } = await supa.from('nennweiten').select('*').order('wert');
     let verbundeneIds = [];
     document.getElementById('btnDeleteMat').style.display = id ? "block" : "none";
@@ -148,13 +159,17 @@ window.openMaterialEdit = async (id) => {
         const { data: mat } = await supa.from('material_katalog').select('*').eq('id', id).single();
         document.getElementById('editMatName').value = mat.name;
         document.getElementById('editMatEinheit').value = mat.einheit; 
+        document.getElementById('editMatKategorie').value = mat.kategorie_id || "";
+        
         const { data: vDN } = await supa.from('material_katalog_nennweiten').select('nennweite_id').eq('katalog_id', id);
         verbundeneIds = vDN?.map(v => v.nennweite_id) || [];
     } else {
         document.getElementById('editMatName').value = "";
         document.getElementById('editMatEinheit').value = "Stk";
+        document.getElementById('editMatKategorie').value = "";
     }
 
+    // Nennweiten Checkboxen
     editMatDnContainer.innerHTML = "";
     alleDN?.forEach(dn => {
         const isChecked = verbundeneIds.includes(dn.id) ? 'checked' : '';
@@ -169,27 +184,35 @@ window.openMaterialEdit = async (id) => {
 window.saveMaterialChanges = async () => {
     const name = document.getElementById('editMatName').value.trim();
     const einheit = document.getElementById('editMatEinheit').value; 
+    const kategorie_id = document.getElementById('editMatKategorie').value || null;
+    
     if (!name) return alert("Bitte Namen eingeben!");
+
     let matId = currentEditMatId;
+    const saveObj = { name, einheit, kategorie_id };
+
     if (matId) {
-        await supa.from('material_katalog').update({ name, einheit }).eq('id', matId);
+        await supa.from('material_katalog').update(saveObj).eq('id', matId);
     } else {
-        const { data, error } = await supa.from('material_katalog').insert([{ name, einheit }]).select();
+        const { data, error } = await supa.from('material_katalog').insert([saveObj]).select();
         if (error) return alert("Fehler: " + error.message);
         matId = data[0].id;
     }
+
+    // Nennweiten synchronisieren
     await supa.from('material_katalog_nennweiten').delete().eq('katalog_id', matId);
     const selectedDNs = Array.from(document.querySelectorAll('.dn-checkbox:checked')).map(cb => ({
         katalog_id: matId,
         nennweite_id: cb.value
     }));
     if (selectedDNs.length > 0) await supa.from('material_katalog_nennweiten').insert(selectedDNs);
+
     closeModal();
     ladeKatalog();
 };
 
 window.deleteMaterialFull = async () => {
-    if (!currentEditMatId || !confirm("Material komplett löschen?")) return;
+    if (!currentEditMatId || !confirm("Material wirklich löschen?")) return;
     await supa.from('material_katalog').delete().eq('id', currentEditMatId);
     closeModal();
     ladeKatalog();
