@@ -10,11 +10,14 @@ const dnList = document.getElementById('dnList');
 // Modals
 const matModal = document.getElementById('matEditModal');
 const katModal = document.getElementById('katEditModal');
+const dnModal = document.getElementById('dnEditModal');
+
 const editMatDnContainer = document.getElementById('editMatDnContainer');
 const editModalTitle = document.getElementById('editModalTitle');
 
 let currentEditMatId = null;
 let currentEditKatId = null;
+let currentEditDNId = null;
 
 async function init() {
     ladeKategorien();
@@ -22,14 +25,18 @@ async function init() {
     ladeNennweitenStamm();
 }
 
-// --- 1. NENNWEITEN STAMMDATEN ---
+// --- 1. NENNWEITEN (MIT POPUP) ---
+
 async function ladeNennweitenStamm() {
     const { data } = await supa.from('nennweiten').select('*').order('wert');
     dnList.innerHTML = "";
     data?.forEach(dn => {
         const div = document.createElement('div');
         div.className = 'list-item';
-        div.innerHTML = `<span>${dn.wert}</span><button onclick="deleteDN('${dn.id}')" class="btn-delete-small">Löschen</button>`;
+        div.innerHTML = `
+            <span>${dn.wert}</span>
+            <button onclick="openDNEdit('${dn.id}', '${dn.wert}')">Edit</button>
+        `;
         dnList.appendChild(div);
     });
 }
@@ -42,14 +49,31 @@ window.addDN = async () => {
     ladeNennweitenStamm();
 };
 
-window.deleteDN = async (id) => {
-    if (confirm("Nennweite löschen?")) {
-        await supa.from('nennweiten').delete().eq('id', id);
-        ladeNennweitenStamm();
-    }
+window.openDNEdit = (id, wert) => {
+    currentEditDNId = id;
+    document.getElementById('editDNWert').value = wert;
+    dnModal.style.display = "flex";
 };
 
-// --- 2. KATEGORIEN ---
+window.saveDNChanges = async () => {
+    const newWert = document.getElementById('editDNWert').value.trim();
+    if (!newWert) return;
+    await supa.from('nennweiten').update({ wert: newWert }).eq('id', currentEditDNId);
+    closeDNModal();
+    ladeNennweitenStamm();
+};
+
+window.deleteDNFull = async () => {
+    if (!confirm("Diese Nennweite wirklich löschen?")) return;
+    await supa.from('nennweiten').delete().eq('id', currentEditDNId);
+    closeDNModal();
+    ladeNennweitenStamm();
+};
+
+window.closeDNModal = () => dnModal.style.display = "none";
+
+// --- 2. KATEGORIEN (MIT POPUP) ---
+
 async function ladeKategorien() {
     const { data } = await supa.from('material_kategorien').select('*').order('name');
     katList.innerHTML = "";
@@ -117,7 +141,6 @@ window.openMaterialEdit = async (id) => {
         const { data: mat } = await supa.from('material_katalog').select('*').eq('id', id).single();
         document.getElementById('editMatName').value = mat.name;
         document.getElementById('editMatEinheit').value = mat.einheit; 
-        
         const { data: vDN } = await supa.from('material_katalog_nennweiten').select('nennweite_id').eq('katalog_id', id);
         verbundeneIds = vDN?.map(v => v.nennweite_id) || [];
     } else {
@@ -140,11 +163,9 @@ window.openMaterialEdit = async (id) => {
 window.saveMaterialChanges = async () => {
     const name = document.getElementById('editMatName').value.trim();
     const einheit = document.getElementById('editMatEinheit').value; 
-    
     if (!name) return alert("Bitte Namen eingeben!");
 
     let matId = currentEditMatId;
-
     if (matId) {
         await supa.from('material_katalog').update({ name, einheit }).eq('id', matId);
     } else {
@@ -158,10 +179,7 @@ window.saveMaterialChanges = async () => {
         katalog_id: matId,
         nennweite_id: cb.value
     }));
-    
-    if (selectedDNs.length > 0) {
-        await supa.from('material_katalog_nennweiten').insert(selectedDNs);
-    }
+    if (selectedDNs.length > 0) await supa.from('material_katalog_nennweiten').insert(selectedDNs);
 
     closeModal();
     ladeKatalog();

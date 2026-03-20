@@ -22,8 +22,6 @@
         button { padding: 12px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
         .btn-add { background: #28a745; color: white; width: 100%; margin-bottom: 10px; }
         
-        .btn-delete-small { background: #dc3545; color: white; padding: 5px 10px; font-size: 0.7rem; border-radius: 3px; }
-        
         .list-item { 
             display: flex; justify-content: space-between; align-items: center; 
             padding: 10px; border-bottom: 1px solid #eee; background: white; margin-bottom: 5px; border-radius: 4px;
@@ -127,6 +125,21 @@
             <button onclick="saveKatChanges()" style="background: #28a745; color: white;">Speichern</button>
             <button onclick="deleteKatFull()" style="background: #dc3545; color: white;">Kategorie löschen</button>
             <button onclick="closeKatModal()" style="background: #6c757d; color: white;">Abbrechen</button>
+        </div>
+    </div>
+</div>
+
+<div id="dnEditModal" class="modal">
+    <div class="modal-content">
+        <h3 id="dnEditModalTitle">Nennweite bearbeiten</h3>
+        
+        <label>Bezeichnung (z.B. DN 110):</label>
+        <input type="text" id="editDNWert">
+
+        <div class="modal-actions">
+            <button onclick="saveDNChanges()" style="background: #28a745; color: white;">Speichern</button>
+            <button onclick="deleteDNFull()" style="background: #dc3545; color: white;">Nennweite löschen</button>
+            <button onclick="closeDNModal()" style="background: #6c757d; color: white;">Abbrechen</button>
         </div>
     </div>
 </div>
