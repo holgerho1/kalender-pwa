@@ -16,6 +16,7 @@
         label { display: block; font-size: 0.7rem; font-weight: bold; color: #666; margin-bottom: 5px; text-transform: uppercase; }
         
         select, input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; box-sizing: border-box; background: white; }
+        select:disabled { background: #eee; cursor: not-allowed; }
         
         .qty-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         .qty-row input { margin-bottom: 0; width: 90px; text-align: center; }
@@ -40,6 +41,7 @@
         }
         .mat-info { display: flex; flex-direction: column; }
         .mat-name { font-weight: bold; font-size: 0.95rem; color: #333; }
+        .mat-dn { font-size: 0.8rem; color: #007bff; font-weight: bold; }
         .mat-details { font-size: 0.75rem; color: #888; margin-top: 2px; }
         
         /* Modal Styles */
@@ -73,6 +75,11 @@
         <select id="matSelect" disabled>
             <option value="">-- Erst Kategorie wählen --</option>
         </select>
+
+        <label for="dnSelect">2b. Nennweite wählen</label>
+        <select id="dnSelect" disabled>
+            <option value="">-- Erst Material wählen --</option>
+        </select>
         
         <label>3. Menge eingeben</label>
         <div class="qty-row">
@@ -96,16 +103,20 @@
 <div id="editEntryModal" class="modal">
     <div class="modal-content">
         <h3>Eintrag bearbeiten</h3>
+        
         <label>Menge:</label>
         <input type="number" id="editMenge" step="any">
         
         <label>Kategorie ändern:</label>
         <select id="editKat"></select>
+
+        <label>Nennweite ändern:</label>
+        <select id="editDn"></select>
         
         <div class="modal-btns">
-            <button id="btnSaveEdit" style="background:#28a745; color:white;">Speichern</button>
-            <button id="btnDeleteEntry" style="background:#dc3545; color:white;">Löschen</button>
-            <button onclick="document.getElementById('editEntryModal').style.display='none'" style="background:#6c757d; color:white;">Abbrechen</button>
+            <button id="btnSaveEdit" style="background:#28a745; color:white; padding:12px; border-radius:4px; border:none; font-weight:bold;">Speichern</button>
+            <button id="btnDeleteEntry" style="background:#dc3545; color:white; padding:12px; border-radius:4px; border:none; font-weight:bold;">Löschen</button>
+            <button onclick="document.getElementById('editEntryModal').style.display='none'" style="background:#6c757d; color:white; padding:12px; border-radius:4px; border:none; font-weight:bold;">Abbrechen</button>
         </div>
     </div>
 </div>

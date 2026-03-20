@@ -6,6 +6,7 @@ const projektId = urlParams.get('id');
 
 const katSel = document.getElementById('katSelect');
 const matSel = document.getElementById('matSelect');
+const dnSel = document.getElementById('dnSelect');
 const mengeInp = document.getElementById('mengeInput');
 const einheitDisplay = document.getElementById('einheitDisplay');
 const listEl = document.getElementById('materialList');
@@ -13,155 +14,158 @@ const status = document.getElementById('status');
 const titleEl = document.getElementById('projectTitle');
 const toggleGroup = document.getElementById('toggleGroup');
 
-// Edit-Modal Elemente aus der HTML
+// Edit-Modal Elemente
 const editModal = document.getElementById('editEntryModal');
 const editMengeInp = document.getElementById('editMenge');
 const editKatSel = document.getElementById('editKat');
+const editDnSel = document.getElementById('editDn');
 let currentEditId = null;
 
 async function init() {
     if (!projektId) return status.innerText = "Fehler: Kein Projekt!";
     
-    // Projekttitel laden
     const { data: proj } = await supa.from('projekte').select('projektname').eq('id', projektId).single();
     if (proj) titleEl.innerText = proj.projektname;
 
-    // Kategorien für beide Select-Boxen laden
+    // Kategorien laden
     const { data: kats } = await supa.from('material_kategorien').select('*').order('name');
-    
     katSel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
-    editKatSel.innerHTML = ''; // Modal-Select leeren
-    
+    editKatSel.innerHTML = "";
     kats?.forEach(k => {
-        const optHtml = `<option value="${k.id}">${k.name}</option>`;
-        katSel.innerHTML += optHtml;
-        editKatSel.innerHTML += optHtml;
+        const opt = `<option value="${k.id}">${k.name}</option>`;
+        katSel.innerHTML += opt;
+        editKatSel.innerHTML += opt;
     });
+
+    // Alle Nennweiten für das Edit-Modal vorladen
+    const { data: allDns } = await supa.from('nennweiten').select('*').order('wert');
+    editDnSel.innerHTML = '<option value="">-- Ohne DN --</option>';
+    allDns?.forEach(d => editDnSel.innerHTML += `<option value="${d.id}">${d.wert}</option>`);
 
     status.innerText = "Bereit";
     ladeMaterialListe();
 }
 
-// Ansicht umschalten (Einzel vs. Summe)
-toggleGroup?.addEventListener('change', ladeMaterialListe);
-
-// --- MATERIAL-AUSWAHL LOGIK ---
+// 1. KATEGORIE GEWÄHLT -> MATERIALIEN LADEN
 katSel.addEventListener('change', async () => {
     const katId = katSel.value;
+    dnSel.disabled = true;
+    dnSel.innerHTML = '<option value="">-- Erst Material wählen --</option>';
+    
     if (!katId) {
         matSel.disabled = true;
         matSel.innerHTML = '<option value="">-- Erst Kategorie wählen --</option>';
         return;
     }
 
-    const { data } = await supa
-        .from('material_katalog_kategorien')
-        .select('material_katalog ( id, name, einheit )')
-        .eq('kategorie_id', katId);
-
+    const { data } = await supa.from('material_katalog_kategorien').select('material_katalog ( id, name, einheit )').eq('kategorie_id', katId);
     matSel.innerHTML = '<option value="">-- Material wählen --</option>';
     data?.forEach(item => {
         const m = item.material_katalog;
         if (m) {
             const opt = document.createElement('option');
-            opt.value = m.id;
-            opt.textContent = m.name;
-            opt.dataset.unit = m.einheit;
+            opt.value = m.id; opt.textContent = m.name; opt.dataset.unit = m.einheit;
             matSel.appendChild(opt);
         }
     });
     matSel.disabled = false;
 });
 
-matSel.addEventListener('change', () => {
+// 2. MATERIAL GEWÄHLT -> NENNWEITEN FILTERN
+matSel.addEventListener('change', async () => {
+    const matId = matSel.value;
     const opt = matSel.options[matSel.selectedIndex];
     einheitDisplay.innerText = opt.dataset.unit || "---";
+
+    if (!matId) {
+        dnSel.disabled = true;
+        return;
+    }
+
+    // Lade nur Nennweiten, die im Admin für dieses Material verknüpft wurden
+    const { data } = await supa
+        .from('material_katalog_nennweiten')
+        .select('nennweiten ( id, wert )')
+        .eq('katalog_id', matId);
+
+    dnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
+    if (data && data.length > 0) {
+        data.forEach(item => {
+            const d = item.nennweiten;
+            if (d) dnSel.innerHTML += `<option value="${d.id}">${d.wert}</option>`;
+        });
+        dnSel.disabled = false;
+    } else {
+        dnSel.disabled = true;
+    }
 });
 
 // --- SPEICHERN ---
 async function addToList() {
     const matId = matSel.value;
     const katId = katSel.value;
+    const dnId = dnSel.value || null;
     const menge = parseFloat(mengeInp.value);
     
-    if (!matId || !katId || isNaN(menge)) {
-        alert("Bitte Kategorie, Material und Menge wählen!");
-        return;
-    }
+    if (!matId || !katId || isNaN(menge)) return alert("Bitte alles ausfüllen!");
 
     status.innerText = "Speichere...";
-    const { error } = await supa.from('materialien').insert([{
+    await supa.from('materialien').insert([{
         projekt_id: projektId,
         katalog_id: matId,
         kategorie_id: katId,
+        nennweite_id: dnId,
         menge: menge
     }]);
 
-    if (error) alert("Fehler: " + error.message);
-    else {
-        mengeInp.value = "1";
-        ladeMaterialListe();
-    }
+    mengeInp.value = "1";
+    ladeMaterialListe();
     status.innerText = "Bereit";
 }
 
-// --- BEARBEITEN & LÖSCHEN (MODAL) ---
-window.openEditModal = (id, menge, katId) => {
-    if (toggleGroup?.checked) return; // In der Summenansicht keine Bearbeitung
+// --- BEARBEITEN & LÖSCHEN ---
+window.openEditModal = (id, menge, katId, dnId) => {
+    if (toggleGroup?.checked) return;
     currentEditId = id;
     editMengeInp.value = menge;
     editKatSel.value = katId;
+    editDnSel.value = dnId || "";
     editModal.style.display = "flex";
 };
 
 document.getElementById('btnSaveEdit').onclick = async () => {
-    const neueMenge = parseFloat(editMengeInp.value);
-    const neueKatId = editKatSel.value;
-    
-    if (isNaN(neueMenge)) return alert("Bitte Menge eingeben");
-
     status.innerText = "Aktualisiere...";
     await supa.from('materialien').update({
-        menge: neueMenge,
-        kategorie_id: neueKatId
+        menge: parseFloat(editMengeInp.value),
+        kategorie_id: editKatSel.value,
+        nennweite_id: editDnSel.value || null
     }).eq('id', currentEditId);
-
     editModal.style.display = "none";
     ladeMaterialListe();
     status.innerText = "Bereit";
 };
 
 document.getElementById('btnDeleteEntry').onclick = async () => {
-    if (!confirm("Eintrag wirklich löschen?")) return;
-    status.innerText = "Lösche...";
+    if (!confirm("Löschen?")) return;
     await supa.from('materialien').delete().eq('id', currentEditId);
     editModal.style.display = "none";
     ladeMaterialListe();
-    status.innerText = "Bereit";
 };
 
-// --- ANZEIGE ---
+// --- LISTE RENDERN ---
 async function ladeMaterialListe() {
     const { data, error } = await supa
         .from('materialien')
         .select(`
-            id, 
-            menge, 
-            katalog_id,
-            kategorie_id,
+            id, menge, katalog_id, kategorie_id, nennweite_id,
             material_katalog ( name, einheit ),
-            material_kategorien ( name )
+            material_kategorien ( name ),
+            nennweiten ( wert )
         `)
         .eq('projekt_id', projektId);
 
-    if (error) return console.error(error);
-
+    if (error) return;
     listEl.innerHTML = "";
-    if (!data || data.length === 0) {
-        listEl.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Keine Einträge.</p>';
-        return;
-    }
-
     const sollGruppieren = toggleGroup?.checked;
 
     const gruppen = {};
@@ -182,12 +186,13 @@ async function ladeMaterialListe() {
         if (sollGruppieren) {
             const zusammengefasst = {};
             materialAnzeigeListe.forEach(m => {
-                const matName = m.material_katalog?.name;
-                if (!zusammengefasst[matName]) {
-                    zusammengefasst[matName] = { ...m, summe: m.menge, anzahl: 1 };
+                // Key aus Material + Nennweite bilden (damit DN 110 nicht mit DN 160 addiert wird)
+                const key = `${m.katalog_id}_${m.nennweite_id || 'noDN'}`;
+                if (!zusammengefasst[key]) {
+                    zusammengefasst[key] = { ...m, summe: m.menge, anzahl: 1 };
                 } else {
-                    zusammengefasst[matName].summe += m.menge;
-                    zusammengefasst[matName].anzahl += 1;
+                    zusammengefasst[key].summe += m.menge;
+                    zusammengefasst[key].anzahl += 1;
                 }
             });
             materialAnzeigeListe = Object.values(zusammengefasst);
@@ -196,23 +201,22 @@ async function ladeMaterialListe() {
         materialAnzeigeListe.forEach(m => {
             const itemDiv = document.createElement('div');
             itemDiv.className = "list-item";
-            
-            // Klick-Event nur im Einzelmodus
             if (!sollGruppieren) {
-                itemDiv.onclick = () => openEditModal(m.id, m.menge, m.kategorie_id);
-            } else {
-                itemDiv.style.cursor = "default";
+                itemDiv.onclick = () => openEditModal(m.id, m.menge, m.kategorie_id, m.nennweite_id);
             }
 
-            const mengeText = sollGruppieren ? m.summe : m.menge;
-            const subText = sollGruppieren ? `Summe aus ${m.anzahl} Einträgen` : "Tippen zum Bearbeiten";
+            const dnText = m.nennweiten?.wert ? `<span class="mat-dn">${m.nennweiten.wert}</span>` : '';
+            const mengeVal = sollGruppieren ? m.summe : m.menge;
 
             itemDiv.innerHTML = `
                 <div class="mat-info">
-                    <span class="mat-name">${sollGruppieren ? '∑ ' : ''}${m.material_katalog?.name}</span>
-                    <span class="mat-details">${subText}</span>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <span class="mat-name">${sollGruppieren ? '∑ ' : ''}${m.material_katalog?.name}</span>
+                        ${dnText}
+                    </div>
+                    <span class="mat-details">${sollGruppieren ? `Summe aus ${m.anzahl} Positionen` : 'Tippen zum Bearbeiten'}</span>
                 </div>
-                <div style="font-weight:bold;">${mengeText} ${m.material_katalog?.einheit}</div>
+                <div style="font-weight:bold;">${mengeVal} ${m.material_katalog?.einheit}</div>
             `;
             listEl.appendChild(itemDiv);
         });
@@ -220,5 +224,6 @@ async function ladeMaterialListe() {
 }
 
 document.getElementById('btnAddMaterial').addEventListener('click', addToList);
+toggleGroup?.addEventListener('change', ladeMaterialListe);
 
 init();
