@@ -2,12 +2,10 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// DOM Elemente
 const katList = document.getElementById('katList');
 const matList = document.getElementById('matList');
 const dnList = document.getElementById('dnList');
 
-// Modals
 const matModal = document.getElementById('matEditModal');
 const katModal = document.getElementById('katEditModal');
 const dnModal = document.getElementById('dnEditModal');
@@ -26,17 +24,19 @@ async function init() {
 }
 
 // --- 1. NENNWEITEN ---
-
 async function ladeNennweitenStamm() {
     const { data } = await supa.from('nennweiten').select('*').order('wert');
     dnList.innerHTML = "";
     data?.forEach(dn => {
         const div = document.createElement('div');
         div.className = 'list-item';
-        div.innerHTML = `
-            <span>${dn.wert}</span>
-            <button onclick="openDNEdit('${dn.id}', '${dn.wert}')">Edit</button>
-        `;
+        const span = document.createElement('span');
+        span.textContent = dn.wert;
+        const btn = document.createElement('button');
+        btn.textContent = 'Edit';
+        btn.onclick = () => openDNEdit(dn.id, dn.wert);
+        div.appendChild(span);
+        div.appendChild(btn);
         dnList.appendChild(div);
     });
 }
@@ -52,7 +52,7 @@ window.addDN = async () => {
 window.openDNEdit = (id, wert) => {
     currentEditDNId = id;
     document.getElementById('editDNWert').value = wert;
-    dnModal.style.display = "flex"; // Öffnet das Nennweiten-Modal
+    dnModal.style.display = "flex";
 };
 
 window.saveDNChanges = async () => {
@@ -70,22 +70,22 @@ window.deleteDNFull = async () => {
     ladeNennweitenStamm();
 };
 
-window.closeDNModal = () => {
-    dnModal.style.display = "none";
-};
+window.closeDNModal = () => dnModal.style.display = "none";
 
 // --- 2. KATEGORIEN ---
-
 async function ladeKategorien() {
     const { data } = await supa.from('material_kategorien').select('*').order('name');
     katList.innerHTML = "";
     data?.forEach(k => {
         const div = document.createElement('div');
         div.className = 'list-item';
-        div.innerHTML = `
-            <span>${k.name}</span>
-            <button onclick="openKatEdit('${k.id}', '${k.name}')">Edit</button>
-        `;
+        const span = document.createElement('span');
+        span.textContent = k.name;
+        const btn = document.createElement('button');
+        btn.textContent = 'Edit';
+        btn.onclick = () => openKatEdit(k.id, k.name);
+        div.appendChild(span);
+        div.appendChild(btn);
         katList.appendChild(div);
     });
 }
@@ -101,7 +101,7 @@ window.addKat = async () => {
 window.openKatEdit = (id, name) => {
     currentEditKatId = id;
     document.getElementById('editKatName').value = name;
-    katModal.style.display = "flex"; // Öffnet das Kategorie-Modal
+    katModal.style.display = "flex";
 };
 
 window.saveKatChanges = async () => {
@@ -119,22 +119,20 @@ window.deleteKatFull = async () => {
     ladeKategorien();
 };
 
-window.closeKatModal = () => {
-    katModal.style.display = "none";
-};
+window.closeKatModal = () => katModal.style.display = "none";
 
 // --- 3. MATERIAL-KATALOG ---
-
 async function ladeKatalog() {
     const { data } = await supa.from('material_katalog').select('*').order('name');
     matList.innerHTML = `<button onclick="openMaterialEdit(null)" class="btn-add" style="margin-bottom:15px;">+ Neues Material anlegen</button>`;
     data?.forEach(m => {
         const div = document.createElement('div');
         div.className = 'list-item';
-        div.innerHTML = `
-            <div><strong>${m.name}</strong> <small>(${m.einheit})</small></div>
-            <button onclick="openMaterialEdit('${m.id}')">Edit</button>
-        `;
+        div.innerHTML = `<div><strong>${m.name}</strong> <small>(${m.einheit})</small></div>`;
+        const btn = document.createElement('button');
+        btn.textContent = 'Edit';
+        btn.onclick = () => openMaterialEdit(m.id);
+        div.appendChild(btn);
         matList.appendChild(div);
     });
 }
@@ -143,7 +141,6 @@ window.openMaterialEdit = async (id) => {
     currentEditMatId = id;
     const { data: alleDN } = await supa.from('nennweiten').select('*').order('wert');
     let verbundeneIds = [];
-
     document.getElementById('btnDeleteMat').style.display = id ? "block" : "none";
     editModalTitle.innerText = id ? "Material bearbeiten" : "Neues Material";
 
@@ -151,7 +148,6 @@ window.openMaterialEdit = async (id) => {
         const { data: mat } = await supa.from('material_katalog').select('*').eq('id', id).single();
         document.getElementById('editMatName').value = mat.name;
         document.getElementById('editMatEinheit').value = mat.einheit; 
-        
         const { data: vDN } = await supa.from('material_katalog_nennweiten').select('nennweite_id').eq('katalog_id', id);
         verbundeneIds = vDN?.map(v => v.nennweite_id) || [];
     } else {
@@ -167,17 +163,14 @@ window.openMaterialEdit = async (id) => {
                 <input type="checkbox" class="dn-checkbox" value="${dn.id}" ${isChecked}> ${dn.wert}
             </label>`;
     });
-
-    matModal.style.display = "flex"; // Öffnet das Material-Modal
+    matModal.style.display = "flex";
 };
 
 window.saveMaterialChanges = async () => {
     const name = document.getElementById('editMatName').value.trim();
     const einheit = document.getElementById('editMatEinheit').value; 
     if (!name) return alert("Bitte Namen eingeben!");
-
     let matId = currentEditMatId;
-
     if (matId) {
         await supa.from('material_katalog').update({ name, einheit }).eq('id', matId);
     } else {
@@ -185,17 +178,12 @@ window.saveMaterialChanges = async () => {
         if (error) return alert("Fehler: " + error.message);
         matId = data[0].id;
     }
-
     await supa.from('material_katalog_nennweiten').delete().eq('katalog_id', matId);
     const selectedDNs = Array.from(document.querySelectorAll('.dn-checkbox:checked')).map(cb => ({
         katalog_id: matId,
         nennweite_id: cb.value
     }));
-    
-    if (selectedDNs.length > 0) {
-        await supa.from('material_katalog_nennweiten').insert(selectedDNs);
-    }
-
+    if (selectedDNs.length > 0) await supa.from('material_katalog_nennweiten').insert(selectedDNs);
     closeModal();
     ladeKatalog();
 };
@@ -207,8 +195,6 @@ window.deleteMaterialFull = async () => {
     ladeKatalog();
 };
 
-window.closeModal = () => {
-    matModal.style.display = "none";
-};
+window.closeModal = () => matModal.style.display = "none";
 
 init();
