@@ -3,153 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Material-Katalog Admin</title>
+    <title>Katalog-Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; margin: 15px; background-color: #f4f7f6; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { font-size: 1.2rem; text-align: center; color: #333; margin-bottom: 20px; }
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 600px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         
-        .section { background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
-        label { display: block; font-size: 0.75rem; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; color: #555; }
+        h1 { font-size: 1.2rem; text-align: center; margin-bottom: 20px; }
+        .nav-back { margin-bottom: 20px; }
+        .btn-back { background: #6c757d; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 0.8rem; }
         
-        input, select { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; background: white; }
+        .admin-section { border: 1px solid #ddd; padding: 15px; border-radius: 6px; margin-bottom: 25px; background: #fafafa; }
+        h2 { font-size: 1rem; margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px; }
         
-        .unit-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
-        .unit-row select { margin-bottom: 0; flex: 2; }
-        .unit-row input { margin-bottom: 0; flex: 1; display: none; }
-
-        #katCheckboxContainer { 
-            background: #fafafa; 
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
-            padding: 10px; 
-            max-height: 200px; 
-            overflow-y: auto; 
-            margin-bottom: 15px; 
+        label { display: block; font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; color: #666; text-transform: uppercase; }
+        input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        
+        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-add { background: #28a745; color: white; width: 100%; margin-bottom: 15px; }
+        .btn-delete-small { background: #dc3545; color: white; padding: 4px 8px; font-size: 0.7rem; }
+        
+        .list-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 8px; border-bottom: 1px solid #eee; background: white; margin-bottom: 4px; border-radius: 3px;
         }
-        
-        .check-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
-        
-        button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        .btn-save-mat { background: #28a745; margin-top: 5px; }
-        .btn-back { background: #6c757d; margin-bottom: 15px; width: auto; font-size: 0.85rem; padding: 8px 15px; }
-        
-        #status { font-size: 0.8rem; text-align: center; color: #007bff; margin-bottom: 15px; font-weight: bold; min-height: 1.2em; }
-        
-        .katalog-view { margin-top: 30px; border-top: 2px solid #eee; padding-top: 15px; }
-        .katalog-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: white; }
-        .katalog-item b { font-size: 0.95rem; color: #333; }
-        .katalog-item span { font-size: 0.75rem; color: #777; display: block; }
-        
+
         /* Modal Styles */
-        .modal {
-            display: none; 
-            position: fixed; 
-            top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.6); 
-            z-index: 1000; 
-            justify-content: center; 
-            align-items: center;
+        .modal { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; 
         }
-        .modal-content {
-            background: white; 
-            padding: 20px; 
-            border-radius: 12px; 
-            width: 85%; 
-            max-width: 350px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            max-height: 90vh;
-            overflow-y: auto;
+        .modal-content { 
+            background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; 
+            max-height: 90vh; overflow-y: auto;
         }
-        .modal-content h3 { margin-top: 0; font-size: 1.1rem; color: #333; }
-        .modal-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-
-        .edit-kat-scroll {
-            background: #f9f9f9;
-            border: 1px solid #ddd;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            max-height: 150px;
-            overflow-y: auto;
+        .dn-container { 
+            max-height: 150px; overflow-y: auto; border: 1px solid #eee; 
+            padding: 10px; background: #fff; margin-bottom: 15px; border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <button onclick="window.location.href='index.html'" class="btn-back">⬅ Zurück zum Projekt</button>
-    <h1>Stammdaten-Pflege</h1>
-    
-    <div id="status">Bereit</div>
-
-    <div class="section">
-        <label>Kategorien verwalten</label>
-        <div id="katCheckboxContainer">
-            <span style="color:#999; font-size:0.8rem;">Lade Kategorien...</span>
-        </div>
-        <input type="text" id="newKatName" placeholder="Neue Kategorie">
-        <button id="btnSaveKat">Kategorie hinzufügen</button>
+    <div class="nav-back">
+        <a href="index.html" class="btn-back">⬅ Zurück zu Projekten</a>
     </div>
 
-    <div class="section">
-        <label>Neues Material im Katalog</label>
-        <input type="text" id="newMatName" placeholder="Name">
-        
-        <label>Einheit</label>
-        <div class="unit-row">
-            <select id="unitSelect">
-                <option value="Stk">Stück (Stk)</option>
-                <option value="m">Meter (m)</option>
-                <option value="Sack">Sack</option>
-                <option value="Eimer">Eimer</option>
-                <option value="Rolle">Rolle</option>
-                <option value="Set">Set</option>
-                <option value="Andere">-- Eigene --</option>
-            </select>
-            <input type="text" id="newMatUnit" placeholder="Einheit">
+    <h1>Katalog-Verwaltung</h1>
+
+    <div class="admin-section">
+        <h2>1. Nennweiten (Stammdaten)</h2>
+        <label>Neue Nennweite hinzufügen</label>
+        <div style="display: flex; gap: 5px;">
+            <input type="text" id="newDNWert" placeholder="z.B. DN 110">
+            <button onclick="addDN()" class="btn-add" style="width: auto;">+</button>
         </div>
-        <button id="btnSaveMat" class="btn-save-mat">Material speichern</button>
+        <div id="dnList"></div>
     </div>
 
-    <div class="katalog-view">
-        <label>Material-Katalog</label>
-        <div id="katalogListe"></div>
+    <div class="admin-section">
+        <h2>2. Material-Kategorien</h2>
+        <input type="text" id="newKatName" placeholder="Kategoriename">
+        <button onclick="addKat()" class="btn-add">Kategorie erstellen</button>
+        <div id="katList"></div>
     </div>
-</div>
 
-<div id="katModal" class="modal">
-    <div class="modal-content">
-        <h3>Kategorie bearbeiten</h3>
-        <label>Name ändern:</label>
-        <input type="text" id="editKatName">
-        <div class="modal-btns">
-            <button id="btnUpdateKat" style="background:#28a745;">Speichern</button>
-            <button id="btnDeleteKat" style="background:#dc3545;">Löschen</button>
-            <button onclick="closeKatModal()" style="background:#6c757d;">Abbrechen</button>
-        </div>
+    <div class="admin-section">
+        <h2>3. Material-Katalog</h2>
+        <div id="matList"></div>
     </div>
 </div>
 
 <div id="matEditModal" class="modal">
     <div class="modal-content">
         <h3>Material bearbeiten</h3>
+        
         <label>Name:</label>
         <input type="text" id="editMatName">
         
         <label>Einheit:</label>
-        <div id="editMatUnit"></div> 
+        <input type="text" id="editMatEinheit">
 
-        <label>Kategorien zuordnen:</label>
-        <div id="editMatKatContainer" class="edit-kat-scroll">
+        <label>Verfügbare Nennweiten (DN):</label>
+        <div id="editMatDnContainer" class="dn-container">
             </div>
-        
-        <div class="modal-btns">
-            <button id="btnUpdateMat" style="background:#28a745;">Änderungen speichern</button>
-            <button id="btnDeleteMat" style="background:#dc3545;">Aus Katalog löschen</button>
-            <button onclick="closeMatModal()" style="background:#6c757d;">Abbrechen</button>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button onclick="saveMaterialChanges()" style="background: #007bff; color: white;">Änderungen speichern</button>
+            <button onclick="closeModal()" style="background: #6c757d; color: white;">Abbrechen</button>
         </div>
     </div>
 </div>
