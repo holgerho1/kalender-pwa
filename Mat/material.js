@@ -13,23 +13,39 @@ const status = document.getElementById('status');
 const titleEl = document.getElementById('projectTitle');
 const toggleGroup = document.getElementById('toggleGroup');
 
+// Edit-Modal Elemente aus der HTML
+const editModal = document.getElementById('editEntryModal');
+const editMengeInp = document.getElementById('editMenge');
+const editKatSel = document.getElementById('editKat');
+let currentEditId = null;
+
 async function init() {
     if (!projektId) return status.innerText = "Fehler: Kein Projekt!";
     
+    // Projekttitel laden
     const { data: proj } = await supa.from('projekte').select('projektname').eq('id', projektId).single();
     if (proj) titleEl.innerText = proj.projektname;
 
+    // Kategorien für beide Select-Boxen laden
     const { data: kats } = await supa.from('material_kategorien').select('*').order('name');
+    
     katSel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
-    kats?.forEach(k => katSel.innerHTML += `<option value="${k.id}">${k.name}</option>`);
+    editKatSel.innerHTML = ''; // Modal-Select leeren
+    
+    kats?.forEach(k => {
+        const optHtml = `<option value="${k.id}">${k.name}</option>`;
+        katSel.innerHTML += optHtml;
+        editKatSel.innerHTML += optHtml;
+    });
 
     status.innerText = "Bereit";
     ladeMaterialListe();
 }
 
-// Event-Listener für den Ansichts-Umschalter
+// Ansicht umschalten (Einzel vs. Summe)
 toggleGroup?.addEventListener('change', ladeMaterialListe);
 
+// --- MATERIAL-AUSWAHL LOGIK ---
 katSel.addEventListener('change', async () => {
     const katId = katSel.value;
     if (!katId) {
@@ -62,6 +78,7 @@ matSel.addEventListener('change', () => {
     einheitDisplay.innerText = opt.dataset.unit || "---";
 });
 
+// --- SPEICHERN ---
 async function addToList() {
     const matId = matSel.value;
     const katId = katSel.value;
@@ -88,6 +105,42 @@ async function addToList() {
     status.innerText = "Bereit";
 }
 
+// --- BEARBEITEN & LÖSCHEN (MODAL) ---
+window.openEditModal = (id, menge, katId) => {
+    if (toggleGroup?.checked) return; // In der Summenansicht keine Bearbeitung
+    currentEditId = id;
+    editMengeInp.value = menge;
+    editKatSel.value = katId;
+    editModal.style.display = "flex";
+};
+
+document.getElementById('btnSaveEdit').onclick = async () => {
+    const neueMenge = parseFloat(editMengeInp.value);
+    const neueKatId = editKatSel.value;
+    
+    if (isNaN(neueMenge)) return alert("Bitte Menge eingeben");
+
+    status.innerText = "Aktualisiere...";
+    await supa.from('materialien').update({
+        menge: neueMenge,
+        kategorie_id: neueKatId
+    }).eq('id', currentEditId);
+
+    editModal.style.display = "none";
+    ladeMaterialListe();
+    status.innerText = "Bereit";
+};
+
+document.getElementById('btnDeleteEntry').onclick = async () => {
+    if (!confirm("Eintrag wirklich löschen?")) return;
+    status.innerText = "Lösche...";
+    await supa.from('materialien').delete().eq('id', currentEditId);
+    editModal.style.display = "none";
+    ladeMaterialListe();
+    status.innerText = "Bereit";
+};
+
+// --- ANZEIGE ---
 async function ladeMaterialListe() {
     const { data, error } = await supa
         .from('materialien')
@@ -95,6 +148,7 @@ async function ladeMaterialListe() {
             id, 
             menge, 
             katalog_id,
+            kategorie_id,
             material_katalog ( name, einheit ),
             material_kategorien ( name )
         `)
@@ -110,7 +164,6 @@ async function ladeMaterialListe() {
 
     const sollGruppieren = toggleGroup?.checked;
 
-    // 1. Daten nach Kategorien sortieren
     const gruppen = {};
     data.forEach(m => {
         const katName = m.material_kategorien?.name || "Sonstiges";
@@ -118,10 +171,7 @@ async function ladeMaterialListe() {
         gruppen[katName].push(m);
     });
 
-    const sortierteKats = Object.keys(gruppen).sort();
-
-    // 2. Anzeige rendern
-    sortierteKats.forEach(katName => {
+    Object.keys(gruppen).sort().forEach(katName => {
         const header = document.createElement('div');
         header.style = "background:#eee; padding:8px 10px; font-size:0.75rem; font-weight:bold; color:#555; margin-top:20px; border-radius:4px; border-left: 5px solid #007bff;";
         header.innerText = katName;
@@ -130,7 +180,6 @@ async function ladeMaterialListe() {
         let materialAnzeigeListe = gruppen[katName];
 
         if (sollGruppieren) {
-            // Logik für das Zusammenrechnen innerhalb der Kategorie
             const zusammengefasst = {};
             materialAnzeigeListe.forEach(m => {
                 const matName = m.material_katalog?.name;
@@ -146,29 +195,29 @@ async function ladeMaterialListe() {
 
         materialAnzeigeListe.forEach(m => {
             const itemDiv = document.createElement('div');
-            itemDiv.style = "padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background:white;";
+            itemDiv.className = "list-item";
             
+            // Klick-Event nur im Einzelmodus
+            if (!sollGruppieren) {
+                itemDiv.onclick = () => openEditModal(m.id, m.menge, m.kategorie_id);
+            } else {
+                itemDiv.style.cursor = "default";
+            }
+
             const mengeText = sollGruppieren ? m.summe : m.menge;
-            const subText = sollGruppieren ? `Summe aus ${m.anzahl} Einträgen` : "";
+            const subText = sollGruppieren ? `Summe aus ${m.anzahl} Einträgen` : "Tippen zum Bearbeiten";
 
             itemDiv.innerHTML = `
-                <div>
-                    <div style="font-weight:bold;">${sollGruppieren ? '∑ ' : ''}${m.material_katalog?.name}</div>
-                    <div style="font-size:0.85rem; color:#666;">${mengeText} ${m.material_katalog?.einheit}</div>
-                    ${subText ? `<div style="font-size:0.65rem; color:#007bff; font-style:italic;">${subText}</div>` : ''}
+                <div class="mat-info">
+                    <span class="mat-name">${sollGruppieren ? '∑ ' : ''}${m.material_katalog?.name}</span>
+                    <span class="mat-details">${subText}</span>
                 </div>
-                ${!sollGruppieren ? `<button onclick="deleteEntry('${m.id}')" style="width:auto; padding:6px 10px; background:#fff; border:1px solid #ffcccc; color:#dc3545; font-size:0.7rem; border-radius:4px; cursor:pointer;">löschen</button>` : ''}
+                <div style="font-weight:bold;">${mengeText} ${m.material_katalog?.einheit}</div>
             `;
             listEl.appendChild(itemDiv);
         });
     });
 }
-
-window.deleteEntry = async (id) => {
-    if (!confirm("Löschen?")) return;
-    await supa.from('materialien').delete().eq('id', id);
-    ladeMaterialListe();
-};
 
 document.getElementById('btnAddMaterial').addEventListener('click', addToList);
 
