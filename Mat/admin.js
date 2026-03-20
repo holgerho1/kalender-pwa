@@ -143,7 +143,6 @@ async function ladeKatalog() {
 window.openMaterialEdit = async (id) => {
     currentEditMatId = id;
     
-    // Alle Stammdaten laden
     const { data: alleKat } = await supa.from('material_kategorien').select('*').order('name');
     const { data: alleDN } = await supa.from('nennweiten').select('*').order('wert');
     
@@ -158,19 +157,17 @@ window.openMaterialEdit = async (id) => {
         document.getElementById('editMatName').value = mat.name;
         document.getElementById('editMatEinheit').value = mat.einheit; 
         
-        // Bereits zugeordnete Nennweiten holen
         const { data: vDN } = await supa.from('material_katalog_nennweiten').select('nennweite_id').eq('katalog_id', id);
         verbundeneDNIds = vDN?.map(v => v.nennweite_id) || [];
 
-        // Bereits zugeordnete Kategorien holen
-        const { data: vKat } = await supa.from('material_katalog_kategorien').select('kategorie_id').eq('katalog_id', id);
+        // Geändert auf 'material_id' laut deiner DB-Struktur
+        const { data: vKat } = await supa.from('material_katalog_kategorien').select('kategorie_id').eq('material_id', id);
         verbundeneKatIds = vKat?.map(v => v.kategorie_id) || [];
     } else {
         document.getElementById('editMatName').value = "";
         document.getElementById('editMatEinheit').value = "Stk";
     }
 
-    // Kategorien-Checkboxen rendern
     editMatKatContainer.innerHTML = "";
     alleKat?.forEach(k => {
         const isChecked = verbundeneKatIds.includes(k.id) ? 'checked' : '';
@@ -180,7 +177,6 @@ window.openMaterialEdit = async (id) => {
             </label>`;
     });
 
-    // Nennweiten-Checkboxen rendern
     editMatDnContainer.innerHTML = "";
     alleDN?.forEach(dn => {
         const isChecked = verbundeneDNIds.includes(dn.id) ? 'checked' : '';
@@ -209,7 +205,6 @@ window.saveMaterialChanges = async () => {
         matId = data[0].id;
     }
 
-    // Nennweiten Sync
     await supa.from('material_katalog_nennweiten').delete().eq('katalog_id', matId);
     const selectedDNs = Array.from(document.querySelectorAll('.dn-checkbox:checked')).map(cb => ({
         katalog_id: matId,
@@ -217,10 +212,10 @@ window.saveMaterialChanges = async () => {
     }));
     if (selectedDNs.length > 0) await supa.from('material_katalog_nennweiten').insert(selectedDNs);
 
-    // Kategorien Sync
-    await supa.from('material_katalog_kategorien').delete().eq('katalog_id', matId);
+    // Geändert auf 'material_id' beim Speichern
+    await supa.from('material_katalog_kategorien').delete().eq('material_id', matId);
     const selectedKats = Array.from(document.querySelectorAll('.kat-checkbox:checked')).map(cb => ({
-        katalog_id: matId,
+        material_id: matId,
         kategorie_id: cb.value
     }));
     if (selectedKats.length > 0) await supa.from('material_katalog_kategorien').insert(selectedKats);
