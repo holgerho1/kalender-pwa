@@ -16,6 +16,7 @@ const toggleGroup = document.getElementById('toggleGroup');
 
 // Edit-Modal Elemente
 const editModal = document.getElementById('editEntryModal');
+const editModalTitle = document.getElementById('editModalTitle');
 const editMengeInp = document.getElementById('editMenge');
 const editKatSel = document.getElementById('editKat');
 const editDnSel = document.getElementById('editDn');
@@ -24,10 +25,11 @@ let currentEditId = null;
 async function init() {
     if (!projektId) return status.innerText = "Fehler: Kein Projekt!";
     
+    // Projekttitel laden
     const { data: proj } = await supa.from('projekte').select('projektname').eq('id', projektId).single();
     if (proj) titleEl.innerText = proj.projektname;
 
-    // Kategorien für die Select-Boxen laden
+    // Kategorien laden
     const { data: kats } = await supa.from('material_kategorien').select('*').order('name');
     katSel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
     editKatSel.innerHTML = "";
@@ -121,13 +123,18 @@ async function addToList() {
 
 // --- BEARBEITUNGS-LOGIK (MODAL) ---
 
-window.openEditModal = async (id, menge, katId, dnId, katalogId) => {
+window.openEditModal = async (id, menge, katId, dnId, katalogId, matName, dnWert) => {
     if (toggleGroup?.checked) return;
     
     currentEditId = id;
+    
+    // Titel setzen: Name + Nennweite (falls vorhanden)
+    const displayDN = dnWert ? ` (${dnWert})` : "";
+    if (editModalTitle) editModalTitle.innerText = `${matName}${displayDN}`; 
+    
     status.innerText = "Lade Nennweiten...";
 
-    // Nur erlaubte Nennweiten für dieses Material laden
+    // Nur erlaubte Nennweiten für dieses Material (katalogId) laden
     const { data: erlaubteDns } = await supa
         .from('material_katalog_nennweiten')
         .select('nennweiten ( id, wert )')
@@ -224,9 +231,17 @@ async function ladeMaterialListe() {
             const itemDiv = document.createElement('div');
             itemDiv.className = "list-item";
             
-            // Klick-Logik: katalog_id wird für die NW-Filterung im Modal mitgegeben
             if (!sollGruppieren) {
-                itemDiv.onclick = () => openEditModal(m.id, m.menge, m.kategorie_id, m.nennweite_id, m.katalog_id);
+                // Übergibt alle notwendigen Daten an das Modal
+                itemDiv.onclick = () => openEditModal(
+                    m.id, 
+                    m.menge, 
+                    m.kategorie_id, 
+                    m.nennweite_id, 
+                    m.katalog_id, 
+                    m.material_katalog?.name,
+                    m.nennweiten?.wert
+                );
             } else {
                 itemDiv.style.cursor = "default";
             }
