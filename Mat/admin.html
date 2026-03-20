@@ -38,8 +38,8 @@
         }
         .modal-content h3 { margin-top: 0; margin-bottom: 20px; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         
-        .dn-container { 
-            max-height: 180px; overflow-y: auto; border: 1px solid #ddd; 
+        .check-container { 
+            max-height: 150px; overflow-y: auto; border: 1px solid #ddd; 
             padding: 10px; background: #fff; margin-bottom: 20px; border-radius: 4px;
         }
 
@@ -88,10 +88,6 @@
         <label>Name:</label>
         <input type="text" id="editMatName">
 
-        <label>Kategorie:</label>
-        <select id="editMatKategorie">
-            </select>
-        
         <label>Einheit:</label>
         <select id="editMatEinheit">
             <option value="Stk">Stk (Stück)</option>
@@ -107,8 +103,11 @@
             <option value="VPE">VPE (Verpackungseinheit)</option>
         </select>
 
+        <label>Kategorien (Zuordnung):</label>
+        <div id="editMatKatContainer" class="check-container"></div>
+
         <label>Erlaubte Nennweiten (DN):</label>
-        <div id="editMatDnContainer" class="dn-container"></div>
+        <div id="editMatDnContainer" class="check-container"></div>
 
         <div class="modal-actions">
             <button onclick="saveMaterialChanges()" style="background: #28a745; color: white;">Speichern</button>
