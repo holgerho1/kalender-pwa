@@ -49,7 +49,7 @@ window.deleteDN = async (id) => {
     }
 };
 
-// --- 2. KATEGORIEN (MIT POPUP) ---
+// --- 2. KATEGORIEN ---
 async function ladeKategorien() {
     const { data } = await supa.from('material_kategorien').select('*').order('name');
     katList.innerHTML = "";
@@ -92,11 +92,11 @@ window.deleteKatFull = async () => {
 
 window.closeKatModal = () => katModal.style.display = "none";
 
-// --- 3. MATERIAL-KATALOG (POPUP NEU & EDIT) ---
+// --- 3. MATERIAL-KATALOG (NEU & EDIT) ---
 
 async function ladeKatalog() {
     const { data } = await supa.from('material_katalog').select('*').order('name');
-    matList.innerHTML = `<button onclick="openMaterialEdit(null)" class="btn-add">+ Neues Material anlegen</button>`;
+    matList.innerHTML = `<button onclick="openMaterialEdit(null)" class="btn-add" style="margin-bottom:15px;">+ Neues Material anlegen</button>`;
     data?.forEach(m => {
         const div = document.createElement('div');
         div.className = 'list-item';
@@ -110,21 +110,24 @@ window.openMaterialEdit = async (id) => {
     const { data: alleDN } = await supa.from('nennweiten').select('*').order('wert');
     let verbundeneIds = [];
 
-    // UI Reset
     document.getElementById('btnDeleteMat').style.display = id ? "block" : "none";
     editModalTitle.innerText = id ? "Material bearbeiten" : "Neues Material";
 
     if (id) {
+        // Bestehendes Material laden
         const { data: mat } = await supa.from('material_katalog').select('*').eq('id', id).single();
         document.getElementById('editMatName').value = mat.name;
-        document.getElementById('editMatEinheit').value = mat.einheit;
+        document.getElementById('editMatEinheit').value = mat.einheit; // Hier wird die Einheit geladen
+        
         const { data: vDN } = await supa.from('material_katalog_nennweiten').select('nennweite_id').eq('katalog_id', id);
         verbundeneIds = vDN?.map(v => v.nennweite_id) || [];
     } else {
+        // Felder leeren für Neuanlage
         document.getElementById('editMatName').value = "";
-        document.getElementById('editMatEinheit').value = "Stk";
+        document.getElementById('editMatEinheit').value = "Stk"; // Standardwert
     }
 
+    // Nennweiten Checkboxen rendern
     editMatDnContainer.innerHTML = "";
     alleDN?.forEach(dn => {
         const isChecked = verbundeneIds.includes(dn.id) ? 'checked' : '';
@@ -139,28 +142,32 @@ window.openMaterialEdit = async (id) => {
 
 window.saveMaterialChanges = async () => {
     const name = document.getElementById('editMatName').value.trim();
-    const einheit = document.getElementById('editMatEinheit').value.trim();
+    const einheit = document.getElementById('editMatEinheit').value.trim(); // Hier wird die Einheit ausgelesen
+    
     if (!name || !einheit) return alert("Bitte Name und Einheit ausfüllen!");
 
     let matId = currentEditMatId;
 
     if (matId) {
-        // Update Bestand
+        // Vorhandenes Material aktualisieren
         await supa.from('material_katalog').update({ name, einheit }).eq('id', matId);
     } else {
-        // Neu-Eintrag
+        // Neues Material in den Katalog schreiben
         const { data, error } = await supa.from('material_katalog').insert([{ name, einheit }]).select();
-        if (error) return alert("Fehler beim Erstellen: " + error.message);
+        if (error) return alert("Fehler beim Speichern: " + error.message);
         matId = data[0].id;
     }
 
-    // Nennweiten synchronisieren
+    // Nennweiten-Verknüpfungen aktualisieren
     await supa.from('material_katalog_nennweiten').delete().eq('katalog_id', matId);
     const selectedDNs = Array.from(document.querySelectorAll('.dn-checkbox:checked')).map(cb => ({
         katalog_id: matId,
         nennweite_id: cb.value
     }));
-    if (selectedDNs.length > 0) await supa.from('material_katalog_nennweiten').insert(selectedDNs);
+    
+    if (selectedDNs.length > 0) {
+        await supa.from('material_katalog_nennweiten').insert(selectedDNs);
+    }
 
     closeModal();
     ladeKatalog();
@@ -173,7 +180,8 @@ window.deleteMaterialFull = async () => {
     ladeKatalog();
 };
 
-window.closeModal = () => matModal.style.display = "none";
+window.closeModal = () => {
+    matModal.style.display = "none";
+};
 
-// Initialisierung
 init();
