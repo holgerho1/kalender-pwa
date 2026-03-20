@@ -9,23 +9,26 @@
         body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 600px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         
-        h1 { font-size: 1.2rem; text-align: center; margin-bottom: 20px; }
+        h1 { font-size: 1.2rem; text-align: center; margin-bottom: 20px; color: #333; }
         .nav-back { margin-bottom: 20px; }
-        .btn-back { background: #6c757d; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 0.8rem; }
+        .btn-back { background: #6c757d; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 0.8rem; display: inline-block; }
         
         .admin-section { border: 1px solid #ddd; padding: 15px; border-radius: 6px; margin-bottom: 25px; background: #fafafa; }
-        h2 { font-size: 1rem; margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        h2 { font-size: 1rem; margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
         
         label { display: block; font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; color: #666; text-transform: uppercase; }
-        input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
         
-        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-add { background: #28a745; color: white; width: 100%; margin-bottom: 15px; }
-        .btn-delete-small { background: #dc3545; color: white; padding: 4px 8px; font-size: 0.7rem; }
+        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
+        .btn-add { background: #28a745; color: white; width: 100%; margin-bottom: 10px; transition: background 0.2s; }
+        .btn-add:hover { background: #218838; }
+        
+        .btn-delete-small { background: #dc3545; color: white; padding: 5px 10px; font-size: 0.7rem; border-radius: 3px; }
         
         .list-item { 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 8px; border-bottom: 1px solid #eee; background: white; margin-bottom: 4px; border-radius: 3px;
+            padding: 10px; border-bottom: 1px solid #eee; background: white; margin-bottom: 5px; border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         /* Modal Styles */
@@ -34,20 +37,24 @@
             background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; 
         }
         .modal-content { 
-            background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; 
-            max-height: 90vh; overflow-y: auto;
+            background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; 
+            max-height: 90vh; overflow-y: auto; box-shadow: 0 15px 30px rgba(0,0,0,0.3);
         }
+        .modal-content h3 { margin-top: 0; margin-bottom: 20px; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        
         .dn-container { 
-            max-height: 150px; overflow-y: auto; border: 1px solid #eee; 
-            padding: 10px; background: #fff; margin-bottom: 15px; border-radius: 4px;
+            max-height: 180px; overflow-y: auto; border: 1px solid #ddd; 
+            padding: 10px; background: #fff; margin-bottom: 20px; border-radius: 4px;
         }
+
+        .modal-actions { display: flex; flex-direction: column; gap: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="nav-back">
-        <a href="index.html" class="btn-back">⬅ Zurück zu Projekten</a>
+        <a href="index.html" class="btn-back">⬅ Zurück zum Projekt</a>
     </div>
 
     <h1>Katalog-Verwaltung</h1>
@@ -55,42 +62,47 @@
     <div class="admin-section">
         <h2>1. Nennweiten (Stammdaten)</h2>
         <label>Neue Nennweite hinzufügen</label>
-        <div style="display: flex; gap: 5px;">
-            <input type="text" id="newDNWert" placeholder="z.B. DN 110">
-            <button onclick="addDN()" class="btn-add" style="width: auto;">+</button>
+        <div style="display: flex; gap: 8px;">
+            <input type="text" id="newDNWert" placeholder="z.B. DN 110" style="margin-bottom:0;">
+            <button onclick="addDN()" class="btn-add" style="width: auto; margin-bottom:0; padding: 0 20px;">+</button>
         </div>
-        <div id="dnList"></div>
+        <div id="dnList" style="margin-top: 15px;"></div>
     </div>
 
     <div class="admin-section">
         <h2>2. Material-Kategorien</h2>
-        <input type="text" id="newKatName" placeholder="Kategoriename">
-        <button onclick="addKat()" class="btn-add">Kategorie erstellen</button>
-        <div id="katList"></div>
+        <label>Neue Kategorie</label>
+        <div style="display: flex; gap: 8px;">
+            <input type="text" id="newKatName" placeholder="Kategoriename" style="margin-bottom:0;">
+            <button onclick="addKat()" class="btn-add" style="width: auto; margin-bottom:0; padding: 0 20px;">+</button>
+        </div>
+        <div id="katList" style="margin-top: 15px;"></div>
     </div>
 
     <div class="admin-section">
         <h2>3. Material-Katalog</h2>
-        <div id="matList"></div>
+        <div id="matList">
+            </div>
     </div>
 </div>
 
 <div id="matEditModal" class="modal">
     <div class="modal-content">
-        <h3>Material bearbeiten</h3>
+        <h3 id="editModalTitle">Material bearbeiten</h3>
         
         <label>Name:</label>
-        <input type="text" id="editMatName">
+        <input type="text" id="editMatName" placeholder="Name des Materials">
         
         <label>Einheit:</label>
-        <input type="text" id="editMatEinheit">
+        <input type="text" id="editMatEinheit" placeholder="z.B. Stk, m, m²">
 
         <label>Verfügbare Nennweiten (DN):</label>
         <div id="editMatDnContainer" class="dn-container">
             </div>
 
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <button onclick="saveMaterialChanges()" style="background: #007bff; color: white;">Änderungen speichern</button>
+        <div class="modal-actions">
+            <button onclick="saveMaterialChanges()" style="background: #28a745; color: white;">Speichern</button>
+            <button id="btnDeleteMat" onclick="deleteMaterialFull()" style="background: #dc3545; color: white; display:none;">Material komplett löschen</button>
             <button onclick="closeModal()" style="background: #6c757d; color: white;">Abbrechen</button>
         </div>
     </div>
