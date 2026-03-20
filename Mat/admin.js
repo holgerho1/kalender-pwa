@@ -4,21 +4,21 @@ const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const katList = document.getElementById('katList');
 const matList = document.getElementById('matList');
-const dnList = document.getElementById('dnList'); // Neues Element für DN-Stammdaten
+const dnList = document.getElementById('dnList');
 
 // Modals
 const matModal = document.getElementById('matEditModal');
-const editMatDnContainer = document.getElementById('editMatDnContainer'); // Checkbox-Container
+const editMatDnContainer = document.getElementById('editMatDnContainer');
 
 let currentEditMatId = null;
 
 async function init() {
     ladeKategorien();
     ladeKatalog();
-    ladeNennweitenStamm(); // Stammdaten beim Start laden
+    ladeNennweitenStamm();
 }
 
-// --- 1. NENNWEITEN STAMMDATEN (DN 50, DN 110 etc.) ---
+// --- 1. NENNWEITEN STAMMDATEN ---
 
 async function ladeNennweitenStamm() {
     const { data, error } = await supa.from('nennweiten').select('*').order('wert');
@@ -53,7 +53,43 @@ window.deleteDN = async (id) => {
     ladeNennweitenStamm();
 };
 
-// --- 2. MATERIAL-KATALOG & VERKNÜPFUNG ---
+// --- 2. KATEGORIEN ---
+
+async function ladeKategorien() {
+    const { data, error } = await supa.from('material_kategorien').select('*').order('name');
+    if (error) return console.error(error);
+
+    katList.innerHTML = "";
+    data?.forEach(k => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+            <span>${k.name}</span>
+            <button onclick="deleteKat('${k.id}')" class="btn-delete-small">Löschen</button>
+        `;
+        katList.appendChild(div);
+    });
+}
+
+window.addKat = async () => {
+    const name = document.getElementById('newKatName').value.trim();
+    if (!name) return;
+    const { error } = await supa.from('material_kategorien').insert([{ name }]);
+    if (error) alert("Fehler: " + error.message);
+    else {
+        document.getElementById('newKatName').value = "";
+        ladeKategorien();
+    }
+};
+
+window.deleteKat = async (id) => {
+    if (!confirm("Kategorie wirklich löschen?")) return;
+    const { error } = await supa.from('material_kategorien').delete().eq('id', id);
+    if (error) alert("Fehler: " + error.message);
+    else ladeKategorien();
+};
+
+// --- 3. MATERIAL-KATALOG & VERKNÜPFUNG ---
 
 async function ladeKatalog() {
     const { data, error } = await supa.from('material_katalog').select('*').order('name');
@@ -75,24 +111,17 @@ async function ladeKatalog() {
 window.openMaterialEdit = async (id) => {
     currentEditMatId = id;
     
-    // 1. Material-Basisdaten laden
     const { data: mat } = await supa.from('material_katalog').select('*').eq('id', id).single();
-    
-    // 2. Alle verfügbaren Nennweiten aus dem Stamm laden
     const { data: alleDN } = await supa.from('nennweiten').select('*').order('wert');
-    
-    // 3. Bestehende Verknüpfungen für dieses Material laden
     const { data: verbundeneDN } = await supa.from('material_katalog_nennweiten')
         .select('nennweite_id')
         .eq('katalog_id', id);
     
     const verbundeneIds = verbundeneDN?.map(v => v.nennweite_id) || [];
 
-    // Modal befüllen
     document.getElementById('editMatName').value = mat.name;
     document.getElementById('editMatEinheit').value = mat.einheit;
     
-    // Checkbox-Liste erstellen
     editMatDnContainer.innerHTML = "";
     alleDN?.forEach(dn => {
         const isChecked = verbundeneIds.includes(dn.id) ? 'checked' : '';
@@ -111,10 +140,7 @@ window.saveMaterialChanges = async () => {
     const name = document.getElementById('editMatName').value;
     const einheit = document.getElementById('editMatEinheit').value;
 
-    // 1. Basisdaten im Katalog updaten
     await supa.from('material_katalog').update({ name, einheit }).eq('id', currentEditMatId);
-
-    // 2. Nennweiten-Verknüpfungen aktualisieren (Löschen & Neu setzen)
     await supa.from('material_katalog_nennweiten').delete().eq('katalog_id', currentEditMatId);
 
     const selectedDNs = Array.from(document.querySelectorAll('.dn-checkbox:checked')).map(cb => ({
@@ -126,21 +152,10 @@ window.saveMaterialChanges = async () => {
         await supa.from('material_katalog_nennweiten').insert(selectedDNs);
     }
 
-    matModal.style.display = "none";
+    closeModal();
     ladeKatalog();
 };
 
-// --- 3. KATEGORIEN (Bleibt wie bisher) ---
-
-async function ladeKategorien() {
-    const { data } = await supa.from('material_kategorien').select('*').order('name');
-    katList.innerHTML = "";
-    data?.forEach(k => {
-        katList.innerHTML += `<div class="list-item">${k.name} <button onclick="deleteKat('${k.id}')">Löschen</button></div>`;
-    });
-}
-
-// ... restliche Funktionen wie deleteKat, addKat, closeModal ...
 window.closeModal = () => matModal.style.display = "none";
 
 init();
