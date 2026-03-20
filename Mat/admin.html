@@ -17,18 +17,16 @@
         h2 { font-size: 1rem; margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
         
         label { display: block; font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; color: #666; text-transform: uppercase; }
-        input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
+        input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
         
         button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
-        .btn-add { background: #28a745; color: white; width: 100%; margin-bottom: 10px; transition: background 0.2s; }
-        .btn-add:hover { background: #218838; }
+        .btn-add { background: #28a745; color: white; width: 100%; margin-bottom: 10px; }
         
         .btn-delete-small { background: #dc3545; color: white; padding: 5px 10px; font-size: 0.7rem; border-radius: 3px; }
         
         .list-item { 
             display: flex; justify-content: space-between; align-items: center; 
             padding: 10px; border-bottom: 1px solid #eee; background: white; margin-bottom: 5px; border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         /* Modal Styles */
@@ -71,7 +69,7 @@
 
     <div class="admin-section">
         <h2>2. Material-Kategorien</h2>
-        <label>Neue Kategorie</label>
+        <label>Neue Kategorie anlegen</label>
         <div style="display: flex; gap: 8px;">
             <input type="text" id="newKatName" placeholder="Kategoriename" style="margin-bottom:0;">
             <button onclick="addKat()" class="btn-add" style="width: auto; margin-bottom:0; padding: 0 20px;">+</button>
@@ -81,8 +79,7 @@
 
     <div class="admin-section">
         <h2>3. Material-Katalog</h2>
-        <div id="matList">
-            </div>
+        <div id="matList"></div>
     </div>
 </div>
 
@@ -91,19 +88,33 @@
         <h3 id="editModalTitle">Material bearbeiten</h3>
         
         <label>Name:</label>
-        <input type="text" id="editMatName" placeholder="Name des Materials">
+        <input type="text" id="editMatName">
         
         <label>Einheit:</label>
-        <input type="text" id="editMatEinheit" placeholder="z.B. Stk, m, m²">
+        <input type="text" id="editMatEinheit">
 
-        <label>Verfügbare Nennweiten (DN):</label>
-        <div id="editMatDnContainer" class="dn-container">
-            </div>
+        <label>Erlaubte Nennweiten (DN):</label>
+        <div id="editMatDnContainer" class="dn-container"></div>
 
         <div class="modal-actions">
             <button onclick="saveMaterialChanges()" style="background: #28a745; color: white;">Speichern</button>
             <button id="btnDeleteMat" onclick="deleteMaterialFull()" style="background: #dc3545; color: white; display:none;">Material komplett löschen</button>
             <button onclick="closeModal()" style="background: #6c757d; color: white;">Abbrechen</button>
+        </div>
+    </div>
+</div>
+
+<div id="katEditModal" class="modal">
+    <div class="modal-content">
+        <h3 id="katEditModalTitle">Kategorie bearbeiten</h3>
+        
+        <label>Name der Kategorie:</label>
+        <input type="text" id="editKatName">
+
+        <div class="modal-actions">
+            <button onclick="saveKatChanges()" style="background: #28a745; color: white;">Speichern</button>
+            <button onclick="deleteKatFull()" style="background: #dc3545; color: white;">Kategorie löschen</button>
+            <button onclick="closeKatModal()" style="background: #6c757d; color: white;">Abbrechen</button>
         </div>
     </div>
 </div>
