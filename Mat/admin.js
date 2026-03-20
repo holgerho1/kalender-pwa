@@ -9,8 +9,9 @@ const dnList = document.getElementById('dnList');
 // Modals
 const matModal = document.getElementById('matEditModal');
 const editMatDnContainer = document.getElementById('editMatDnContainer');
+const editModalTitle = document.getElementById('editModalTitle');
 
-let currentEditMatId = null;
+let currentEditMatId = null; // null bedeutet "Neu anlegen"
 
 async function init() {
     ladeKategorien();
@@ -19,19 +20,13 @@ async function init() {
 }
 
 // --- 1. NENNWEITEN STAMMDATEN ---
-
 async function ladeNennweitenStamm() {
-    const { data, error } = await supa.from('nennweiten').select('*').order('wert');
-    if (error) return console.error(error);
-
+    const { data } = await supa.from('nennweiten').select('*').order('wert');
     dnList.innerHTML = "";
     data?.forEach(dn => {
         const div = document.createElement('div');
         div.className = 'list-item';
-        div.innerHTML = `
-            <span>${dn.wert}</span>
-            <button onclick="deleteDN('${dn.id}')" class="btn-delete-small">Löschen</button>
-        `;
+        div.innerHTML = `<span>${dn.wert}</span><button onclick="deleteDN('${dn.id}')" class="btn-delete-small">Löschen</button>`;
         dnList.appendChild(div);
     });
 }
@@ -39,34 +34,26 @@ async function ladeNennweitenStamm() {
 window.addDN = async () => {
     const wert = document.getElementById('newDNWert').value.trim();
     if (!wert) return;
-    const { error } = await supa.from('nennweiten').insert([{ wert }]);
-    if (error) alert("Fehler: " + error.message);
-    else {
-        document.getElementById('newDNWert').value = "";
+    await supa.from('nennweiten').insert([{ wert }]);
+    document.getElementById('newDNWert').value = "";
+    ladeNennweitenStamm();
+};
+
+window.deleteDN = async (id) => {
+    if (confirm("Nennweite löschen?")) {
+        await supa.from('nennweiten').delete().eq('id', id);
         ladeNennweitenStamm();
     }
 };
 
-window.deleteDN = async (id) => {
-    if (!confirm("Nennweite wirklich löschen?")) return;
-    await supa.from('nennweiten').delete().eq('id', id);
-    ladeNennweitenStamm();
-};
-
 // --- 2. KATEGORIEN ---
-
 async function ladeKategorien() {
-    const { data, error } = await supa.from('material_kategorien').select('*').order('name');
-    if (error) return console.error(error);
-
+    const { data } = await supa.from('material_kategorien').select('*').order('name');
     katList.innerHTML = "";
     data?.forEach(k => {
         const div = document.createElement('div');
         div.className = 'list-item';
-        div.innerHTML = `
-            <span>${k.name}</span>
-            <button onclick="deleteKat('${k.id}')" class="btn-delete-small">Löschen</button>
-        `;
+        div.innerHTML = `<span>${k.name}</span><button onclick="deleteKat('${k.id}')" class="btn-delete-small">Löschen</button>`;
         katList.appendChild(div);
     });
 }
@@ -74,84 +61,95 @@ async function ladeKategorien() {
 window.addKat = async () => {
     const name = document.getElementById('newKatName').value.trim();
     if (!name) return;
-    const { error } = await supa.from('material_kategorien').insert([{ name }]);
-    if (error) alert("Fehler: " + error.message);
-    else {
-        document.getElementById('newKatName').value = "";
+    await supa.from('material_kategorien').insert([{ name }]);
+    document.getElementById('newKatName').value = "";
+    ladeKategorien();
+};
+
+window.deleteKat = async (id) => {
+    if (confirm("Kategorie löschen?")) {
+        await supa.from('material_kategorien').delete().eq('id', id);
         ladeKategorien();
     }
 };
 
-window.deleteKat = async (id) => {
-    if (!confirm("Kategorie wirklich löschen?")) return;
-    const { error } = await supa.from('material_kategorien').delete().eq('id', id);
-    if (error) alert("Fehler: " + error.message);
-    else ladeKategorien();
-};
-
-// --- 3. MATERIAL-KATALOG & VERKNÜPFUNG ---
+// --- 3. MATERIAL-KATALOG (NEU & EDIT) ---
 
 async function ladeKatalog() {
-    const { data, error } = await supa.from('material_katalog').select('*').order('name');
-    if (error) return;
-    matList.innerHTML = "";
-    data.forEach(m => {
+    const { data } = await supa.from('material_katalog').select('*').order('name');
+    matList.innerHTML = `<button onclick="openMaterialEdit(null)" class="btn-add" style="margin-bottom:15px;">+ Neues Material anlegen</button>`;
+    data?.forEach(m => {
         const div = document.createElement('div');
         div.className = 'list-item';
-        div.innerHTML = `
-            <div>
-                <strong>${m.name}</strong> <small>(${m.einheit})</small>
-            </div>
-            <button onclick="openMaterialEdit('${m.id}')">Bearbeiten</button>
-        `;
+        div.innerHTML = `<div><strong>${m.name}</strong> <small>(${m.einheit})</small></div><button onclick="openMaterialEdit('${m.id}')">Edit</button>`;
         matList.appendChild(div);
     });
 }
 
 window.openMaterialEdit = async (id) => {
     currentEditMatId = id;
-    
-    const { data: mat } = await supa.from('material_katalog').select('*').eq('id', id).single();
     const { data: alleDN } = await supa.from('nennweiten').select('*').order('wert');
-    const { data: verbundeneDN } = await supa.from('material_katalog_nennweiten')
-        .select('nennweite_id')
-        .eq('katalog_id', id);
-    
-    const verbundeneIds = verbundeneDN?.map(v => v.nennweite_id) || [];
+    let verbundeneIds = [];
 
-    document.getElementById('editMatName').value = mat.name;
-    document.getElementById('editMatEinheit').value = mat.einheit;
-    
+    // UI Reset
+    document.getElementById('btnDeleteMat').style.display = id ? "block" : "none";
+    editModalTitle.innerText = id ? "Material bearbeiten" : "Neues Material";
+
+    if (id) {
+        const { data: mat } = await supa.from('material_katalog').select('*').eq('id', id).single();
+        document.getElementById('editMatName').value = mat.name;
+        document.getElementById('editMatEinheit').value = mat.einheit;
+        const { data: vDN } = await supa.from('material_katalog_nennweiten').select('nennweite_id').eq('katalog_id', id);
+        verbundeneIds = vDN?.map(v => v.nennweite_id) || [];
+    } else {
+        document.getElementById('editMatName').value = "";
+        document.getElementById('editMatEinheit').value = "Stk";
+    }
+
     editMatDnContainer.innerHTML = "";
     alleDN?.forEach(dn => {
         const isChecked = verbundeneIds.includes(dn.id) ? 'checked' : '';
         editMatDnContainer.innerHTML += `
-            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-weight: normal;">
-                <input type="checkbox" class="dn-checkbox" value="${dn.id}" ${isChecked}>
-                ${dn.wert}
-            </label>
-        `;
+            <label style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
+                <input type="checkbox" class="dn-checkbox" value="${dn.id}" ${isChecked}> ${dn.wert}
+            </label>`;
     });
 
     matModal.style.display = "flex";
 };
 
 window.saveMaterialChanges = async () => {
-    const name = document.getElementById('editMatName').value;
-    const einheit = document.getElementById('editMatEinheit').value;
+    const name = document.getElementById('editMatName').value.trim();
+    const einheit = document.getElementById('editMatEinheit').value.trim();
+    if (!name || !einheit) return alert("Name und Einheit fehlen!");
 
-    await supa.from('material_katalog').update({ name, einheit }).eq('id', currentEditMatId);
-    await supa.from('material_katalog_nennweiten').delete().eq('katalog_id', currentEditMatId);
+    let matId = currentEditMatId;
 
-    const selectedDNs = Array.from(document.querySelectorAll('.dn-checkbox:checked')).map(cb => ({
-        katalog_id: currentEditMatId,
-        nennweite_id: cb.value
-    }));
-
-    if (selectedDNs.length > 0) {
-        await supa.from('material_katalog_nennweiten').insert(selectedDNs);
+    if (matId) {
+        // Update
+        await supa.from('material_katalog').update({ name, einheit }).eq('id', matId);
+    } else {
+        // Insert
+        const { data, error } = await supa.from('material_katalog').insert([{ name, einheit }]).select();
+        if (error) return alert("Fehler: " + error.message);
+        matId = data[0].id;
     }
 
+    // Nennweiten synchronisieren
+    await supa.from('material_katalog_nennweiten').delete().eq('katalog_id', matId);
+    const selectedDNs = Array.from(document.querySelectorAll('.dn-checkbox:checked')).map(cb => ({
+        katalog_id: matId,
+        nennweite_id: cb.value
+    }));
+    if (selectedDNs.length > 0) await supa.from('material_katalog_nennweiten').insert(selectedDNs);
+
+    closeModal();
+    ladeKatalog();
+};
+
+window.deleteMaterialFull = async () => {
+    if (!currentEditMatId || !confirm("Dieses Material komplett aus dem Katalog löschen?")) return;
+    await supa.from('material_katalog').delete().eq('id', currentEditMatId);
     closeModal();
     ladeKatalog();
 };
