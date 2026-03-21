@@ -18,26 +18,11 @@
         select, input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; box-sizing: border-box; background: white; }
         select:disabled { background: #eee; cursor: not-allowed; }
         
-        /* SCHMALE BUTTONS NEBENEINANDER */
-        #dnFilterBar { 
-            display: flex; 
-            gap: 4px; 
-            flex-wrap: wrap; 
-            margin-bottom: 10px; 
-            margin-top: 2px; 
-        }
+        #dnFilterBar { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; margin-top: 2px; }
         .filter-btn { 
-            padding: 4px 8px; 
-            border: 1px solid #007bff; 
-            border-radius: 4px; 
-            background: white; 
-            color: #007bff; 
-            font-size: 0.7rem; 
-            font-weight: bold; 
-            cursor: pointer; 
-            white-space: nowrap;
-            width: auto; /* Verhindert volle Breite */
-            -webkit-tap-highlight-color: transparent;
+            padding: 4px 8px; border: 1px solid #007bff; border-radius: 4px; 
+            background: white; color: #007bff; font-size: 0.7rem; font-weight: bold; 
+            cursor: pointer; white-space: nowrap; width: auto; -webkit-tap-highlight-color: transparent;
         }
         .filter-btn.active { background: #007bff; color: white; }
 
@@ -65,9 +50,9 @@
         .mat-info { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
         .mat-name { font-weight: bold; font-size: 0.95rem; color: #333; }
         
+        /* Nennweite jetzt ohne farbigen Hintergrund und in Standardschrift */
         .mat-dn { 
-            font-size: 0.75rem; color: #007bff; font-weight: bold; 
-            background: #e7f1ff; padding: 2px 6px; border-radius: 4px; 
+            font-size: 0.95rem; color: #333; 
             white-space: nowrap; display: inline-block;
         }
         
