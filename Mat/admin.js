@@ -8,14 +8,18 @@ const editModal = document.getElementById('editModal');
 const editNameContainer = document.getElementById('editNameContainer');
 const editInput = document.getElementById('editInput');
 const editDnFields = document.getElementById('editDnFields');
-const editDnTyp = document.getElementById('editDnTyp');
+const editDnTypSelect = document.getElementById('editDnTypSelect');
 const editDnWert = document.getElementById('editDnWert');
-const editDnGruppe = document.getElementById('editDnGruppe');
+const editDnGruppeSelect = document.getElementById('editDnGruppeSelect');
 const editUnitContainer = document.getElementById('editUnitContainer');
 const editUnitInput = document.getElementById('editUnitInput');
 const materialEditExtras = document.getElementById('materialEditExtras');
 const btnSaveEdit = document.getElementById('btnSaveEdit');
 const btnDeleteConfirm = document.getElementById('btnDeleteConfirm');
+
+// Neuanlage Dropdowns
+const dnTypSelect = document.getElementById('dnTypSelect');
+const dnGruppeSelect = document.getElementById('dnGruppeSelect');
 
 let currentEditTable = "";
 let currentEditId = null;
@@ -24,6 +28,7 @@ async function init() {
     try {
         status.innerText = "Lade Daten...";
         await Promise.all([
+            ladeTypenUndGruppen(),
             ladeKategorien(),
             ladeMaterialien(),
             ladeNennweiten(),
@@ -36,7 +41,31 @@ async function init() {
     }
 }
 
-// --- HILFSFUNKTIONEN ---
+// --- DROPDOWNS BEFÜLLEN ---
+
+async function ladeTypenUndGruppen() {
+    const [{ data: typen }, { data: gruppen }] = await Promise.all([
+        supa.from('nennweiten_typen').select('*').order('name'),
+        supa.from('nennweiten_gruppen').select('*').order('name')
+    ]);
+
+    const befuelleDropdown = (el, data) => {
+        el.innerHTML = '<option value="">-- wählen --</option>';
+        data?.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.name;
+            opt.textContent = item.name;
+            el.appendChild(opt);
+        });
+    };
+
+    befuelleDropdown(dnTypSelect, typen);
+    befuelleDropdown(editDnTypSelect, typen);
+    befuelleDropdown(dnGruppeSelect, gruppen);
+    befuelleDropdown(editDnGruppeSelect, gruppen);
+}
+
+// --- HILFSFUNKTIONEN FÜR LISTEN ---
 
 async function befuelleNeuanlageListen() {
     const [{ data: kats }, { data: dns }] = await Promise.all([
@@ -69,7 +98,7 @@ function createCheckRow(id, label, className, checked = false) {
     return div;
 }
 
-// --- LISTEN LADEN ---
+// --- LISTEN ANZEIGEN ---
 
 async function ladeKategorien() {
     const { data } = await supa.from('material_kategorien').select('*').order('name');
@@ -116,7 +145,6 @@ window.openEditPopup = async (table, id, currentText, currentUnit = null, dnTyp 
     currentEditTable = table;
     currentEditId = id;
     
-    // Reset Ansicht
     editNameContainer.style.display = "block";
     editDnFields.style.display = "none";
     editUnitContainer.style.display = "none";
@@ -125,9 +153,9 @@ window.openEditPopup = async (table, id, currentText, currentUnit = null, dnTyp 
     if (table === 'nennweiten') {
         editNameContainer.style.display = "none";
         editDnFields.style.display = "block";
-        editDnTyp.value = dnTyp;
-        editDnWert.value = dnWert;
-        editDnGruppe.value = dnGruppe;
+        editDnTypSelect.value = dnTyp || "";
+        editDnWert.value = dnWert || "";
+        editDnGruppeSelect.value = dnGruppe || "";
     } else {
         editInput.value = currentText;
         if (table === 'material_katalog') {
@@ -168,7 +196,11 @@ btnSaveEdit.onclick = async () => {
     status.innerText = "Speichere...";
     
     if (currentEditTable === 'nennweiten') {
-        await supa.from('nennweiten').update({ typ: editDnTyp.value, wert: editDnWert.value, gruppe: editDnGruppe.value }).eq('id', currentEditId);
+        await supa.from('nennweiten').update({ 
+            typ: editDnTypSelect.value, 
+            wert: editDnWert.value, 
+            gruppe: editDnGruppeSelect.value 
+        }).eq('id', currentEditId);
     } else if (currentEditTable === 'material_katalog') {
         await supa.from('material_katalog').update({ name: editInput.value, einheit: editUnitInput.value }).eq('id', currentEditId);
         
@@ -225,9 +257,11 @@ window.saveMaterial = async () => {
 };
 
 window.saveDN = async () => {
-    const typ = document.getElementById('dnTyp').value, wert = document.getElementById('dnWert').value, gruppe = document.getElementById('dnGruppe').value;
+    const typ = dnTypSelect.value;
+    const wert = document.getElementById('dnWert').value;
+    const gruppe = dnGruppeSelect.value;
     if (wert) await supa.from('nennweiten').insert([{ typ, wert, gruppe }]);
-    document.getElementById('dnTyp').value = ""; document.getElementById('dnWert').value = ""; document.getElementById('dnGruppe').value = "";
+    document.getElementById('dnWert').value = "";
     init();
 };
 

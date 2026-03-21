@@ -36,7 +36,6 @@
 
         #status { font-size: 0.75rem; color: #888; text-align: center; margin-top: 20px; font-style: italic; height: 1rem; }
 
-        /* Multi-Select Listen */
         .scroll-list { 
             max-height: 150px; overflow-y: auto; border: 1px solid #ccc; 
             border-radius: 6px; padding: 10px; background: #fff; margin-bottom: 15px; 
@@ -47,10 +46,9 @@
         }
         .check-row input { width: 20px; height: 20px; margin: 0; cursor: pointer; }
 
-        .dn-row { display: flex; gap: 8px; }
+        .dn-row { display: flex; gap: 8px; align-items: flex-end; }
         .dn-row div { flex: 1; }
 
-        /* MODAL STYLES */
         .modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center;
@@ -93,14 +91,10 @@
         </select>
         
         <label>3. Kategorien zuordnen</label>
-        <div id="newMatKatList" class="scroll-list">
-            <div style="color:#888; font-size:0.8rem;">Lade Kategorien...</div>
-        </div>
+        <div id="newMatKatList" class="scroll-list"></div>
 
         <label>4. Nennweiten zuordnen</label>
-        <div id="newMatDnList" class="scroll-list">
-            <div style="color:#888; font-size:0.8rem;">Lade Nennweiten...</div>
-        </div>
+        <div id="newMatDnList" class="scroll-list"></div>
 
         <button class="btn-save" onclick="saveMaterial()">Material Speichern</button>
         <div class="list-container" id="matList"></div>
@@ -108,9 +102,9 @@
 
     <div id="sec-dn" class="section">
         <div class="dn-row">
-            <div><label>Typ</label><input type="text" id="dnTyp" placeholder="KG"></div>
+            <div><label>Typ</label><select id="dnTypSelect"></select></div>
             <div><label>Wert</label><input type="text" id="dnWert" placeholder="110"></div>
-            <div><label>Gruppe</label><input type="text" id="dnGruppe" placeholder="Abwasser"></div>
+            <div><label>Gruppe</label><select id="dnGruppeSelect"></select></div>
         </div>
         <button class="btn-save" onclick="saveDN()">Nennweite Speichern</button>
         <div class="list-container" id="dnList"></div>
@@ -137,9 +131,9 @@
 
         <div id="editDnFields" style="display:none;">
             <div class="dn-row">
-                <div><label>Typ</label><input type="text" id="editDnTyp"></div>
+                <div><label>Typ</label><select id="editDnTypSelect"></select></div>
                 <div><label>Wert</label><input type="text" id="editDnWert"></div>
-                <div><label>Gruppe</label><input type="text" id="editDnGruppe"></div>
+                <div><label>Gruppe</label><select id="editDnGruppeSelect"></select></div>
             </div>
         </div>
         
