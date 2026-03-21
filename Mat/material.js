@@ -14,6 +14,14 @@ const status = document.getElementById('status');
 const titleEl = document.getElementById('projectTitle');
 const toggleGroup = document.getElementById('toggleGroup');
 
+// Edit-Modal Elemente
+const editModal = document.getElementById('editEntryModal');
+const editModalTitle = document.getElementById('editModalTitle');
+const editMengeInp = document.getElementById('editMenge');
+const editKatSel = document.getElementById('editKat');
+const editDnSel = document.getElementById('editDn');
+let currentEditId = null;
+
 function formatDN(dn) {
     if (!dn) return "";
     const teile = [];
@@ -25,35 +33,31 @@ function formatDN(dn) {
 
 async function init() {
     try {
-        if (!projektId) {
-            status.innerText = "Fehler: Kein Projekt!";
-            return;
-        }
+        if (!projektId) return status.innerText = "Fehler: Kein Projekt!";
         
-        // Projektdaten laden
         const { data: proj } = await supa.from('projekte').select('*').eq('id', projektId).single();
         if (proj) titleEl.innerText = proj.projektname || proj.name;
 
-        // Kategorien für Dropdown laden
         const { data: kats } = await supa.from('material_kategorien').select('*').order('name');
         katSel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
+        if(editKatSel) editKatSel.innerHTML = "";
         kats?.forEach(k => {
-            katSel.innerHTML += `<option value="${k.id}">${k.name}</option>`;
+            const opt = `<option value="${k.id}">${k.name}</option>`;
+            katSel.innerHTML += opt;
+            if(editKatSel) editKatSel.innerHTML += opt;
         });
 
         await ladeMaterialListe();
         status.innerText = "Bereit";
     } catch (e) {
-        status.innerText = "Fehler im Init";
         console.error(e);
     }
 }
 
-// 1. Kategorie -> Material
+// NEUANLAGE LOGIK
 katSel.addEventListener('change', async () => {
     const katId = katSel.value;
-    matSel.disabled = true;
-    dnSel.disabled = true;
+    matSel.disabled = true; dnSel.disabled = true;
     matSel.innerHTML = '<option value="">-- Lädt... --</option>';
     if (!katId) return;
 
@@ -70,7 +74,6 @@ katSel.addEventListener('change', async () => {
     matSel.disabled = false;
 });
 
-// 2. Material -> Nennweite
 matSel.addEventListener('change', async () => {
     const matId = matSel.value;
     const opt = matSel.options[matSel.selectedIndex];
@@ -79,7 +82,7 @@ matSel.addEventListener('change', async () => {
 
     const { data } = await supa.from('material_katalog_nennweiten').select('nennweiten ( id, wert, typ, gruppe )').eq('katalog_id', matId);
     dnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
-    if (data && data.length > 0) {
+    if (data?.length > 0) {
         data.forEach(item => {
             const d = item.nennweiten;
             if (d) dnSel.innerHTML += `<option value="${d.id}">${formatDN(d)}</option>`;
@@ -88,35 +91,74 @@ matSel.addEventListener('change', async () => {
     }
 });
 
-// 3. Speichern (Hier Tabellenname prüfen!)
 window.addToList = async () => {
     const matId = matSel.value;
     const katId = katSel.value;
     const dnId = dnSel.value || null;
     const menge = parseFloat(mengeInp.value);
-    
     if (!matId || !katId || isNaN(menge)) return alert("Bitte alles ausfüllen!");
 
     status.innerText = "Speichere...";
-    // Nutze hier 'materialien' oder 'projekt_material' – je nach deiner DB!
-    const { error } = await supa.from('materialien').insert([{
-        projekt_id: projektId,
-        katalog_id: matId,
-        kategorie_id: katId,
-        nennweite_id: dnId,
-        menge: menge
+    await supa.from('materialien').insert([{
+        projekt_id: projektId, katalog_id: matId, kategorie_id: katId, nennweite_id: dnId, menge: menge
     }]);
-
-    if(error) { alert("Fehler beim Speichern: " + error.message); }
-    
     mengeInp.value = "1";
     await ladeMaterialListe();
     status.innerText = "Bereit";
 };
 
-// 4. Liste laden
+// MODAL LOGIK (Bearbeiten/Löschen)
+window.openEditModal = async (entry) => {
+    if (toggleGroup?.checked) return; // Kein Edit im Summen-Modus
+    
+    currentEditId = entry.id;
+    if (editModalTitle) editModalTitle.innerText = entry.material_katalog?.name || "Bearbeiten";
+    
+    // Nennweiten für dieses Material laden
+    const { data: nenns } = await supa.from('material_katalog_nennweiten')
+        .select('nennweiten ( id, wert, typ, gruppe )')
+        .eq('katalog_id', entry.katalog_id);
+
+    editDnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
+    nenns?.forEach(item => {
+        const d = item.nennweiten;
+        if (d) {
+            const opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = formatDN(d);
+            editDnSel.appendChild(opt);
+        }
+    });
+
+    editMengeInp.value = entry.menge;
+    if(editKatSel) editKatSel.value = entry.kategorie_id;
+    editDnSel.value = entry.nennweite_id || ""; 
+    editModal.style.display = "flex";
+};
+
+document.getElementById('btnSaveEdit').onclick = async () => {
+    status.innerText = "Speichere...";
+    await supa.from('materialien').update({
+        menge: parseFloat(editMengeInp.value),
+        kategorie_id: editKatSel.value,
+        nennweite_id: editDnSel.value || null
+    }).eq('id', currentEditId);
+    editModal.style.display = "none";
+    await ladeMaterialListe();
+    status.innerText = "Bereit";
+};
+
+document.getElementById('btnDeleteEntry').onclick = async () => {
+    if (!confirm("Eintrag löschen?")) return;
+    status.innerText = "Lösche...";
+    await supa.from('materialien').delete().eq('id', currentEditId);
+    editModal.style.display = "none";
+    await ladeMaterialListe();
+    status.innerText = "Bereit";
+};
+
+// LISTE RENDERN
 async function ladeMaterialListe() {
-    // WICHTIG: Tabellenname 'materialien' muss mit deiner DB übereinstimmen
     const { data, error } = await supa.from('materialien').select(`
             id, menge, katalog_id, kategorie_id, nennweite_id,
             material_katalog ( name, einheit ),
@@ -124,20 +166,11 @@ async function ladeMaterialListe() {
             nennweiten ( id, wert, typ, gruppe )
         `).eq('projekt_id', projektId);
 
-    if (error) {
-        console.error("Listen-Fehler:", error);
-        status.innerText = "Fehler: " + error.message;
-        return;
-    }
-    
+    if (error) return status.innerText = "Listen-Fehler!";
     listEl.innerHTML = "";
-    if (!data || data.length === 0) {
-        listEl.innerHTML = "<div style='text-align:center; color:#888; margin-top:20px;'>Noch keine Einträge vorhanden.</div>";
-        return;
-    }
-
+    
     const gruppen = {};
-    data.forEach(m => {
+    data?.forEach(m => {
         const katName = m.material_kategorien?.name || "Sonstiges";
         if (!gruppen[katName]) gruppen[katName] = [];
         gruppen[katName].push(m);
@@ -166,6 +199,11 @@ async function ladeMaterialListe() {
             const dnTxt = formatDN(m.nennweiten);
             const mengeVal = toggleGroup?.checked ? m.summe : m.menge;
 
+            // Hier wird der Klick-Event für das Modal wieder gesetzt:
+            if (!toggleGroup?.checked) {
+                itemDiv.onclick = () => openEditModal(m);
+            }
+
             itemDiv.innerHTML = `
                 <div class="mat-info">
                     <div style="display:flex; gap:8px; align-items:center;">
@@ -182,5 +220,4 @@ async function ladeMaterialListe() {
 
 document.getElementById('btnAddMaterial').onclick = window.addToList;
 toggleGroup?.addEventListener('change', ladeMaterialListe);
-
 init();
