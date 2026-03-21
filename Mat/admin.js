@@ -25,10 +25,23 @@ let currentEditDNId = null;
 let allMaterials = [];
 
 async function init() {
-    await ladeStammdatenListen(); // Lädt Gruppen & Typen Tabellen
+    await ladeStammdatenListen(); // Lädt Gruppen & Typen
     ladeKategorien();
     ladeKatalog();
     ladeNennweitenStamm();
+}
+
+/**
+ * ZENTRALE FORMATIERUNG:
+ * Baut den String aus Typ, Wert (Bezeichnung) und Gruppe zusammen.
+ */
+function formatDN(dn) {
+    const teile = [];
+    if (dn.typ) teile.push(dn.typ);
+    if (dn.wert) teile.push(dn.wert);
+    if (dn.gruppe) teile.push(dn.gruppe);
+    
+    return teile.length > 0 ? teile.join(' ') : "Unbenannt";
 }
 
 // --- STAMMDATEN POPUP (GRUPPEN & TYPEN) ---
@@ -40,7 +53,6 @@ async function ladeStammdatenListen() {
     const { data: gruppen } = await supa.from('dn_gruppen').select('*').order('name');
     const { data: typen } = await supa.from('dn_typen').select('*').order('name');
 
-    // Anzeige im Popup
     dnGruppenList.innerHTML = gruppen?.map(g => `
         <div class="list-item" style="padding: 5px; font-size: 0.8rem;">
             <span>${g.name}</span>
@@ -53,19 +65,15 @@ async function ladeStammdatenListen() {
             <button onclick="deleteStamm('dn_typen','${t.id}')" style="background:none; color:red; padding:2px 5px;">X</button>
         </div>`).join('') || '';
 
-    // Alle Dropdowns im HTML befüllen
     updateDNSelectOptions(gruppen || [], typen || []);
 }
 
 function updateDNSelectOptions(gruppen, typen) {
-    const optG = '<option value="">Gruppe wählen...</option>' + gruppen.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
-    const optT = '<option value="">Typ wählen...</option>' + typen.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+    const optG = '<option value="">Gruppe...</option>' + gruppen.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+    const optT = '<option value="">Typ...</option>' + typen.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
 
-    // Neuanlage-Bereich
     if(document.getElementById('newDNGruppe')) document.getElementById('newDNGruppe').innerHTML = optG;
     if(document.getElementById('newDNTyp')) document.getElementById('newDNTyp').innerHTML = optT;
-    
-    // DN-Edit-Modal
     if(document.getElementById('editDNGruppe')) document.getElementById('editDNGruppe').innerHTML = optG;
     if(document.getElementById('editDNTyp')) document.getElementById('editDNTyp').innerHTML = optT;
 }
@@ -87,12 +95,12 @@ window.addDNTyp = async () => {
 };
 
 window.deleteStamm = async (table, id) => {
-    if (!confirm("Eintrag wirklich löschen?")) return;
+    if (!confirm("Eintrag löschen?")) return;
     await supa.from(table).delete().eq('id', id);
     ladeStammdatenListen();
 };
 
-// --- 1. NENNWEITEN ---
+// --- 1. NENNWEITEN (STAMMDATEN) ---
 
 async function ladeNennweitenStamm() {
     const { data } = await supa.from('nennweiten').select('*').order('wert');
@@ -100,7 +108,7 @@ async function ladeNennweitenStamm() {
     data?.forEach(dn => {
         const div = document.createElement('div');
         div.className = 'list-item';
-        div.innerHTML = `<span><strong>${dn.wert}</strong> <small style="color:#888;">[${dn.gruppe || '-'} | ${dn.typ || '-'}]</small></span>`;
+        div.innerHTML = `<span><strong>${formatDN(dn)}</strong></span>`;
         const btn = document.createElement('button');
         btn.textContent = 'Edit';
         btn.onclick = () => openDNEdit(dn);
@@ -113,7 +121,9 @@ window.addDN = async () => {
     const wert = document.getElementById('newDNWert').value.trim();
     const gruppe = document.getElementById('newDNGruppe').value;
     const typ = document.getElementById('newDNTyp').value;
-    if (!wert) return alert("Bezeichnung fehlt!");
+
+    if (!wert && !gruppe && !typ) return alert("Bitte mindestens ein Feld ausfüllen!");
+
     await supa.from('nennweiten').insert([{ wert, gruppe, typ }]);
     document.getElementById('newDNWert').value = "";
     ladeNennweitenStamm();
@@ -224,7 +234,6 @@ window.openMaterialEdit = async (id) => {
     const { data: alleKat } = await supa.from('material_kategorien').select('*').order('name');
     const { data: alleDN } = await supa.from('nennweiten').select('*').order('wert');
     
-    // Filter befüllen
     const gruppen = [...new Set(alleDN.map(d => d.gruppe).filter(Boolean))].sort();
     const typen = [...new Set(alleDN.map(d => d.typ).filter(Boolean))].sort();
     document.getElementById('filterDNGruppe').innerHTML = '<option value="">Alle Gruppen</option>' + gruppen.map(g => `<option value="${g}">${g}</option>`).join('');
@@ -250,7 +259,13 @@ window.openMaterialEdit = async (id) => {
     }
 
     editMatKatContainer.innerHTML = alleKat?.map(k => `<label style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><input type="checkbox" class="kat-checkbox" value="${k.id}" ${verbundeneKatIds.includes(k.id)?'checked':''}> ${k.name}</label>`).join('') || '';
-    editMatDnContainer.innerHTML = alleDN?.map(dn => `<label class="dn-label" data-gruppe="${dn.gruppe || ''}" data-typ="${dn.typ || ''}" style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><input type="checkbox" class="dn-checkbox" value="${dn.id}" ${verbundeneDNIds.includes(dn.id)?'checked':''}> ${dn.wert} <small>(${dn.typ || ''})</small></label>`).join('') || '';
+    
+    // Checkboxen mit formatierter Nennweite
+    editMatDnContainer.innerHTML = alleDN?.map(dn => `
+        <label class="dn-label" data-gruppe="${dn.gruppe || ''}" data-typ="${dn.typ || ''}" style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+            <input type="checkbox" class="dn-checkbox" value="${dn.id}" ${verbundeneDNIds.includes(dn.id)?'checked':''}> 
+            ${formatDN(dn)}
+        </label>`).join('') || '';
 
     matModal.style.display = "flex";
 };

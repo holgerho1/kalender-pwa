@@ -45,9 +45,11 @@
 
         .modal-actions { display: flex; flex-direction: column; gap: 10px; }
 
-        .dn-add-grid { display: flex; flex-direction: column; gap: 5px; }
-        .dn-add-row { display: flex; gap: 5px; }
-        .dn-add-row select { margin-bottom: 0; flex: 1; }
+        /* NEUE REIHENFOLGE: TYP - WERT - GRUPPE */
+        .dn-add-grid { display: flex; flex-direction: column; gap: 8px; }
+        .dn-add-row { display: flex; gap: 8px; align-items: flex-start; }
+        .dn-add-row select, .dn-add-row input { margin-bottom: 0; flex: 1; }
+        .dn-add-row input { flex: 1.5; } /* Bezeichnung etwas breiter */
 
         .small-list { font-size: 0.85rem; border: 1px solid #eee; padding: 5px; border-radius: 4px; margin-bottom: 15px; max-height: 120px; overflow-y: auto; }
     </style>
@@ -65,13 +67,13 @@
     <div class="admin-section">
         <h2>1. Nennweiten (Stammdaten)</h2>
         <div class="dn-add-grid">
-            <label>Neue Nennweite anlegen</label>
-            <input type="text" id="newDNWert" placeholder="Bezeichnung (z.B. DN 100)">
+            <label>Nennweite zusammenstellen (Typ - Bezeichnung - Gruppe)</label>
             <div class="dn-add-row">
-                <select id="newDNGruppe"><option value="">Gruppe...</option></select>
                 <select id="newDNTyp"><option value="">Typ...</option></select>
+                <input type="text" id="newDNWert" placeholder="DN (z.B. 100)">
+                <select id="newDNGruppe"><option value="">Gruppe...</option></select>
             </div>
-            <button onclick="addDN()" class="btn-add" style="margin-top:5px;">Hinzufügen</button>
+            <button onclick="addDN()" class="btn-add">Hinzufügen</button>
         </div>
         <div id="dnList" style="margin-top:15px;"></div>
     </div>
@@ -129,13 +131,16 @@
         </select>
         <label>Kategorien:</label>
         <div id="editMatKatContainer" class="check-container"></div>
+        
         <label>Nennweiten filtern:</label>
         <div style="display:flex; gap:5px; margin-bottom:10px;">
             <select id="filterDNGruppe"><option value="">Alle Gruppen</option></select>
             <select id="filterDNTyp"><option value="">Alle Typen</option></select>
         </div>
+        
         <label>Nennweiten (DN):</label>
         <div id="editMatDnContainer" class="check-container"></div>
+        
         <div class="modal-actions">
             <button onclick="saveMaterialChanges()" style="background:#28a745; color:white;">Speichern</button>
             <button id="btnDeleteMat" onclick="deleteMaterialFull()" style="background:#dc3545; color:white; display:none;">Löschen</button>
@@ -159,12 +164,16 @@
 <div id="dnEditModal" class="modal">
     <div class="modal-content">
         <h3>Nennweite bearbeiten</h3>
-        <label>Bezeichnung:</label>
-        <input type="text" id="editDNWert">
-        <label>Gruppe:</label>
-        <select id="editDNGruppe"></select>
+        
         <label>Typ:</label>
         <select id="editDNTyp"></select>
+        
+        <label>Bezeichnung:</label>
+        <input type="text" id="editDNWert" placeholder="z.B. 100">
+        
+        <label>Gruppe:</label>
+        <select id="editDNGruppe"></select>
+        
         <div class="modal-actions">
             <button onclick="saveDNChanges()" style="background:#28a745; color:white;">Speichern</button>
             <button onclick="deleteDNFull()" style="background:#dc3545; color:white;">Löschen</button>
