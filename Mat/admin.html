@@ -44,6 +44,10 @@
         }
 
         .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+
+        /* Filter-Bar Styling */
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+        .filter-bar select { padding: 8px; font-size: 0.85rem; height: auto; margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -77,6 +81,7 @@
 
     <div class="admin-section">
         <h2>3. Material-Katalog</h2>
+        <input type="text" id="matSearch" placeholder="Material suchen..." style="border-color: #28a745;">
         <div id="matList"></div>
     </div>
 </div>
@@ -105,6 +110,16 @@
 
         <label>Kategorien (Zuordnung):</label>
         <div id="editMatKatContainer" class="check-container"></div>
+
+        <label>Nennweiten filtern:</label>
+        <div class="filter-bar">
+            <select id="filterDNGruppe">
+                <option value="">Alle Gruppen</option>
+            </select>
+            <select id="filterDNTyp">
+                <option value="">Alle Typen</option>
+            </select>
+        </div>
 
         <label>Erlaubte Nennweiten (DN):</label>
         <div id="editMatDnContainer" class="check-container"></div>
@@ -138,6 +153,12 @@
         
         <label>Bezeichnung (z.B. DN 110):</label>
         <input type="text" id="editDNWert">
+
+        <label>Gruppe (z.B. Abwasser, Gas):</label>
+        <input type="text" id="editDNGruppe" placeholder="Gruppe">
+
+        <label>Typ (z.B. KG, Guss, PE):</label>
+        <input type="text" id="editDNTyp" placeholder="Typ">
 
         <div class="modal-actions">
             <button onclick="saveDNChanges()" style="background: #28a745; color: white;">Speichern</button>
