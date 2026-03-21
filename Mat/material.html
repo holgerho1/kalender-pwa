@@ -18,12 +18,26 @@
         select, input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; box-sizing: border-box; background: white; }
         select:disabled { background: #eee; cursor: not-allowed; }
         
-        /* Styling für die neuen Filter-Buttons */
-        #dnFilterBar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; margin-top: 5px; }
+        /* SCHMALE BUTTONS NEBENEINANDER */
+        #dnFilterBar { 
+            display: flex; 
+            gap: 4px; 
+            flex-wrap: wrap; 
+            margin-bottom: 10px; 
+            margin-top: 2px; 
+        }
         .filter-btn { 
-            padding: 8px 14px; border: 1.5px solid #007bff; border-radius: 20px; 
-            background: white; color: #007bff; font-size: 0.8rem; font-weight: bold; 
-            cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+            padding: 4px 8px; 
+            border: 1px solid #007bff; 
+            border-radius: 4px; 
+            background: white; 
+            color: #007bff; 
+            font-size: 0.7rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            white-space: nowrap;
+            width: auto; /* Verhindert volle Breite */
+            -webkit-tap-highlight-color: transparent;
         }
         .filter-btn.active { background: #007bff; color: white; }
 
@@ -89,7 +103,7 @@
             <option value="">-- Erst Kategorie wählen --</option>
         </select>
 
-        <label>2b. Nennweite filtern / wählen</label>
+        <label>2b. Nennweite filtern</label>
         <div id="dnFilterBar"></div>
         
         <select id="dnSelect" disabled>
