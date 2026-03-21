@@ -130,8 +130,18 @@
     <div class="modal-content">
         <h3 id="modalTitle" style="margin-top:0;">Eintrag bearbeiten</h3>
         
-        <label>Bezeichnung / Wert</label>
-        <input type="text" id="editInput">
+        <div id="editNameContainer">
+            <label>Bezeichnung / Name</label>
+            <input type="text" id="editInput">
+        </div>
+
+        <div id="editDnFields" style="display:none;">
+            <div class="dn-row">
+                <div><label>Typ</label><input type="text" id="editDnTyp"></div>
+                <div><label>Wert</label><input type="text" id="editDnWert"></div>
+                <div><label>Gruppe</label><input type="text" id="editDnGruppe"></div>
+            </div>
+        </div>
         
         <div id="editUnitContainer" style="display:none; margin-top:15px;">
             <label>Einheit</label>
