@@ -6,6 +6,8 @@ const status = document.getElementById('status');
 // Modal-Elemente
 const editModal = document.getElementById('editModal'); 
 const editInput = document.getElementById('editInput');
+const editUnitContainer = document.getElementById('editUnitContainer');
+const editUnitInput = document.getElementById('editUnitInput');
 const btnSaveEdit = document.getElementById('btnSaveEdit');
 const btnDeleteConfirm = document.getElementById('btnDeleteConfirm');
 
@@ -14,22 +16,19 @@ let currentEditId = null;
 
 async function init() {
     try {
-        // Einzeln laden, damit ein Fehler in einer Liste nicht alles blockiert
         await ladeKategorien();
         await ladeMaterialien();
         await ladeNennweiten();
         status.innerText = "Bereit";
     } catch (e) {
-        status.innerText = "Fehler beim Initialisieren";
+        status.innerText = "Fehler beim Laden";
         console.error(e);
     }
 }
 
 // --- KATEGORIEN ---
 async function ladeKategorien() {
-    const { data, error } = await supa.from('material_kategorien').select('*').order('name');
-    if (error) return console.error("Kat-Fehler:", error);
-
+    const { data } = await supa.from('material_kategorien').select('*').order('name');
     const sel = document.getElementById('matKatSelect');
     const list = document.getElementById('katList');
     
@@ -44,7 +43,6 @@ async function ladeKategorien() {
 
         const item = document.createElement('div');
         item.className = "list-item";
-        item.style.cursor = "pointer";
         item.onclick = () => openEditPopup('material_kategorien', k.id, k.name);
 
         const txt = document.createElement('span');
@@ -52,7 +50,7 @@ async function ladeKategorien() {
         item.appendChild(txt);
 
         const icon = document.createElement('span');
-        icon.textContent = "⚙"; // Zahnrad-Symbol
+        icon.textContent = "⚙";
         icon.style.color = "#007bff";
         item.appendChild(icon);
         
@@ -60,13 +58,10 @@ async function ladeKategorien() {
     });
 }
 
-// --- MATERIALIEN (Hauptliste) ---
+// --- MATERIALIEN ---
 async function ladeMaterialien() {
     const { data, error } = await supa.from('material_katalog').select('*').order('name');
-    if (error) {
-        console.error("Material-Fehler:", error);
-        return;
-    }
+    if (error) return console.error(error);
 
     const sel = document.getElementById('dnMatSelect');
     const list = document.getElementById('matList');
@@ -75,17 +70,14 @@ async function ladeMaterialien() {
     list.innerHTML = "";
 
     data?.forEach(m => {
-        // Für das Dropdown bei Nennweiten
         const opt = document.createElement('option');
         opt.value = m.id;
         opt.textContent = m.name;
         sel.appendChild(opt);
 
-        // Für die Liste
         const item = document.createElement('div');
         item.className = "list-item";
-        item.style.cursor = "pointer";
-        item.onclick = () => openEditPopup('material_katalog', m.id, m.name);
+        item.onclick = () => openEditPopup('material_katalog', m.id, m.name, m.einheit);
 
         const info = document.createElement('div');
         const title = document.createElement('div');
@@ -101,7 +93,7 @@ async function ladeMaterialien() {
         item.appendChild(info);
 
         const icon = document.createElement('span');
-        icon.textContent = "⚙"; // Zahnrad-Symbol
+        icon.textContent = "⚙";
         icon.style.color = "#007bff";
         item.appendChild(icon);
 
@@ -111,19 +103,15 @@ async function ladeMaterialien() {
 
 // --- NENNWEITEN ---
 async function ladeNennweiten() {
-    const { data, error } = await supa.from('nennweiten').select('*').order('wert');
-    if (error) return;
-
+    const { data } = await supa.from('nennweiten').select('*').order('wert');
     const list = document.getElementById('dnList');
     list.innerHTML = "";
 
     data?.forEach(d => {
         const item = document.createElement('div');
         item.className = "list-item";
-        item.style.cursor = "pointer";
-        
-        const displayTxt = `${d.typ || ''} ${d.wert || ''} ${d.gruppe || ''}`.trim();
-        item.onclick = () => openEditPopup('nennweiten', d.id, displayTxt);
+        // Bei Nennweiten zeigen wir im Modal vorerst nur den 'wert' zum Bearbeiten an
+        item.onclick = () => openEditPopup('nennweiten', d.id, d.wert);
 
         const info = document.createElement('div');
         info.className = "item-info";
@@ -147,11 +135,20 @@ async function ladeNennweiten() {
     });
 }
 
-// POPUP LOGIK
-window.openEditPopup = (table, id, currentText) => {
+// --- MODAL LOGIK ---
+window.openEditPopup = (table, id, currentText, currentUnit = null) => {
     currentEditTable = table;
     currentEditId = id;
     editInput.value = currentText;
+    
+    // Einheit-Feld nur bei Materialien anzeigen
+    if (table === 'material_katalog') {
+        editUnitContainer.style.display = "block";
+        editUnitInput.value = currentUnit || "m";
+    } else {
+        editUnitContainer.style.display = "none";
+    }
+    
     editModal.style.display = "flex";
 };
 
@@ -164,14 +161,20 @@ btnSaveEdit.onclick = async () => {
     if (!newVal) return;
     
     status.innerText = "Speichere...";
-    // Hinweis: Bei nennweiten müsste man eigentlich typ/wert/gruppe trennen, 
-    // hier ändern wir der Einfachheit halber erst mal nur das 'name' Feld bei Mat/Kat.
-    const updateObj = (currentEditTable === 'nennweiten') ? { wert: newVal } : { name: newVal };
+    let updateObj = {};
+
+    if (currentEditTable === 'material_katalog') {
+        updateObj = { name: newVal, einheit: editUnitInput.value };
+    } else if (currentEditTable === 'nennweiten') {
+        updateObj = { wert: newVal };
+    } else {
+        updateObj = { name: newVal };
+    }
     
     await supa.from(currentEditTable).update(updateObj).eq('id', currentEditId);
     
     editModal.style.display = "none";
-    init(); // Alles neu laden
+    init(); 
 };
 
 btnDeleteConfirm.onclick = async () => {
@@ -182,7 +185,7 @@ btnDeleteConfirm.onclick = async () => {
     init();
 };
 
-// SPEICHER-FUNKTIONEN (NEUANLAGE)
+// --- NEUANLAGE ---
 window.saveCategory = async () => {
     const name = document.getElementById('katName').value;
     if (!name) return;
@@ -195,14 +198,13 @@ window.saveMaterial = async () => {
     const name = document.getElementById('matName').value;
     const einheit = document.getElementById('matUnit').value;
     const katId = document.getElementById('matKatSelect').value;
-    if (!name || !einheit || !katId) return alert("Pflichtfelder fehlen!");
+    if (!name || !katId) return alert("Name und Kategorie fehlen!");
 
     const { data } = await supa.from('material_katalog').insert([{ name, einheit }]).select();
     if (data && data[0]) {
         await supa.from('material_katalog_kategorien').insert([{ material_id: data[0].id, kategorie_id: katId }]);
     }
     document.getElementById('matName').value = "";
-    document.getElementById('matUnit').value = "";
     ladeMaterialien();
 };
 

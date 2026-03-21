@@ -27,7 +27,7 @@
         .list-container { margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px; }
         .list-item { 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 12px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem;
+            padding: 12px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; cursor: pointer;
         }
         .list-item:last-child { border-bottom: none; }
         
@@ -35,7 +35,7 @@
         .item-main { font-weight: bold; color: #333; }
         .item-sub { font-size: 0.75rem; color: #007bff; font-weight: bold; }
 
-        #status { font-size: 0.75rem; color: #888; text-align: center; margin-top: 20px; font-style: italic; }
+        #status { font-size: 0.75rem; color: #888; text-align: center; margin-top: 20px; font-style: italic; height: 1rem; }
 
         .dn-row { display: flex; gap: 8px; }
         .dn-row div { flex: 1; }
@@ -63,18 +63,28 @@
     <h1>Stammdaten Verwaltung</h1>
 
     <div class="nav-btns">
-        <button class="btn-nav active" onclick="showSection('sec-mat')">Materialien</button>
-        <button class="btn-nav" onclick="showSection('sec-dn')">Nennweiten</button>
-        <button class="btn-nav" onclick="showSection('sec-kat')">Kategorien</button>
+        <button id="nav-mat" class="btn-nav active" onclick="showSection('sec-mat')">Materialien</button>
+        <button id="nav-dn" class="btn-nav" onclick="showSection('sec-dn')">Nennweiten</button>
+        <button id="nav-kat" class="btn-nav" onclick="showSection('sec-kat')">Kategorien</button>
     </div>
 
     <div id="sec-mat" class="section active">
         <label>Neues Material Name</label>
         <input type="text" id="matName" placeholder="z.B. KG-Rohr">
+        
         <label>Einheit</label>
-        <input type="text" id="matUnit" placeholder="z.B. m, Stk, Rollen">
+        <select id="matUnit">
+            <option value="m">Meter (m)</option>
+            <option value="Stk">Stück (Stk)</option>
+            <option value="Set">Set</option>
+            <option value="Paar">Paar</option>
+            <option value="Rolle">Rolle</option>
+            <option value="Sack">Sack</option>
+        </select>
+        
         <label>Kategorie zuordnen</label>
         <select id="matKatSelect"></select>
+
         <button class="btn-save" onclick="saveMaterial()">Material Speichern</button>
         <div class="list-container" id="matList"></div>
     </div>
@@ -104,8 +114,22 @@
 <div id="editModal" class="modal">
     <div class="modal-content">
         <h3 id="modalTitle" style="margin-top:0;">Eintrag bearbeiten</h3>
-        <label>Bezeichnung</label>
+        
+        <label id="editInputLabel">Bezeichnung / Wert</label>
         <input type="text" id="editInput">
+        
+        <div id="editUnitContainer" style="display:none; margin-top:15px;">
+            <label>Einheit</label>
+            <select id="editUnitInput">
+                <option value="m">Meter (m)</option>
+                <option value="Stk">Stück (Stk)</option>
+                <option value="Set">Set</option>
+                <option value="Paar">Paar</option>
+                <option value="Rolle">Rolle</option>
+                <option value="Sack">Sack</option>
+            </select>
+        </div>
+
         <div class="modal-btns">
             <button id="btnSaveEdit" class="btn-modal-save">Speichern</button>
             <button id="btnDeleteConfirm" class="btn-modal-del">Löschen</button>
@@ -121,7 +145,10 @@
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        event.target.classList.add('active');
+        // Button-Highlighting
+        if (id === 'sec-mat') document.getElementById('nav-mat').classList.add('active');
+        if (id === 'sec-dn') document.getElementById('nav-dn').classList.add('active');
+        if (id === 'sec-kat') document.getElementById('nav-kat').classList.add('active');
     }
 </script>
 
