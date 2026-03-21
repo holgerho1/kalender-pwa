@@ -14,12 +14,6 @@ const status = document.getElementById('status');
 const titleEl = document.getElementById('projectTitle');
 const toggleGroup = document.getElementById('toggleGroup');
 
-const editModal = document.getElementById('editEntryModal');
-const editMengeInp = document.getElementById('editMenge');
-const editKatSel = document.getElementById('editKat');
-const editDnSel = document.getElementById('editDn');
-let currentEditId = null;
-
 function formatDN(dn) {
     if (!dn) return "";
     const teile = [];
@@ -36,33 +30,31 @@ async function init() {
             return;
         }
         
-        // Prüfe ob 'projektname' oder 'name' (hier auf 'name' geändert, falls Standard)
-        const { data: proj, error: pErr } = await supa.from('projekte').select('*').eq('id', projektId).single();
-        if (proj) titleEl.innerText = proj.name || proj.projektname;
+        // Projektdaten laden
+        const { data: proj } = await supa.from('projekte').select('*').eq('id', projektId).single();
+        if (proj) titleEl.innerText = proj.projektname || proj.name;
 
+        // Kategorien für Dropdown laden
         const { data: kats } = await supa.from('material_kategorien').select('*').order('name');
         katSel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
-        if(editKatSel) editKatSel.innerHTML = "";
         kats?.forEach(k => {
-            const opt = `<option value="${k.id}">${k.name}</option>`;
-            katSel.innerHTML += opt;
-            if(editKatSel) editKatSel.innerHTML += opt;
+            katSel.innerHTML += `<option value="${k.id}">${k.name}</option>`;
         });
 
         await ladeMaterialListe();
         status.innerText = "Bereit";
     } catch (e) {
-        status.innerText = "Fehler beim Laden";
+        status.innerText = "Fehler im Init";
         console.error(e);
     }
 }
 
+// 1. Kategorie -> Material
 katSel.addEventListener('change', async () => {
     const katId = katSel.value;
     matSel.disabled = true;
     dnSel.disabled = true;
     matSel.innerHTML = '<option value="">-- Lädt... --</option>';
-    
     if (!katId) return;
 
     const { data } = await supa.from('material_katalog_kategorien').select('material_katalog ( id, name, einheit )').eq('kategorie_id', katId);
@@ -78,15 +70,12 @@ katSel.addEventListener('change', async () => {
     matSel.disabled = false;
 });
 
+// 2. Material -> Nennweite
 matSel.addEventListener('change', async () => {
     const matId = matSel.value;
     const opt = matSel.options[matSel.selectedIndex];
     einheitDisplay.innerText = opt.dataset.unit || "---";
-
-    if (!matId) {
-        dnSel.disabled = true;
-        return;
-    }
+    if (!matId) { dnSel.disabled = true; return; }
 
     const { data } = await supa.from('material_katalog_nennweiten').select('nennweiten ( id, wert, typ, gruppe )').eq('katalog_id', matId);
     dnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
@@ -99,7 +88,8 @@ matSel.addEventListener('change', async () => {
     }
 });
 
-async function addToList() {
+// 3. Speichern (Hier Tabellenname prüfen!)
+window.addToList = async () => {
     const matId = matSel.value;
     const katId = katSel.value;
     const dnId = dnSel.value || null;
@@ -108,8 +98,8 @@ async function addToList() {
     if (!matId || !katId || isNaN(menge)) return alert("Bitte alles ausfüllen!");
 
     status.innerText = "Speichere...";
-    // Tabellenname auf 'projekt_material' geändert!
-    await supa.from('projekt_material').insert([{
+    // Nutze hier 'materialien' oder 'projekt_material' – je nach deiner DB!
+    const { error } = await supa.from('materialien').insert([{
         projekt_id: projektId,
         katalog_id: matId,
         kategorie_id: katId,
@@ -117,14 +107,17 @@ async function addToList() {
         menge: menge
     }]);
 
+    if(error) { alert("Fehler beim Speichern: " + error.message); }
+    
     mengeInp.value = "1";
     await ladeMaterialListe();
     status.innerText = "Bereit";
-}
+};
 
+// 4. Liste laden
 async function ladeMaterialListe() {
-    // Tabellenname auf 'projekt_material' geändert!
-    const { data, error } = await supa.from('projekt_material').select(`
+    // WICHTIG: Tabellenname 'materialien' muss mit deiner DB übereinstimmen
+    const { data, error } = await supa.from('materialien').select(`
             id, menge, katalog_id, kategorie_id, nennweite_id,
             material_katalog ( name, einheit ),
             material_kategorien ( name ),
@@ -132,15 +125,19 @@ async function ladeMaterialListe() {
         `).eq('projekt_id', projektId);
 
     if (error) {
-        console.error(error);
+        console.error("Listen-Fehler:", error);
+        status.innerText = "Fehler: " + error.message;
         return;
     }
     
     listEl.innerHTML = "";
-    const sollGruppieren = toggleGroup?.checked;
-    const gruppen = {};
+    if (!data || data.length === 0) {
+        listEl.innerHTML = "<div style='text-align:center; color:#888; margin-top:20px;'>Noch keine Einträge vorhanden.</div>";
+        return;
+    }
 
-    data?.forEach(m => {
+    const gruppen = {};
+    data.forEach(m => {
         const katName = m.material_kategorien?.name || "Sonstiges";
         if (!gruppen[katName]) gruppen[katName] = [];
         gruppen[katName].push(m);
@@ -148,12 +145,12 @@ async function ladeMaterialListe() {
 
     Object.keys(gruppen).sort().forEach(katName => {
         const header = document.createElement('div');
-        header.style = "background:#eee; padding:8px 10px; font-size:0.75rem; font-weight:bold; color:#555; margin-top:20px; border-radius:4px;";
+        header.style = "background:#eee; padding:8px 10px; font-size:0.75rem; font-weight:bold; color:#555; margin-top:20px; border-radius:4px; border-left: 5px solid #007bff;";
         header.innerText = katName;
         listEl.appendChild(header);
 
         let anzeigeListe = gruppen[katName];
-        if (sollGruppieren) {
+        if (toggleGroup?.checked) {
             const temp = {};
             anzeigeListe.forEach(m => {
                 const key = `${m.katalog_id}_${m.nennweite_id}`;
@@ -167,7 +164,7 @@ async function ladeMaterialListe() {
             const itemDiv = document.createElement('div');
             itemDiv.className = "list-item";
             const dnTxt = formatDN(m.nennweiten);
-            const mengeVal = sollGruppieren ? m.summe : m.menge;
+            const mengeVal = toggleGroup?.checked ? m.summe : m.menge;
 
             itemDiv.innerHTML = `
                 <div class="mat-info">
@@ -183,7 +180,7 @@ async function ladeMaterialListe() {
     });
 }
 
-document.getElementById('btnAddMaterial').onclick = addToList;
+document.getElementById('btnAddMaterial').onclick = window.addToList;
 toggleGroup?.addEventListener('change', ladeMaterialListe);
 
 init();
