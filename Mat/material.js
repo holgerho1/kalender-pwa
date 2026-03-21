@@ -91,7 +91,6 @@ matSel.addEventListener('change', async () => {
     const opt = matSel.options[matSel.selectedIndex];
     einheitDisplay.textContent = opt.dataset.unit || "---";
     
-    // Filterbar leeren
     const filterBar = document.getElementById('dnFilterBar');
     if(filterBar) filterBar.innerHTML = "";
 
@@ -99,13 +98,9 @@ matSel.addEventListener('change', async () => {
 
     const { data } = await supa.from('material_katalog_nennweiten').select('nennweiten ( id, wert, typ, gruppe )').eq('katalog_id', matId);
     
-    // Nennweiten für Filterung speichern
     aktuelleNennweiten = data?.map(item => item.nennweiten).filter(d => d !== null) || [];
     
-    // Buttons erstellen
     erstelleFilterButtons();
-    
-    // Dropdown initial befüllen
     befuelleDnDropdown(aktuelleNennweiten);
     dnSel.disabled = false;
 });
@@ -115,11 +110,9 @@ function erstelleFilterButtons() {
     if (!filterBar) return;
     filterBar.innerHTML = "";
 
-    // Eindeutige Gruppen extrahieren, die tatsächlich vorhanden sind
     const gruppen = [...new Set(aktuelleNennweiten.map(d => d.gruppe).filter(g => g))].sort();
 
     if (gruppen.length > 0) {
-        // "Alle" Button
         filterBar.appendChild(createFilterBtn("Alle", null));
         gruppen.forEach(g => {
             filterBar.appendChild(createFilterBtn(g, g));
@@ -130,14 +123,12 @@ function erstelleFilterButtons() {
 function createFilterBtn(label, gruppe) {
     const btn = document.createElement('button');
     btn.textContent = label;
-    btn.className = "filter-btn"; // Styling erfolgt über CSS
+    btn.className = "filter-btn";
     btn.onclick = (e) => {
         e.preventDefault();
-        // Aktiven Status optisch setzen
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         
-        // Dropdown filtern
         const gefiltert = gruppe 
             ? aktuelleNennweiten.filter(d => d.gruppe === gruppe)
             : aktuelleNennweiten;
@@ -278,6 +269,14 @@ async function ladeMaterialListe() {
             }
             
             infoDiv.appendChild(row);
+
+            // NEU: Anzeige der Anzahl der zusammengefassten Einträge
+            if (toggleGroup?.checked && m.anzahl > 1) {
+                const subLine = document.createElement('div');
+                subLine.style = "font-size: 0.7rem; color: #888; font-style: italic;";
+                subLine.textContent = `Summe aus ${m.anzahl} Einträgen`;
+                infoDiv.appendChild(subLine);
+            }
             
             const valDiv = document.createElement('div');
             valDiv.style = "font-weight:bold;";
