@@ -3,185 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Katalog-Admin</title>
+    <title>Material-Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 600px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        body { font-family: sans-serif; margin: 15px; background-color: #f0f2f5; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 600px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
-        h1 { font-size: 1.2rem; text-align: center; margin-bottom: 20px; color: #333; }
-        .nav-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-back { background: #6c757d; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 0.8rem; }
-        .btn-settings { background: #007bff; color: white; padding: 8px 15px; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer; }
+        h1 { font-size: 1.3rem; color: #1a1a1a; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
         
-        .admin-section { border: 1px solid #ddd; padding: 15px; border-radius: 6px; margin-bottom: 25px; background: #fafafa; }
-        h2 { font-size: 1rem; margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
+        .nav-btns { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn-nav { flex: 1; padding: 10px; border: none; border-radius: 6px; background: #eef2f7; color: #333; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
+        .btn-nav.active { background: #007bff; color: white; }
+
+        .section { display: none; background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
+        .section.active { display: block; }
+
+        label { display: block; font-size: 0.75rem; font-weight: bold; color: #555; margin-top: 15px; margin-bottom: 5px; text-transform: uppercase; }
         
-        label { display: block; font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; color: #666; text-transform: uppercase; }
-        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; background: white; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
         
-        button { padding: 12px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
-        .btn-add { background: #28a745; color: white; width: 100%; margin-bottom: 10px; }
+        .btn-save { background: #28a745; color: white; border: none; padding: 14px; width: 100%; border-radius: 6px; font-weight: bold; margin-top: 20px; cursor: pointer; }
         
+        .list-container { margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px; }
         .list-item { 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 10px; border-bottom: 1px solid #eee; background: white; margin-bottom: 5px; border-radius: 4px;
+            padding: 12px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem;
         }
-
-        /* Modal Styles */
-        .modal { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; 
-        }
-        .modal-content { 
-            background: white; padding: 25px; border-radius: 12px; width: 95%; max-width: 450px; 
-            max-height: 90vh; overflow-y: auto; box-shadow: 0 15px 30px rgba(0,0,0,0.3);
-        }
+        .list-item:last-child { border-bottom: none; }
         
-        .check-container { 
-            max-height: 200px; overflow-y: auto; border: 1px solid #ddd; 
-            padding: 10px; background: #fff; margin-bottom: 20px; border-radius: 4px;
-        }
+        .item-info { display: flex; flex-direction: column; gap: 2px; }
+        .item-main { font-weight: bold; color: #333; }
+        .item-sub { font-size: 0.75rem; color: #007bff; font-weight: bold; }
 
-        .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+        .btn-del { background: #ff4d4d; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; }
+        
+        #status { font-size: 0.75rem; color: #888; text-align: center; margin-top: 20px; font-style: italic; }
 
-        /* NEUE REIHENFOLGE: TYP - WERT - GRUPPE */
-        .dn-add-grid { display: flex; flex-direction: column; gap: 8px; }
-        .dn-add-row { display: flex; gap: 8px; align-items: flex-start; }
-        .dn-add-row select, .dn-add-row input { margin-bottom: 0; flex: 1; }
-        .dn-add-row input { flex: 1.5; } /* Bezeichnung etwas breiter */
-
-        .small-list { font-size: 0.85rem; border: 1px solid #eee; padding: 5px; border-radius: 4px; margin-bottom: 15px; max-height: 120px; overflow-y: auto; }
+        /* Spezielles Styling für Nennweiten-Input-Reihe */
+        .dn-row { display: flex; gap: 8px; }
+        .dn-row div { flex: 1; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="nav-header">
-        <a href="index.html" class="btn-back">⬅ Zurück</a>
-        <button onclick="openStammModal()" class="btn-settings">⚙ Gruppen & Typen</button>
+    <button onclick="window.location.href='index.html'" style="background:none; border:none; color:#007bff; cursor:pointer; font-weight:bold; margin-bottom:15px;">⬅ Zurück zur Übersicht</button>
+    
+    <h1>Stammdaten Verwaltung</h1>
+
+    <div class="nav-btns">
+        <button class="btn-nav active" onclick="showSection('sec-mat')">Materialien</button>
+        <button class="btn-nav" onclick="showSection('sec-dn')">Nennweiten</button>
+        <button class="btn-nav" onclick="showSection('sec-kat')">Kategorien</button>
     </div>
 
-    <h1>Katalog-Verwaltung</h1>
+    <div id="sec-mat" class="section active">
+        <label>Neues Material Name</label>
+        <input type="text" id="matName" placeholder="z.B. KG-Rohr">
+        
+        <label>Einheit</label>
+        <input type="text" id="matUnit" placeholder="z.B. m, Stk, Rollen">
+        
+        <label>Kategorie zuordnen</label>
+        <select id="matKatSelect"></select>
 
-    <div class="admin-section">
-        <h2>1. Nennweiten (Stammdaten)</h2>
-        <div class="dn-add-grid">
-            <label>Nennweite zusammenstellen (Typ - Bezeichnung - Gruppe)</label>
-            <div class="dn-add-row">
-                <select id="newDNTyp"><option value="">Typ...</option></select>
-                <input type="text" id="newDNWert" placeholder="DN (z.B. 100)">
-                <select id="newDNGruppe"><option value="">Gruppe...</option></select>
+        <button class="btn-save" onclick="saveMaterial()">Material Speichern</button>
+        
+        <div class="list-container" id="matList"></div>
+    </div>
+
+    <div id="sec-dn" class="section">
+        <div class="dn-row">
+            <div>
+                <label>Typ</label>
+                <input type="text" id="dnTyp" placeholder="KG">
             </div>
-            <button onclick="addDN()" class="btn-add">Hinzufügen</button>
+            <div>
+                <label>Wert</label>
+                <input type="text" id="dnWert" placeholder="110">
+            </div>
+            <div>
+                <label>Gruppe</label>
+                <input type="text" id="dnGruppe" placeholder="Abwasser">
+            </div>
         </div>
-        <div id="dnList" style="margin-top:15px;"></div>
-    </div>
 
-    <div class="admin-section">
-        <h2>2. Material-Kategorien</h2>
-        <div style="display: flex; gap: 8px;">
-            <input type="text" id="newKatName" placeholder="Neue Kategorie..." style="margin-bottom:0;">
-            <button onclick="addKat()" class="btn-add" style="width: auto; margin-bottom:0; padding: 0 20px;">+</button>
-        </div>
-        <div id="katList" style="margin-top: 15px;"></div>
-    </div>
-
-    <div class="admin-section">
-        <h2>3. Material-Katalog</h2>
-        <input type="text" id="matSearch" placeholder="Material suchen..." style="border-color: #28a745;">
-        <div id="matList"></div>
-    </div>
-</div>
-
-<div id="stammModal" class="modal">
-    <div class="modal-content">
-        <h3>Gruppen & Typen verwalten</h3>
-        
-        <label>Neue Gruppe hinzufügen</label>
-        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-            <input type="text" id="newDNGruppenName" placeholder="Name..." style="margin-bottom:0;">
-            <button onclick="addDNGruppe()" style="background:#28a745; color:white; padding: 0 15px;">+</button>
-        </div>
-        <div id="dnGruppenList" class="small-list"></div>
-
-        <label>Neuen Typ hinzufügen</label>
-        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-            <input type="text" id="newDNTypenName" placeholder="Name..." style="margin-bottom:0;">
-            <button onclick="addDNTyp()" style="background:#28a745; color:white; padding: 0 15px;">+</button>
-        </div>
-        <div id="dnTypenList" class="small-list"></div>
-
-        <div class="modal-actions">
-            <button onclick="closeStammModal()" style="background: #6c757d; color: white;">Schließen</button>
-        </div>
-    </div>
-</div>
-
-<div id="matEditModal" class="modal">
-    <div class="modal-content">
-        <h3 id="editModalTitle">Material bearbeiten</h3>
-        <label>Name:</label>
-        <input type="text" id="editMatName">
-        <label>Einheit:</label>
-        <select id="editMatEinheit">
-            <option value="Stk">Stk</option><option value="m">m</option><option value="m²">m²</option><option value="m³">m³</option>
-            <option value="l">l</option><option value="Pkg">Pkg</option><option value="Satz">Satz</option><option value="Paar">Paar</option>
-            <option value="kg">kg</option><option value="t">t</option><option value="VPE">VPE</option>
+        <label>Material zuordnen (Optional)</label>
+        <select id="dnMatSelect">
+            <option value="">-- Nur global anlegen --</option>
         </select>
-        <label>Kategorien:</label>
-        <div id="editMatKatContainer" class="check-container"></div>
-        
-        <label>Nennweiten filtern:</label>
-        <div style="display:flex; gap:5px; margin-bottom:10px;">
-            <select id="filterDNGruppe"><option value="">Alle Gruppen</option></select>
-            <select id="filterDNTyp"><option value="">Alle Typen</option></select>
-        </div>
-        
-        <label>Nennweiten (DN):</label>
-        <div id="editMatDnContainer" class="check-container"></div>
-        
-        <div class="modal-actions">
-            <button onclick="saveMaterialChanges()" style="background:#28a745; color:white;">Speichern</button>
-            <button id="btnDeleteMat" onclick="deleteMaterialFull()" style="background:#dc3545; color:white; display:none;">Löschen</button>
-            <button onclick="closeModal()" style="background:#6c757d; color:white;">Abbrechen</button>
-        </div>
-    </div>
-</div>
 
-<div id="katEditModal" class="modal">
-    <div class="modal-content">
-        <h3>Kategorie bearbeiten</h3>
-        <input type="text" id="editKatName">
-        <div class="modal-actions">
-            <button onclick="saveKatChanges()" style="background:#28a745; color:white;">Speichern</button>
-            <button onclick="deleteKatFull()" style="background:#dc3545; color:white;">Löschen</button>
-            <button onclick="closeKatModal()" style="background:#6c757d; color:white;">Abbrechen</button>
-        </div>
+        <button class="btn-save" onclick="saveDN()">Nennweite Speichern</button>
+        
+        <div class="list-container" id="dnList"></div>
     </div>
-</div>
 
-<div id="dnEditModal" class="modal">
-    <div class="modal-content">
-        <h3>Nennweite bearbeiten</h3>
+    <div id="sec-kat" class="section">
+        <label>Neue Kategorie</label>
+        <input type="text" id="katName" placeholder="z.B. Tiefbau">
         
-        <label>Typ:</label>
-        <select id="editDNTyp"></select>
+        <button class="btn-save" onclick="saveCategory()">Kategorie Speichern</button>
         
-        <label>Bezeichnung:</label>
-        <input type="text" id="editDNWert" placeholder="z.B. 100">
-        
-        <label>Gruppe:</label>
-        <select id="editDNGruppe"></select>
-        
-        <div class="modal-actions">
-            <button onclick="saveDNChanges()" style="background:#28a745; color:white;">Speichern</button>
-            <button onclick="deleteDNFull()" style="background:#dc3545; color:white;">Löschen</button>
-            <button onclick="closeDNModal()" style="background:#6c757d; color:white;">Abbrechen</button>
-        </div>
+        <div class="list-container" id="katList"></div>
     </div>
+
+    <div id="status">Bereit</div>
 </div>
 
 <script type="module" src="admin.js"></script>
+
+<script>
+    // Einfaches UI-Switching ohne Modul-Logik
+    window.showSection = function(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.target.classList.add('active');
+    }
+</script>
+
 </body>
 </html>

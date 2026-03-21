@@ -22,6 +22,7 @@ const editKatSel = document.getElementById('editKat');
 const editDnSel = document.getElementById('editDn');
 let currentEditId = null;
 
+// HILFSFUNKTIONEN (Sicher gegen Zoll-Zeichen ")
 function formatDN(dn) {
     if (!dn) return "";
     const teile = [];
@@ -29,6 +30,10 @@ function formatDN(dn) {
     if (dn.wert) teile.push(dn.wert);
     if (dn.gruppe) teile.push(dn.gruppe);
     return teile.length > 0 ? teile.join(' ') : "";
+}
+
+function safeText(str) {
+    return str ? str.toString() : "";
 }
 
 async function init() {
@@ -39,22 +44,25 @@ async function init() {
         if (proj) titleEl.innerText = proj.projektname || proj.name;
 
         const { data: kats } = await supa.from('material_kategorien').select('*').order('name');
-        katSel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
-        if(editKatSel) editKatSel.innerHTML = "";
-        kats?.forEach(k => {
-            const opt = `<option value="${k.id}">${k.name}</option>`;
-            katSel.innerHTML += opt;
-            if(editKatSel) editKatSel.innerHTML += opt;
+        
+        // Dropdowns sicher befüllen
+        [katSel, editKatSel].forEach(sel => {
+            if (!sel) return;
+            sel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
+            kats?.forEach(k => {
+                const opt = document.createElement('option');
+                opt.value = k.id;
+                opt.textContent = k.name; // textContent ist sicher gegen "
+                sel.appendChild(opt);
+            });
         });
 
         await ladeMaterialListe();
         status.innerText = "Bereit";
-    } catch (e) {
-        console.error(e);
-    }
+    } catch (e) { console.error(e); }
 }
 
-// NEUANLAGE LOGIK
+// LOGIK NEUANLAGE
 katSel.addEventListener('change', async () => {
     const katId = katSel.value;
     matSel.disabled = true; dnSel.disabled = true;
@@ -67,7 +75,9 @@ katSel.addEventListener('change', async () => {
         const m = item.material_katalog;
         if (m) {
             const opt = document.createElement('option');
-            opt.value = m.id; opt.textContent = m.name; opt.dataset.unit = m.einheit;
+            opt.value = m.id;
+            opt.textContent = m.name;
+            opt.dataset.unit = m.einheit;
             matSel.appendChild(opt);
         }
     });
@@ -77,18 +87,21 @@ katSel.addEventListener('change', async () => {
 matSel.addEventListener('change', async () => {
     const matId = matSel.value;
     const opt = matSel.options[matSel.selectedIndex];
-    einheitDisplay.innerText = opt.dataset.unit || "---";
+    einheitDisplay.textContent = opt.dataset.unit || "---";
     if (!matId) { dnSel.disabled = true; return; }
 
     const { data } = await supa.from('material_katalog_nennweiten').select('nennweiten ( id, wert, typ, gruppe )').eq('katalog_id', matId);
     dnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
-    if (data?.length > 0) {
-        data.forEach(item => {
-            const d = item.nennweiten;
-            if (d) dnSel.innerHTML += `<option value="${d.id}">${formatDN(d)}</option>`;
-        });
-        dnSel.disabled = false;
-    }
+    data?.forEach(item => {
+        const d = item.nennweiten;
+        if (d) {
+            const o = document.createElement('option');
+            o.value = d.id;
+            o.textContent = formatDN(d); // Zoll-Zeichen sicher
+            dnSel.appendChild(o);
+        }
+    });
+    dnSel.disabled = false;
 });
 
 window.addToList = async () => {
@@ -107,37 +120,34 @@ window.addToList = async () => {
     status.innerText = "Bereit";
 };
 
-// MODAL LOGIK (Bearbeiten/Löschen)
-window.openEditModal = async (entry) => {
-    if (toggleGroup?.checked) return; // Kein Edit im Summen-Modus
-    
-    currentEditId = entry.id;
-    if (editModalTitle) editModalTitle.innerText = entry.material_katalog?.name || "Bearbeiten";
-    
-    // Nennweiten für dieses Material laden
+// MODAL (BEARBEITEN)
+async function openEditModal(m) {
+    if (toggleGroup?.checked) return;
+    currentEditId = m.id;
+    editModalTitle.textContent = m.material_katalog?.name || "Bearbeiten";
+    editMengeInp.value = m.menge;
+    if (editKatSel) editKatSel.value = m.kategorie_id;
+
     const { data: nenns } = await supa.from('material_katalog_nennweiten')
-        .select('nennweiten ( id, wert, typ, gruppe )')
-        .eq('katalog_id', entry.katalog_id);
+        .select('nennweiten ( id, wert, typ, gruppe )').eq('katalog_id', m.katalog_id);
 
-    editDnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
-    nenns?.forEach(item => {
-        const d = item.nennweiten;
-        if (d) {
-            const opt = document.createElement('option');
-            opt.value = d.id;
-            opt.textContent = formatDN(d);
-            editDnSel.appendChild(opt);
-        }
-    });
-
-    editMengeInp.value = entry.menge;
-    if(editKatSel) editKatSel.value = entry.kategorie_id;
-    editDnSel.value = entry.nennweite_id || ""; 
+    if (editDnSel) {
+        editDnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
+        nenns?.forEach(item => {
+            const d = item.nennweiten;
+            if (d) {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = formatDN(d);
+                editDnSel.appendChild(opt);
+            }
+        });
+        editDnSel.value = m.nennweite_id || "";
+    }
     editModal.style.display = "flex";
-};
+}
 
 document.getElementById('btnSaveEdit').onclick = async () => {
-    status.innerText = "Speichere...";
     await supa.from('materialien').update({
         menge: parseFloat(editMengeInp.value),
         kategorie_id: editKatSel.value,
@@ -145,16 +155,13 @@ document.getElementById('btnSaveEdit').onclick = async () => {
     }).eq('id', currentEditId);
     editModal.style.display = "none";
     await ladeMaterialListe();
-    status.innerText = "Bereit";
 };
 
 document.getElementById('btnDeleteEntry').onclick = async () => {
-    if (!confirm("Eintrag löschen?")) return;
-    status.innerText = "Lösche...";
+    if (!confirm("Löschen?")) return;
     await supa.from('materialien').delete().eq('id', currentEditId);
     editModal.style.display = "none";
     await ladeMaterialListe();
-    status.innerText = "Bereit";
 };
 
 // LISTE RENDERN
@@ -166,7 +173,7 @@ async function ladeMaterialListe() {
             nennweiten ( id, wert, typ, gruppe )
         `).eq('projekt_id', projektId);
 
-    if (error) return status.innerText = "Listen-Fehler!";
+    if (error) return;
     listEl.innerHTML = "";
     
     const gruppen = {};
@@ -179,7 +186,7 @@ async function ladeMaterialListe() {
     Object.keys(gruppen).sort().forEach(katName => {
         const header = document.createElement('div');
         header.style = "background:#eee; padding:8px 10px; font-size:0.75rem; font-weight:bold; color:#555; margin-top:20px; border-radius:4px; border-left: 5px solid #007bff;";
-        header.innerText = katName;
+        header.textContent = katName;
         listEl.appendChild(header);
 
         let anzeigeListe = gruppen[katName];
@@ -196,23 +203,38 @@ async function ladeMaterialListe() {
         anzeigeListe.forEach(m => {
             const itemDiv = document.createElement('div');
             itemDiv.className = "list-item";
+            if (!toggleGroup?.checked) itemDiv.onclick = () => openEditModal(m);
+
+            // Innere Struktur sicher aufbauen
+            const infoDiv = document.createElement('div');
+            infoDiv.className = "mat-info";
+            
+            const row = document.createElement('div');
+            row.style = "display:flex; gap:8px; align-items:center;";
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = "mat-name";
+            nameSpan.textContent = m.material_katalog?.name || "Unbekannt";
+            
+            row.appendChild(nameSpan);
+
             const dnTxt = formatDN(m.nennweiten);
-            const mengeVal = toggleGroup?.checked ? m.summe : m.menge;
-
-            // Hier wird der Klick-Event für das Modal wieder gesetzt:
-            if (!toggleGroup?.checked) {
-                itemDiv.onclick = () => openEditModal(m);
+            if (dnTxt) {
+                const dnSpan = document.createElement('span');
+                dnSpan.className = "mat-dn";
+                dnSpan.textContent = dnTxt;
+                row.appendChild(dnSpan);
             }
+            
+            infoDiv.appendChild(row);
+            
+            const valDiv = document.createElement('div');
+            valDiv.style = "font-weight:bold;";
+            const mengeVal = toggleGroup?.checked ? m.summe : m.menge;
+            valDiv.textContent = `${mengeVal} ${m.material_katalog?.einheit || ''}`;
 
-            itemDiv.innerHTML = `
-                <div class="mat-info">
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <span class="mat-name">${m.material_katalog?.name}</span>
-                        ${dnTxt ? `<span class="mat-dn">${dnTxt}</span>` : ''}
-                    </div>
-                </div>
-                <div style="font-weight:bold;">${mengeVal} ${m.material_katalog?.einheit}</div>
-            `;
+            itemDiv.appendChild(infoDiv);
+            itemDiv.appendChild(valDiv);
             listEl.appendChild(itemDiv);
         });
     });

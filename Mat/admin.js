@@ -2,319 +2,168 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// DOM Elemente
-const katList = document.getElementById('katList');
-const matList = document.getElementById('matList');
-const dnList = document.getElementById('dnList');
-const dnGruppenList = document.getElementById('dnGruppenList');
-const dnTypenList = document.getElementById('dnTypenList');
+const status = document.getElementById('status');
 
-// Modals
-const matModal = document.getElementById('matEditModal');
-const katModal = document.getElementById('katEditModal');
-const dnModal = document.getElementById('dnEditModal');
-const stammModal = document.getElementById('stammModal');
-
-const editMatDnContainer = document.getElementById('editMatDnContainer');
-const editMatKatContainer = document.getElementById('editMatKatContainer');
-const editModalTitle = document.getElementById('editModalTitle');
-
-let currentEditMatId = null;
-let currentEditKatId = null;
-let currentEditDNId = null;
-let allMaterials = [];
-
-async function init() {
-    await ladeStammdatenListen(); // Lädt Gruppen & Typen
-    ladeKategorien();
-    ladeKatalog();
-    ladeNennweitenStamm();
-}
-
-/**
- * ZENTRALE FORMATIERUNG:
- * Baut den String aus Typ, Wert (Bezeichnung) und Gruppe zusammen.
- */
+// Hilfsfunktion für die Anzeige (Zoll-sicher)
 function formatDN(dn) {
+    if (!dn) return "";
     const teile = [];
     if (dn.typ) teile.push(dn.typ);
     if (dn.wert) teile.push(dn.wert);
     if (dn.gruppe) teile.push(dn.gruppe);
-    
-    return teile.length > 0 ? teile.join(' ') : "Unbenannt";
+    return teile.length > 0 ? teile.join(' ') : "";
 }
 
-// --- STAMMDATEN POPUP (GRUPPEN & TYPEN) ---
-
-window.openStammModal = () => stammModal.style.display = "flex";
-window.closeStammModal = () => stammModal.style.display = "none";
-
-async function ladeStammdatenListen() {
-    const { data: gruppen } = await supa.from('dn_gruppen').select('*').order('name');
-    const { data: typen } = await supa.from('dn_typen').select('*').order('name');
-
-    dnGruppenList.innerHTML = gruppen?.map(g => `
-        <div class="list-item" style="padding: 5px; font-size: 0.8rem;">
-            <span>${g.name}</span>
-            <button onclick="deleteStamm('dn_gruppen','${g.id}')" style="background:none; color:red; padding:2px 5px;">X</button>
-        </div>`).join('') || '';
-
-    dnTypenList.innerHTML = typen?.map(t => `
-        <div class="list-item" style="padding: 5px; font-size: 0.8rem;">
-            <span>${t.name}</span>
-            <button onclick="deleteStamm('dn_typen','${t.id}')" style="background:none; color:red; padding:2px 5px;">X</button>
-        </div>`).join('') || '';
-
-    updateDNSelectOptions(gruppen || [], typen || []);
+async function init() {
+    try {
+        await ladeKategorien();
+        await ladeMaterialien();
+        await ladeNennweiten();
+        status.innerText = "Bereit";
+    } catch (e) {
+        console.error(e);
+        status.innerText = "Fehler beim Laden!";
+    }
 }
 
-function updateDNSelectOptions(gruppen, typen) {
-    const optG = '<option value="">Gruppe...</option>' + gruppen.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
-    const optT = '<option value="">Typ...</option>' + typen.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-
-    if(document.getElementById('newDNGruppe')) document.getElementById('newDNGruppe').innerHTML = optG;
-    if(document.getElementById('newDNTyp')) document.getElementById('newDNTyp').innerHTML = optT;
-    if(document.getElementById('editDNGruppe')) document.getElementById('editDNGruppe').innerHTML = optG;
-    if(document.getElementById('editDNTyp')) document.getElementById('editDNTyp').innerHTML = optT;
-}
-
-window.addDNGruppe = async () => {
-    const name = document.getElementById('newDNGruppenName').value.trim();
-    if (!name) return;
-    await supa.from('dn_gruppen').insert([{ name }]);
-    document.getElementById('newDNGruppenName').value = "";
-    ladeStammdatenListen();
-};
-
-window.addDNTyp = async () => {
-    const name = document.getElementById('newDNTypenName').value.trim();
-    if (!name) return;
-    await supa.from('dn_typen').insert([{ name }]);
-    document.getElementById('newDNTypenName').value = "";
-    ladeStammdatenListen();
-};
-
-window.deleteStamm = async (table, id) => {
-    if (!confirm("Eintrag löschen?")) return;
-    await supa.from(table).delete().eq('id', id);
-    ladeStammdatenListen();
-};
-
-// --- 1. NENNWEITEN (STAMMDATEN) ---
-
-async function ladeNennweitenStamm() {
-    const { data } = await supa.from('nennweiten').select('*').order('wert');
-    dnList.innerHTML = "";
-    data?.forEach(dn => {
-        const div = document.createElement('div');
-        div.className = 'list-item';
-        div.innerHTML = `<span><strong>${formatDN(dn)}</strong></span>`;
-        const btn = document.createElement('button');
-        btn.textContent = 'Edit';
-        btn.onclick = () => openDNEdit(dn);
-        div.appendChild(btn);
-        dnList.appendChild(div);
-    });
-}
-
-window.addDN = async () => {
-    const wert = document.getElementById('newDNWert').value.trim();
-    const gruppe = document.getElementById('newDNGruppe').value;
-    const typ = document.getElementById('newDNTyp').value;
-
-    if (!wert && !gruppe && !typ) return alert("Bitte mindestens ein Feld ausfüllen!");
-
-    await supa.from('nennweiten').insert([{ wert, gruppe, typ }]);
-    document.getElementById('newDNWert').value = "";
-    ladeNennweitenStamm();
-};
-
-window.openDNEdit = (dn) => {
-    currentEditDNId = dn.id;
-    document.getElementById('editDNWert').value = dn.wert || "";
-    document.getElementById('editDNGruppe').value = dn.gruppe || "";
-    document.getElementById('editDNTyp').value = dn.typ || "";
-    dnModal.style.display = "flex";
-};
-
-window.saveDNChanges = async () => {
-    const wert = document.getElementById('editDNWert').value.trim();
-    const gruppe = document.getElementById('editDNGruppe').value;
-    const typ = document.getElementById('editDNTyp').value;
-    await supa.from('nennweiten').update({ wert, gruppe, typ }).eq('id', currentEditDNId);
-    closeDNModal();
-    ladeNennweitenStamm();
-};
-
-window.deleteDNFull = async () => {
-    if (!confirm("Löschen?")) return;
-    await supa.from('nennweiten').delete().eq('id', currentEditDNId);
-    closeDNModal();
-    ladeNennweitenStamm();
-};
-
-window.closeDNModal = () => dnModal.style.display = "none";
-
-// --- 2. KATEGORIEN ---
-
+// --- KATEGORIEN ---
 async function ladeKategorien() {
     const { data } = await supa.from('material_kategorien').select('*').order('name');
-    katList.innerHTML = "";
+    const sel = document.getElementById('matKatSelect');
+    const list = document.getElementById('katList');
+    
+    sel.innerHTML = '<option value="">-- Wählen --</option>';
+    list.innerHTML = "";
+    
     data?.forEach(k => {
-        const div = document.createElement('div');
-        div.className = 'list-item';
-        div.innerHTML = `<span>${k.name}</span>`;
+        const opt = document.createElement('option');
+        opt.value = k.id;
+        opt.textContent = k.name;
+        sel.appendChild(opt);
+
+        const item = document.createElement('div');
+        item.className = "list-item";
+        item.innerHTML = `<span>${k.name}</span>`;
         const btn = document.createElement('button');
-        btn.textContent = 'Edit';
-        btn.onclick = () => openKatEdit(k.id, k.name);
-        div.appendChild(btn);
-        katList.appendChild(div);
+        btn.className = "btn-del";
+        btn.textContent = "Löschen";
+        btn.onclick = () => deleteEntry('material_kategorien', k.id, ladeKategorien);
+        item.appendChild(btn);
+        list.appendChild(item);
     });
 }
 
-window.addKat = async () => {
-    const name = document.getElementById('newKatName').value.trim();
+window.saveCategory = async () => {
+    const name = document.getElementById('katName').value;
     if (!name) return;
     await supa.from('material_kategorien').insert([{ name }]);
-    document.getElementById('newKatName').value = "";
-    ladeKategorien();
+    document.getElementById('katName').value = "";
+    await ladeKategorien();
 };
 
-window.openKatEdit = (id, name) => {
-    currentEditKatId = id;
-    document.getElementById('editKatName').value = name;
-    katModal.style.display = "flex";
-};
+// --- MATERIALIEN ---
+async function ladeMaterialien() {
+    const { data } = await supa.from('material_katalog').select('*, material_katalog_kategorien(kategorie_id)').order('name');
+    const sel = document.getElementById('dnMatSelect');
+    const list = document.getElementById('matList');
+    
+    sel.innerHTML = '<option value="">-- Nur global anlegen --</option>';
+    list.innerHTML = "";
 
-window.saveKatChanges = async () => {
-    const name = document.getElementById('editKatName').value.trim();
-    await supa.from('material_kategorien').update({ name }).eq('id', currentEditKatId);
-    closeKatModal();
-    ladeKategorien();
-};
+    data?.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.name;
+        sel.appendChild(opt);
 
-window.deleteKatFull = async () => {
-    if (!confirm("Kategorie löschen?")) return;
-    await supa.from('material_kategorien').delete().eq('id', currentEditKatId);
-    closeKatModal();
-    ladeKategorien();
-};
-
-window.closeKatModal = () => katModal.style.display = "none";
-
-// --- 3. MATERIAL-KATALOG ---
-
-async function ladeKatalog() {
-    const { data } = await supa.from('material_katalog').select('*').order('name');
-    allMaterials = data || [];
-    renderKatalog(allMaterials);
-}
-
-function renderKatalog(liste) {
-    matList.innerHTML = `<button onclick="openMaterialEdit(null)" class="btn-add" style="margin-top:10px;">+ Neues Material</button>`;
-    liste.forEach(m => {
-        const div = document.createElement('div');
-        div.className = 'list-item';
-        div.innerHTML = `<div><strong>${m.name}</strong> <small>(${m.einheit})</small></div>`;
+        const item = document.createElement('div');
+        item.className = "list-item";
+        item.innerHTML = `<div><div class="item-main">${m.name}</div><div style="font-size:0.7rem; color:#888;">${m.einheit}</div></div>`;
         const btn = document.createElement('button');
-        btn.textContent = 'Edit';
-        btn.onclick = () => openMaterialEdit(m.id);
-        div.appendChild(btn);
-        matList.appendChild(div);
+        btn.className = "btn-del";
+        btn.textContent = "Löschen";
+        btn.onclick = () => deleteEntry('material_katalog', m.id, ladeMaterialien);
+        item.appendChild(btn);
+        list.appendChild(item);
     });
 }
 
-document.getElementById('matSearch')?.addEventListener('input', (e) => {
-    const s = e.target.value.toLowerCase();
-    renderKatalog(allMaterials.filter(m => m.name.toLowerCase().includes(s)));
-});
-
-window.openMaterialEdit = async (id) => {
-    currentEditMatId = id;
-    const { data: alleKat } = await supa.from('material_kategorien').select('*').order('name');
-    const { data: alleDN } = await supa.from('nennweiten').select('*').order('wert');
+window.saveMaterial = async () => {
+    const name = document.getElementById('matName').value;
+    const einheit = document.getElementById('matUnit').value;
+    const katId = document.getElementById('matKatSelect').value;
     
-    const gruppen = [...new Set(alleDN.map(d => d.gruppe).filter(Boolean))].sort();
-    const typen = [...new Set(alleDN.map(d => d.typ).filter(Boolean))].sort();
-    document.getElementById('filterDNGruppe').innerHTML = '<option value="">Alle Gruppen</option>' + gruppen.map(g => `<option value="${g}">${g}</option>`).join('');
-    document.getElementById('filterDNTyp').innerHTML = '<option value="">Alle Typen</option>' + typen.map(t => `<option value="${t}">${t}</option>`).join('');
+    if (!name || !einheit || !katId) return alert("Bitte alles ausfüllen!");
 
-    let verbundeneDNIds = [];
-    let verbundeneKatIds = [];
-
-    document.getElementById('btnDeleteMat').style.display = id ? "block" : "none";
-    editModalTitle.innerText = id ? "Material bearbeiten" : "Neues Material";
-
-    if (id) {
-        const { data: mat } = await supa.from('material_katalog').select('*').eq('id', id).single();
-        document.getElementById('editMatName').value = mat.name;
-        document.getElementById('editMatEinheit').value = mat.einheit; 
-        const { data: vDN } = await supa.from('material_katalog_nennweiten').select('nennweite_id').eq('katalog_id', id);
-        verbundeneDNIds = vDN?.map(v => v.nennweite_id) || [];
-        const { data: vKat } = await supa.from('material_katalog_kategorien').select('kategorie_id').eq('material_id', id);
-        verbundeneKatIds = vKat?.map(v => v.kategorie_id) || [];
-    } else {
-        document.getElementById('editMatName').value = "";
-        document.getElementById('editMatEinheit').value = "Stk";
+    const { data, error } = await supa.from('material_katalog').insert([{ name, einheit }]).select();
+    if (data) {
+        await supa.from('material_katalog_kategorien').insert([{ material_id: data[0].id, kategorie_id: katId }]);
     }
-
-    editMatKatContainer.innerHTML = alleKat?.map(k => `<label style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><input type="checkbox" class="kat-checkbox" value="${k.id}" ${verbundeneKatIds.includes(k.id)?'checked':''}> ${k.name}</label>`).join('') || '';
-    
-    // Checkboxen mit formatierter Nennweite
-    editMatDnContainer.innerHTML = alleDN?.map(dn => `
-        <label class="dn-label" data-gruppe="${dn.gruppe || ''}" data-typ="${dn.typ || ''}" style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-            <input type="checkbox" class="dn-checkbox" value="${dn.id}" ${verbundeneDNIds.includes(dn.id)?'checked':''}> 
-            ${formatDN(dn)}
-        </label>`).join('') || '';
-
-    matModal.style.display = "flex";
+    document.getElementById('matName').value = "";
+    document.getElementById('matUnit').value = "";
+    await ladeMaterialien();
 };
 
-document.getElementById('filterDNGruppe')?.addEventListener('change', filtereDN);
-document.getElementById('filterDNTyp')?.addEventListener('change', filtereDN);
+// --- NENNWEITEN (TYP, WERT, GRUPPE) ---
+async function ladeNennweiten() {
+    const { data } = await supa.from('nennweiten').select('*').order('wert');
+    const list = document.getElementById('dnList');
+    list.innerHTML = "";
 
-function filtereDN() {
-    const g = document.getElementById('filterDNGruppe').value;
-    const t = document.getElementById('filterDNTyp').value;
-    document.querySelectorAll('.dn-label').forEach(label => {
-        const mG = !g || label.getAttribute('data-gruppe') === g;
-        const mT = !t || label.getAttribute('data-typ') === t;
-        label.style.display = (mG && mT) ? "flex" : "none";
+    data?.forEach(d => {
+        const item = document.createElement('div');
+        item.className = "list-item";
+        
+        const info = document.createElement('div');
+        info.className = "item-info";
+        
+        const main = document.createElement('div');
+        main.className = "item-main";
+        main.textContent = d.wert || ""; // Zoll-sicher
+        
+        const sub = document.createElement('div');
+        sub.className = "item-sub";
+        sub.textContent = `${d.typ || ''} ${d.gruppe || ''}`.trim();
+
+        info.appendChild(main);
+        info.appendChild(sub);
+        item.appendChild(info);
+
+        const btn = document.createElement('button');
+        btn.className = "btn-del";
+        btn.textContent = "Löschen";
+        btn.onclick = () => deleteEntry('nennweiten', d.id, ladeNennweiten);
+        
+        item.appendChild(btn);
+        list.appendChild(item);
     });
 }
 
-window.saveMaterialChanges = async () => {
-    const name = document.getElementById('editMatName').value.trim();
-    const einheit = document.getElementById('editMatEinheit').value;
-    if (!name) return alert("Name fehlt!");
+window.saveDN = async () => {
+    const typ = document.getElementById('dnTyp').value;
+    const wert = document.getElementById('dnWert').value;
+    const gruppe = document.getElementById('dnGruppe').value;
+    const matId = document.getElementById('dnMatSelect').value;
 
-    let mId = currentEditMatId;
-    if (mId) {
-        await supa.from('material_katalog').update({ name, einheit }).eq('id', mId);
-    } else {
-        const { data } = await supa.from('material_katalog').insert([{ name, einheit }]).select();
-        mId = data[0].id;
+    if (!wert) return alert("Mindestens ein Wert (z.B. 110 oder 1\") wird benötigt!");
+
+    const { data, error } = await supa.from('nennweiten').insert([{ typ, wert, gruppe }]).select();
+    
+    if (data && matId) {
+        await supa.from('material_katalog_nennweiten').insert([{ katalog_id: matId, nennweite_id: data[0].id }]);
     }
 
-    await supa.from('material_katalog_nennweiten').delete().eq('katalog_id', mId);
-    const dns = Array.from(document.querySelectorAll('.dn-checkbox:checked')).map(cb => ({ katalog_id: mId, nennweite_id: cb.value }));
-    if(dns.length) await supa.from('material_katalog_nennweiten').insert(dns);
-
-    await supa.from('material_katalog_kategorien').delete().eq('material_id', mId);
-    const kats = Array.from(document.querySelectorAll('.kat-checkbox:checked')).map(cb => ({ material_id: mId, kategorie_id: cb.value }));
-    if(kats.length) await supa.from('material_katalog_kategorien').insert(kats);
-
-    closeModal();
-    ladeKatalog();
+    document.getElementById('dnTyp').value = "";
+    document.getElementById('dnWert').value = "";
+    document.getElementById('dnGruppe').value = "";
+    await ladeNennweiten();
 };
 
-window.closeModal = () => matModal.style.display = "none";
-window.deleteMaterialFull = async () => {
-    if (confirm("Löschen?")) {
-        await supa.from('material_katalog').delete().eq('id', currentEditMatId);
-        closeModal();
-        ladeKatalog();
-    }
-};
+// --- ALLGEMEIN ---
+async function deleteEntry(table, id, callback) {
+    if (!confirm("Wirklich löschen?")) return;
+    await supa.from(table).delete().eq('id', id);
+    await callback();
+}
 
 init();
