@@ -33,21 +33,26 @@
             background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; 
         }
         .modal-content { 
-            background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; 
+            background: white; padding: 25px; border-radius: 12px; width: 95%; max-width: 450px; 
             max-height: 90vh; overflow-y: auto; box-shadow: 0 15px 30px rgba(0,0,0,0.3);
         }
         .modal-content h3 { margin-top: 0; margin-bottom: 20px; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         
         .check-container { 
-            max-height: 150px; overflow-y: auto; border: 1px solid #ddd; 
+            max-height: 200px; overflow-y: auto; border: 1px solid #ddd; 
             padding: 10px; background: #fff; margin-bottom: 20px; border-radius: 4px;
         }
 
         .modal-actions { display: flex; flex-direction: column; gap: 10px; }
 
-        /* Filter-Bar Styling */
+        /* Filter-Bar Styling im Modal */
         .filter-bar { display: flex; gap: 8px; margin-bottom: 10px; }
-        .filter-bar select { padding: 8px; font-size: 0.85rem; height: auto; margin-bottom: 0; }
+        .filter-bar select { padding: 8px; font-size: 0.85rem; height: auto; margin-bottom: 0; flex: 1; }
+
+        /* Kompakte Eingabe für Nennweiten-Stamm */
+        .dn-add-grid { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        .dn-add-row { display: flex; gap: 5px; }
+        .dn-add-row input { margin-bottom: 0; flex: 1; }
     </style>
 </head>
 <body>
@@ -61,12 +66,16 @@
 
     <div class="admin-section">
         <h2>1. Nennweiten (Stammdaten)</h2>
-        <label>Neue Nennweite hinzufügen</label>
-        <div style="display: flex; gap: 8px;">
-            <input type="text" id="newDNWert" placeholder="z.B. DN 110" style="margin-bottom:0;">
-            <button onclick="addDN()" class="btn-add" style="width: auto; margin-bottom:0; padding: 0 20px;">+</button>
+        <div class="dn-add-grid">
+            <label>Neue Nennweite anlegen</label>
+            <input type="text" id="newDNWert" placeholder="DN (z.B. DN 100)">
+            <div class="dn-add-row">
+                <input type="text" id="newDNGruppe" placeholder="Gruppe (z.B. Abwasser)">
+                <input type="text" id="newDNTyp" placeholder="Typ (z.B. KG)">
+            </div>
+            <button onclick="addDN()" class="btn-add" style="margin-top:5px;">Hinzufügen</button>
         </div>
-        <div id="dnList" style="margin-top: 15px;"></div>
+        <div id="dnList"></div>
     </div>
 
     <div class="admin-section">
@@ -81,6 +90,7 @@
 
     <div class="admin-section">
         <h2>3. Material-Katalog</h2>
+        <label>Suche</label>
         <input type="text" id="matSearch" placeholder="Material suchen..." style="border-color: #28a745;">
         <div id="matList"></div>
     </div>
@@ -151,18 +161,18 @@
     <div class="modal-content">
         <h3 id="dnEditModalTitle">Nennweite bearbeiten</h3>
         
-        <label>Bezeichnung (z.B. DN 110):</label>
+        <label>Bezeichnung:</label>
         <input type="text" id="editDNWert">
 
-        <label>Gruppe (z.B. Abwasser, Gas):</label>
-        <input type="text" id="editDNGruppe" placeholder="Gruppe">
+        <label>Gruppe:</label>
+        <input type="text" id="editDNGruppe">
 
-        <label>Typ (z.B. KG, Guss, PE):</label>
-        <input type="text" id="editDNTyp" placeholder="Typ">
+        <label>Typ:</label>
+        <input type="text" id="editDNTyp">
 
         <div class="modal-actions">
             <button onclick="saveDNChanges()" style="background: #28a745; color: white;">Speichern</button>
-            <button onclick="deleteDNFull()" style="background: #dc3545; color: white;">Nennweite löschen</button>
+            <button onclick="deleteDNFull()" style="background: #dc3545; color: white;">Löschen</button>
             <button onclick="closeDNModal()" style="background: #6c757d; color: white;">Abbrechen</button>
         </div>
     </div>
