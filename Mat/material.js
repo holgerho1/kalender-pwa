@@ -22,6 +22,18 @@ const editKatSel = document.getElementById('editKat');
 const editDnSel = document.getElementById('editDn');
 let currentEditId = null;
 
+/**
+ * ZENTRALE FORMATIERUNG (Identisch mit Admin)
+ */
+function formatDN(dn) {
+    if (!dn) return "";
+    const teile = [];
+    if (dn.typ) teile.push(dn.typ);
+    if (dn.wert) teile.push(dn.wert);
+    if (dn.gruppe) teile.push(dn.gruppe);
+    return teile.length > 0 ? teile.join(' ') : "";
+}
+
 async function init() {
     if (!projektId) return status.innerText = "Fehler: Kein Projekt!";
     
@@ -45,7 +57,6 @@ async function init() {
 
 // --- LOGIK FÜR NEUANLAGE ---
 
-// 1. Kategorie wählen -> Materialien filtern
 katSel.addEventListener('change', async () => {
     const katId = katSel.value;
     dnSel.disabled = true;
@@ -70,7 +81,6 @@ katSel.addEventListener('change', async () => {
     matSel.disabled = false;
 });
 
-// 2. Material wählen -> Nennweiten filtern
 matSel.addEventListener('change', async () => {
     const matId = matSel.value;
     const opt = matSel.options[matSel.selectedIndex];
@@ -81,16 +91,17 @@ matSel.addEventListener('change', async () => {
         return;
     }
 
+    // Erweitert um typ und gruppe
     const { data } = await supa
         .from('material_katalog_nennweiten')
-        .select('nennweiten ( id, wert )')
+        .select('nennweiten ( id, wert, typ, gruppe )')
         .eq('katalog_id', matId);
 
     dnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
     if (data && data.length > 0) {
         data.forEach(item => {
             const d = item.nennweiten;
-            if (d) dnSel.innerHTML += `<option value="${d.id}">${d.wert}</option>`;
+            if (d) dnSel.innerHTML += `<option value="${d.id}">${formatDN(d)}</option>`;
         });
         dnSel.disabled = false;
     } else {
@@ -98,7 +109,6 @@ matSel.addEventListener('change', async () => {
     }
 });
 
-// 3. Speichern
 async function addToList() {
     const matId = matSel.value;
     const katId = katSel.value;
@@ -123,21 +133,20 @@ async function addToList() {
 
 // --- BEARBEITUNGS-LOGIK (MODAL) ---
 
-window.openEditModal = async (id, menge, katId, dnId, katalogId, matName, dnWert) => {
+window.openEditModal = async (id, menge, katId, dnId, katalogId, matName, dnObj) => {
     if (toggleGroup?.checked) return;
     
     currentEditId = id;
     
-    // Titel setzen: Name + Nennweite (falls vorhanden)
-    const displayDN = dnWert ? ` (${dnWert})` : "";
+    const displayDN = dnObj ? ` (${formatDN(dnObj)})` : "";
     if (editModalTitle) editModalTitle.innerText = `${matName}${displayDN}`; 
     
     status.innerText = "Lade Nennweiten...";
 
-    // Nur erlaubte Nennweiten für dieses Material (katalogId) laden
+    // Erweitert um typ und gruppe
     const { data: erlaubteDns } = await supa
         .from('material_katalog_nennweiten')
-        .select('nennweiten ( id, wert )')
+        .select('nennweiten ( id, wert, typ, gruppe )')
         .eq('katalog_id', katalogId);
 
     editDnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
@@ -146,12 +155,11 @@ window.openEditModal = async (id, menge, katId, dnId, katalogId, matName, dnWert
         if (d) {
             const opt = document.createElement('option');
             opt.value = d.id;
-            opt.textContent = d.wert;
+            opt.textContent = formatDN(d);
             editDnSel.appendChild(opt);
         }
     });
 
-    // Werte im Modal setzen
     editMengeInp.value = menge;
     editKatSel.value = katId;
     editDnSel.value = dnId || ""; 
@@ -184,13 +192,14 @@ document.getElementById('btnDeleteEntry').onclick = async () => {
 // --- LISTE RENDERN ---
 
 async function ladeMaterialListe() {
+    // JOIN erweitert um typ und gruppe
     const { data, error } = await supa
         .from('materialien')
         .select(`
             id, menge, katalog_id, kategorie_id, nennweite_id,
             material_katalog ( name, einheit ),
             material_kategorien ( name ),
-            nennweiten ( wert )
+            nennweiten ( id, wert, typ, gruppe )
         `)
         .eq('projekt_id', projektId);
 
@@ -231,8 +240,9 @@ async function ladeMaterialListe() {
             const itemDiv = document.createElement('div');
             itemDiv.className = "list-item";
             
+            const dnFormatiert = formatDN(m.nennweiten);
+
             if (!sollGruppieren) {
-                // Übergibt alle notwendigen Daten an das Modal
                 itemDiv.onclick = () => openEditModal(
                     m.id, 
                     m.menge, 
@@ -240,20 +250,20 @@ async function ladeMaterialListe() {
                     m.nennweite_id, 
                     m.katalog_id, 
                     m.material_katalog?.name,
-                    m.nennweiten?.wert
+                    m.nennweiten // Übergibt das ganze Objekt für formatDN im Modal
                 );
             } else {
                 itemDiv.style.cursor = "default";
             }
 
-            const dnText = m.nennweiten?.wert ? `<span class="mat-dn">${m.nennweiten.wert}</span>` : '';
+            const dnBadge = dnFormatiert ? `<span class="mat-dn">${dnFormatiert}</span>` : '';
             const mengeVal = sollGruppieren ? m.summe : m.menge;
 
             itemDiv.innerHTML = `
                 <div class="mat-info">
                     <div style="display:flex; gap:8px; align-items:center;">
                         <span class="mat-name">${sollGruppieren ? '∑ ' : ''}${m.material_katalog?.name}</span>
-                        ${dnText}
+                        ${dnBadge}
                     </div>
                     <span class="mat-details">${sollGruppieren ? `Summe aus ${m.anzahl} Positionen` : 'Tippen zum Bearbeiten'}</span>
                 </div>

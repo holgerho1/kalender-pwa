@@ -39,9 +39,10 @@
             display: flex; justify-content: space-between; align-items: center; 
             background: white; cursor: pointer; -webkit-tap-highlight-color: transparent;
         }
-        .mat-info { display: flex; flex-direction: column; }
+        .mat-info { display: flex; flex-direction: column; flex: 1; padding-right: 10px; }
         .mat-name { font-weight: bold; font-size: 0.95rem; color: #333; }
-        .mat-dn { font-size: 0.8rem; color: #007bff; font-weight: bold; background: #e7f1ff; padding: 2px 6px; border-radius: 4px; }
+        /* Badge für die formatierte Nennweite */
+        .mat-dn { font-size: 0.8rem; color: #007bff; font-weight: bold; background: #e7f1ff; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 4px; }
         .mat-details { font-size: 0.75rem; color: #888; margin-top: 2px; }
         
         /* Modal Styles */
@@ -77,7 +78,7 @@
             <option value="">-- Erst Kategorie wählen --</option>
         </select>
 
-        <label for="dnSelect">2b. Nennweite (DN)</label>
+        <label for="dnSelect">2b. Nennweite wählen</label>
         <select id="dnSelect" disabled>
             <option value="">-- Erst Material wählen --</option>
         </select>
@@ -106,13 +107,7 @@
         <h3 id="editModalTitle">Eintrag bearbeiten</h3>
         
         <label>Menge:</label>
-        <input type="number" id="editMenge" step="any" inputmode="decimal">
-        
-        <label>Kategorie ändern:</label>
-        <select id="editKat"></select>
-
-        <label>Nennweite ändern:</label>
-        <select id="editDn"></select>
+        <input type="number" id="editMenge" step="any" inputmode="decimal" style="margin-bottom: 20px;">
         
         <div class="modal-btns">
             <button id="btnSaveEdit" style="background:#28a745; color:white;">Speichern</button>
