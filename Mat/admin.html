@@ -20,9 +20,6 @@
         label { display: block; font-size: 0.75rem; font-weight: bold; color: #555; margin-top: 15px; margin-bottom: 5px; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
         
-        /* Spezielle Höhe für Multiple-Selects zur besseren Bedienung */
-        select[multiple] { height: 100px; padding: 5px; }
-
         .btn-save { background: #28a745; color: white; border: none; padding: 14px; width: 100%; border-radius: 6px; font-weight: bold; margin-top: 20px; cursor: pointer; }
         
         .list-container { margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px; }
@@ -33,8 +30,10 @@
         .check-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; cursor: pointer; }
         .check-row input { width: 20px; height: 20px; margin: 0; }
 
+        /* Optimierte DN-Zeile für gleiche Höhe */
         .dn-row { display: flex; gap: 8px; align-items: flex-start; }
         .dn-row div { flex: 1; }
+        .dn-row .scroll-list { height: 120px; margin-bottom: 0; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 85%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
@@ -87,11 +86,19 @@
 
     <div id="sec-dn" class="section">
         <div class="dn-row">
-            <div><label>Typ (Mehrfach)</label><select id="dnTypSelect" multiple></select></div>
-            <div><label>Wert</label><input type="text" id="dnWert"></div>
-            <div><label>Gruppe (Mehrfach)</label><select id="dnGruppeSelect" multiple></select></div>
+            <div>
+                <label>Typ (Wahl)</label>
+                <div id="dnTypList" class="scroll-list"></div>
+            </div>
+            <div>
+                <label>Wert (Eingabe)</label>
+                <input type="text" id="dnWert" placeholder="z.B. 110">
+            </div>
+            <div>
+                <label>Gruppe (Wahl)</label>
+                <div id="dnGruppeList" class="scroll-list"></div>
+            </div>
         </div>
-        <p style="font-size: 0.65rem; color: #888; margin-top: 5px;">* Halten für Mehrfachauswahl</p>
         <button class="btn-save" onclick="saveDN()">Speichern</button>
         <div class="list-container" id="dnList"></div>
     </div>

@@ -17,9 +17,9 @@ const materialEditExtras = document.getElementById('materialEditExtras');
 const btnSaveEdit = document.getElementById('btnSaveEdit');
 const btnDeleteConfirm = document.getElementById('btnDeleteConfirm');
 
-// Neuanlage Dropdowns
-const dnTypSelect = document.getElementById('dnTypSelect');
-const dnGruppeSelect = document.getElementById('dnGruppeSelect');
+// Neuanlage Checkbox-Container (DN)
+const dnTypListDiv = document.getElementById('dnTypList');
+const grpListDiv = document.getElementById('dnGruppeList');
 
 let currentEditTable = "";
 let currentEditId = null;
@@ -51,8 +51,15 @@ async function ladeTypenUndGruppen() {
         supa.from('dn_gruppen').select('*').order('name')
     ]);
 
+    // Checkbox-Listen für Neuanlage DN
+    dnTypListDiv.innerHTML = "";
+    grpListDiv.innerHTML = "";
+    typen?.forEach(t => dnTypListDiv.appendChild(createCheckRow(t.name, t.name, "dn-new-typ-cb")));
+    gruppen?.forEach(g => grpListDiv.appendChild(createCheckRow(g.name, g.name, "dn-new-grp-cb")));
+
+    // Einfache Dropdowns für das EDIT-Modal
     const befuelleDropdown = (el, data) => {
-        el.innerHTML = el.multiple ? '' : '<option value="">-- wählen --</option>';
+        el.innerHTML = '<option value="">-- wählen --</option>';
         data?.forEach(item => {
             const opt = document.createElement('option');
             opt.value = item.name;
@@ -60,10 +67,7 @@ async function ladeTypenUndGruppen() {
             el.appendChild(opt);
         });
     };
-
-    befuelleDropdown(dnTypSelect, typen);
     befuelleDropdown(editDnTypSelect, typen);
-    befuelleDropdown(dnGruppeSelect, gruppen);
     befuelleDropdown(editDnGruppeSelect, gruppen);
 }
 
@@ -281,9 +285,9 @@ window.saveMaterial = async () => {
 };
 
 window.saveDN = async () => {
-    const typen = Array.from(dnTypSelect.selectedOptions).map(opt => opt.value);
+    const typen = Array.from(document.querySelectorAll('.dn-new-typ-cb:checked')).map(cb => cb.value);
     const wert = document.getElementById('dnWert').value.trim();
-    const gruppen = Array.from(dnGruppeSelect.selectedOptions).map(opt => opt.value);
+    const gruppen = Array.from(document.querySelectorAll('.dn-new-grp-cb:checked')).map(cb => cb.value);
     
     if (typen.length === 0 && !wert && gruppen.length === 0) {
         return alert("Bitte mindestens ein Feld ausfüllen.");
@@ -291,7 +295,6 @@ window.saveDN = async () => {
 
     status.innerText = "Speichere Kombinationen...";
     
-    // Arrays für die Schleifen vorbereiten (mindestens ein Element für den Durchlauf)
     const tList = typen.length > 0 ? typen : [null];
     const gList = gruppen.length > 0 ? gruppen : [null];
     
@@ -313,8 +316,7 @@ window.saveDN = async () => {
         alert("Fehler beim Speichern: " + error.message);
     } else {
         document.getElementById('dnWert').value = "";
-        dnTypSelect.selectedIndex = -1;
-        dnGruppeSelect.selectedIndex = -1;
+        document.querySelectorAll('.dn-new-typ-cb, .dn-new-grp-cb').forEach(cb => cb.checked = false);
         await init();
     }
 };
