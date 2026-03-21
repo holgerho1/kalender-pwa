@@ -6,6 +6,8 @@ const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const katList = document.getElementById('katList');
 const matList = document.getElementById('matList');
 const dnList = document.getElementById('dnList');
+const dnGruppenList = document.getElementById('dnGruppenList');
+const dnTypenList = document.getElementById('dnTypenList');
 
 // Modals
 const matModal = document.getElementById('matEditModal');
@@ -22,23 +24,67 @@ let currentEditDNId = null;
 let allMaterials = [];
 
 async function init() {
+    await ladeStammdatenListen(); // Gruppen & Typen
     ladeKategorien();
     ladeKatalog();
     ladeNennweitenStamm();
 }
 
+// --- A & B: GRUPPEN UND TYPEN VERWALTUNG ---
+
+async function ladeStammdatenListen() {
+    const { data: gruppen } = await supa.from('dn_gruppen').select('*').order('name');
+    const { data: typen } = await supa.from('dn_typen').select('*').order('name');
+
+    // Listen in der Admin-Ansicht anzeigen (einfache Text-Liste)
+    dnGruppenList.innerHTML = gruppen?.map(g => `<div class="list-item"><span>${g.name}</span><button onclick="deleteStamm('dn_gruppen','${g.id}')">X</button></div>`).join('') || '';
+    dnTypenList.innerHTML = typen?.map(t => `<div class="list-item"><span>${t.name}</span><button onclick="deleteStamm('dn_typen','${t.id}')">X</button></div>`).join('') || '';
+
+    // Dropdowns befüllen
+    updateDNSelectOptions(gruppen, typen);
+}
+
+function updateDNSelectOptions(gruppen, typen) {
+    const optG = '<option value="">Gruppe wählen...</option>' + gruppen.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+    const optT = '<option value="">Typ wählen...</option>' + typen.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+
+    document.getElementById('newDNGruppe').innerHTML = optG;
+    document.getElementById('newDNTyp').innerHTML = optT;
+    document.getElementById('editDNGruppe').innerHTML = optG;
+    document.getElementById('editDNTyp').innerHTML = optT;
+}
+
+window.addDNGruppe = async () => {
+    const name = document.getElementById('newDNGruppenName').value.trim();
+    if (!name) return;
+    await supa.from('dn_gruppen').insert([{ name }]);
+    document.getElementById('newDNGruppenName').value = "";
+    ladeStammdatenListen();
+};
+
+window.addDNTyp = async () => {
+    const name = document.getElementById('newDNTypenName').value.trim();
+    if (!name) return;
+    await supa.from('dn_typen').insert([{ name }]);
+    document.getElementById('newDNTypenName').value = "";
+    ladeStammdatenListen();
+};
+
+window.deleteStamm = async (table, id) => {
+    if (!confirm("Eintrag wirklich löschen?")) return;
+    await supa.from(table).delete().eq('id', id);
+    ladeStammdatenListen();
+};
+
 // --- 1. NENNWEITEN (Stammdaten) ---
+
 async function ladeNennweitenStamm() {
     const { data } = await supa.from('nennweiten').select('*').order('wert');
     dnList.innerHTML = "";
     data?.forEach(dn => {
         const div = document.createElement('div');
         div.className = 'list-item';
-        div.innerHTML = `
-            <span>
-                <strong>${dn.wert}</strong> 
-                <small style="color:#888; margin-left:8px;">[${dn.gruppe || '-'} | ${dn.typ || '-'}]</small>
-            </span>`;
+        div.innerHTML = `<span><strong>${dn.wert}</strong> <small style="color:#888;">[${dn.gruppe || '-'} | ${dn.typ || '-'}]</small></span>`;
         const btn = document.createElement('button');
         btn.textContent = 'Edit';
         btn.onclick = () => openDNEdit(dn);
@@ -49,21 +95,14 @@ async function ladeNennweitenStamm() {
 
 window.addDN = async () => {
     const wert = document.getElementById('newDNWert').value.trim();
-    const gruppe = document.getElementById('newDNGruppe').value.trim();
-    const typ = document.getElementById('newDNTyp').value.trim();
+    const gruppe = document.getElementById('newDNGruppe').value;
+    const typ = document.getElementById('newDNTyp').value;
 
-    if (!wert) return alert("Bitte Bezeichnung eingeben!");
+    if (!wert) return alert("Bezeichnung fehlt!");
 
-    const { error } = await supa.from('nennweiten').insert([{ wert, gruppe, typ }]);
-    
-    if (error) {
-        alert("Fehler: " + error.message);
-    } else {
-        document.getElementById('newDNWert').value = "";
-        document.getElementById('newDNGruppe').value = "";
-        document.getElementById('newDNTyp').value = "";
-        ladeNennweitenStamm();
-    }
+    await supa.from('nennweiten').insert([{ wert, gruppe, typ }]);
+    document.getElementById('newDNWert').value = "";
+    ladeNennweitenStamm();
 };
 
 window.openDNEdit = (dn) => {
@@ -76,18 +115,15 @@ window.openDNEdit = (dn) => {
 
 window.saveDNChanges = async () => {
     const wert = document.getElementById('editDNWert').value.trim();
-    const gruppe = document.getElementById('editDNGruppe').value.trim();
-    const typ = document.getElementById('editDNTyp').value.trim();
-    
-    if (!wert) return;
-
+    const gruppe = document.getElementById('editDNGruppe').value;
+    const typ = document.getElementById('editDNTyp').value;
     await supa.from('nennweiten').update({ wert, gruppe, typ }).eq('id', currentEditDNId);
     closeDNModal();
     ladeNennweitenStamm();
 };
 
 window.deleteDNFull = async () => {
-    if (!confirm("Nennweite löschen?")) return;
+    if (!confirm("Löschen?")) return;
     await supa.from('nennweiten').delete().eq('id', currentEditDNId);
     closeDNModal();
     ladeNennweitenStamm();
@@ -96,6 +132,7 @@ window.deleteDNFull = async () => {
 window.closeDNModal = () => dnModal.style.display = "none";
 
 // --- 2. KATEGORIEN ---
+
 async function ladeKategorien() {
     const { data } = await supa.from('material_kategorien').select('*').order('name');
     katList.innerHTML = "";
@@ -126,14 +163,14 @@ window.openKatEdit = (id, name) => {
 };
 
 window.saveKatChanges = async () => {
-    const newName = document.getElementById('editKatName').value.trim();
-    await supa.from('material_kategorien').update({ name: newName }).eq('id', currentEditKatId);
+    const name = document.getElementById('editKatName').value.trim();
+    await supa.from('material_kategorien').update({ name }).eq('id', currentEditKatId);
     closeKatModal();
     ladeKategorien();
 };
 
 window.deleteKatFull = async () => {
-    if (!confirm("Kategorie löschen?")) return;
+    if (!confirm("Löschen?")) return;
     await supa.from('material_kategorien').delete().eq('id', currentEditKatId);
     closeKatModal();
     ladeKategorien();
@@ -142,6 +179,7 @@ window.deleteKatFull = async () => {
 window.closeKatModal = () => katModal.style.display = "none";
 
 // --- 3. MATERIAL-KATALOG ---
+
 async function ladeKatalog() {
     const { data } = await supa.from('material_katalog').select('*').order('name');
     allMaterials = data || [];
@@ -149,7 +187,7 @@ async function ladeKatalog() {
 }
 
 function renderKatalog(liste) {
-    matList.innerHTML = `<button onclick="openMaterialEdit(null)" class="btn-add" style="margin-bottom:15px;">+ Neues Material anlegen</button>`;
+    matList.innerHTML = `<button onclick="openMaterialEdit(null)" class="btn-add">+ Neues Material</button>`;
     liste.forEach(m => {
         const div = document.createElement('div');
         div.className = 'list-item';
@@ -162,7 +200,6 @@ function renderKatalog(liste) {
     });
 }
 
-// Suche
 document.getElementById('matSearch')?.addEventListener('input', (e) => {
     const s = e.target.value.toLowerCase();
     renderKatalog(allMaterials.filter(m => m.name.toLowerCase().includes(s)));
@@ -173,13 +210,11 @@ window.openMaterialEdit = async (id) => {
     const { data: alleKat } = await supa.from('material_kategorien').select('*').order('name');
     const { data: alleDN } = await supa.from('nennweiten').select('*').order('wert');
     
-    // Filter befüllen
+    // Filter-Dropdowns im Modal befüllen
     const gruppen = [...new Set(alleDN.map(d => d.gruppe).filter(Boolean))].sort();
     const typen = [...new Set(alleDN.map(d => d.typ).filter(Boolean))].sort();
-    const fG = document.getElementById('filterDNGruppe');
-    const fT = document.getElementById('filterDNTyp');
-    if(fG) fG.innerHTML = '<option value="">Alle Gruppen</option>' + gruppen.map(g => `<option value="${g}">${g}</option>`).join('');
-    if(fT) fT.innerHTML = '<option value="">Alle Typen</option>' + typen.map(t => `<option value="${t}">${t}</option>`).join('');
+    document.getElementById('filterDNGruppe').innerHTML = '<option value="">Alle Gruppen</option>' + gruppen.map(g => `<option value="${g}">${g}</option>`).join('');
+    document.getElementById('filterDNTyp').innerHTML = '<option value="">Alle Typen</option>' + typen.map(t => `<option value="${t}">${t}</option>`).join('');
 
     let verbundeneDNIds = [];
     let verbundeneKatIds = [];
@@ -200,22 +235,9 @@ window.openMaterialEdit = async (id) => {
         document.getElementById('editMatEinheit').value = "Stk";
     }
 
-    // Kategorien
-    editMatKatContainer.innerHTML = "";
-    alleKat?.forEach(k => {
-        const chk = verbundeneKatIds.includes(k.id) ? 'checked' : '';
-        editMatKatContainer.innerHTML += `<label style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><input type="checkbox" class="kat-checkbox" value="${k.id}" ${chk}> ${k.name}</label>`;
-    });
-
-    // Nennweiten
-    editMatDnContainer.innerHTML = "";
-    alleDN?.forEach(dn => {
-        const chk = verbundeneDNIds.includes(dn.id) ? 'checked' : '';
-        editMatDnContainer.innerHTML += `
-            <label class="dn-label" data-gruppe="${dn.gruppe || ''}" data-typ="${dn.typ || ''}" style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-                <input type="checkbox" class="dn-checkbox" value="${dn.id}" ${chk}> ${dn.wert} <small>(${dn.typ || ''})</small>
-            </label>`;
-    });
+    // Checkboxen rendern
+    editMatKatContainer.innerHTML = alleKat?.map(k => `<label style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><input type="checkbox" class="kat-checkbox" value="${k.id}" ${verbundeneKatIds.includes(k.id)?'checked':''}> ${k.name}</label>`).join('') || '';
+    editMatDnContainer.innerHTML = alleDN?.map(dn => `<label class="dn-label" data-gruppe="${dn.gruppe || ''}" data-typ="${dn.typ || ''}" style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><input type="checkbox" class="dn-checkbox" value="${dn.id}" ${verbundeneDNIds.includes(dn.id)?'checked':''}> ${dn.wert} <small>(${dn.typ || ''})</small></label>`).join('') || '';
 
     matModal.style.display = "flex";
 };
@@ -246,12 +268,10 @@ window.saveMaterialChanges = async () => {
         mId = data[0].id;
     }
 
-    // Sync DN
     await supa.from('material_katalog_nennweiten').delete().eq('katalog_id', mId);
     const dns = Array.from(document.querySelectorAll('.dn-checkbox:checked')).map(cb => ({ katalog_id: mId, nennweite_id: cb.value }));
     if(dns.length) await supa.from('material_katalog_nennweiten').insert(dns);
 
-    // Sync Kat
     await supa.from('material_katalog_kategorien').delete().eq('material_id', mId);
     const kats = Array.from(document.querySelectorAll('.kat-checkbox:checked')).map(cb => ({ material_id: mId, kategorie_id: cb.value }));
     if(kats.length) await supa.from('material_katalog_kategorien').insert(kats);
@@ -262,7 +282,7 @@ window.saveMaterialChanges = async () => {
 
 window.closeModal = () => matModal.style.display = "none";
 window.deleteMaterialFull = async () => {
-    if (confirm("Material löschen?")) {
+    if (confirm("Löschen?")) {
         await supa.from('material_katalog').delete().eq('id', currentEditMatId);
         closeModal();
         ladeKatalog();

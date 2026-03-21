@@ -52,7 +52,7 @@
         /* Kompakte Eingabe für Nennweiten-Stamm */
         .dn-add-grid { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .dn-add-row { display: flex; gap: 5px; }
-        .dn-add-row input { margin-bottom: 0; flex: 1; }
+        .dn-add-row select { margin-bottom: 0; flex: 1; }
     </style>
 </head>
 <body>
@@ -65,13 +65,31 @@
     <h1>Katalog-Verwaltung</h1>
 
     <div class="admin-section">
+        <h2>A. DN-Gruppen (z.B. Abwasser)</h2>
+        <div style="display: flex; gap: 8px;">
+            <input type="text" id="newDNGruppenName" placeholder="Neue Gruppe..." style="margin-bottom:0;">
+            <button onclick="addDNGruppe()" class="btn-add" style="width: auto; margin-bottom:0; padding: 0 20px;">+</button>
+        </div>
+        <div id="dnGruppenList" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="admin-section">
+        <h2>B. DN-Typen (z.B. KG, HT)</h2>
+        <div style="display: flex; gap: 8px;">
+            <input type="text" id="newDNTypenName" placeholder="Neuer Typ..." style="margin-bottom:0;">
+            <button onclick="addDNTyp()" class="btn-add" style="width: auto; margin-bottom:0; padding: 0 20px;">+</button>
+        </div>
+        <div id="dnTypenList" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="admin-section">
         <h2>1. Nennweiten (Stammdaten)</h2>
         <div class="dn-add-grid">
             <label>Neue Nennweite anlegen</label>
             <input type="text" id="newDNWert" placeholder="DN (z.B. DN 100)">
             <div class="dn-add-row">
-                <input type="text" id="newDNGruppe" placeholder="Gruppe (z.B. Abwasser)">
-                <input type="text" id="newDNTyp" placeholder="Typ (z.B. KG)">
+                <select id="newDNGruppe"><option value="">Gruppe wählen...</option></select>
+                <select id="newDNTyp"><option value="">Typ wählen...</option></select>
             </div>
             <button onclick="addDN()" class="btn-add" style="margin-top:5px;">Hinzufügen</button>
         </div>
@@ -145,13 +163,11 @@
 <div id="katEditModal" class="modal">
     <div class="modal-content">
         <h3 id="katEditModalTitle">Kategorie bearbeiten</h3>
-        
         <label>Name der Kategorie:</label>
         <input type="text" id="editKatName">
-
         <div class="modal-actions">
             <button onclick="saveKatChanges()" style="background: #28a745; color: white;">Speichern</button>
-            <button onclick="deleteKatFull()" style="background: #dc3545; color: white;">Kategorie löschen</button>
+            <button onclick="deleteKatFull()" style="background: #dc3545; color: white;">Löschen</button>
             <button onclick="closeKatModal()" style="background: #6c757d; color: white;">Abbrechen</button>
         </div>
     </div>
@@ -160,16 +176,12 @@
 <div id="dnEditModal" class="modal">
     <div class="modal-content">
         <h3 id="dnEditModalTitle">Nennweite bearbeiten</h3>
-        
         <label>Bezeichnung:</label>
         <input type="text" id="editDNWert">
-
         <label>Gruppe:</label>
-        <input type="text" id="editDNGruppe">
-
+        <select id="editDNGruppe"></select>
         <label>Typ:</label>
-        <input type="text" id="editDNTyp">
-
+        <select id="editDNTyp"></select>
         <div class="modal-actions">
             <button onclick="saveDNChanges()" style="background: #28a745; color: white;">Speichern</button>
             <button onclick="deleteDNFull()" style="background: #dc3545; color: white;">Löschen</button>
@@ -179,6 +191,5 @@
 </div>
 
 <script type="module" src="admin.js"></script>
-
 </body>
 </html>
