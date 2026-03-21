@@ -8,113 +8,106 @@
     <style>
         body { font-family: sans-serif; margin: 15px; background-color: #f0f2f5; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 600px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        
         h1 { font-size: 1.3rem; color: #1a1a1a; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
         
-        .nav-btns { display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn-nav { flex: 1; padding: 10px; border: none; border-radius: 6px; background: #eef2f7; color: #333; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
+        /* Navigation */
+        .nav-btns { display: flex; gap: 5px; margin-bottom: 20px; flex-wrap: wrap; }
+        .btn-nav { flex: 1; min-width: 80px; padding: 10px 5px; border: none; border-radius: 6px; background: #eef2f7; color: #333; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
         .btn-nav.active { background: #007bff; color: white; }
 
         .section { display: none; background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
         .section.active { display: block; }
 
         label { display: block; font-size: 0.75rem; font-weight: bold; color: #555; margin-top: 15px; margin-bottom: 5px; text-transform: uppercase; }
-        
         input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
         
         .btn-save { background: #28a745; color: white; border: none; padding: 14px; width: 100%; border-radius: 6px; font-weight: bold; margin-top: 20px; cursor: pointer; }
         
         .list-container { margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px; }
-        .list-item { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 12px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; cursor: pointer;
-        }
-        .list-item:last-child { border-bottom: none; }
-        
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; cursor: pointer; }
         .item-main { font-weight: bold; color: #333; }
         .item-sub { font-size: 0.75rem; color: #007bff; font-weight: bold; }
 
-        #status { font-size: 0.75rem; color: #888; text-align: center; margin-top: 20px; font-style: italic; height: 1rem; }
-
-        .scroll-list { 
-            max-height: 150px; overflow-y: auto; border: 1px solid #ccc; 
-            border-radius: 6px; padding: 10px; background: #fff; margin-bottom: 15px; 
-        }
-        .check-row { 
-            display: flex; align-items: center; gap: 10px; margin-bottom: 8px; 
-            font-size: 0.9rem; cursor: pointer; text-transform: none; font-weight: normal;
-        }
-        .check-row input { width: 20px; height: 20px; margin: 0; cursor: pointer; }
+        /* Multi-Select & Scroll */
+        .scroll-list { max-height: 150px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px; padding: 10px; background: #fff; margin-bottom: 15px; }
+        .check-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; cursor: pointer; }
+        .check-row input { width: 20px; height: 20px; margin: 0; }
 
         .dn-row { display: flex; gap: 8px; align-items: flex-end; }
         .dn-row div { flex: 1; }
 
-        .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center;
-        }
-        .modal-content {
-            background: white; padding: 20px; border-radius: 12px; width: 85%; max-width: 400px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;
-        }
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 85%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
         .modal-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        .btn-modal-save { background: #28a745; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-modal-del { background: #dc3545; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-modal-cancel { background: #6c757d; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-modal-save { background: #28a745; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; }
+        .btn-modal-del { background: #dc3545; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; }
+        .btn-modal-cancel { background: #6c757d; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; }
+        
+        #status { font-size: 0.75rem; color: #888; text-align: center; margin-top: 20px; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <button onclick="window.location.href='index.html'" style="background:none; border:none; color:#007bff; cursor:pointer; font-weight:bold; margin-bottom:15px;">⬅ Zurück zur Übersicht</button>
+    <button onclick="window.location.href='index.html'" style="background:none; border:none; color:#007bff; cursor:pointer; font-weight:bold; margin-bottom:15px;">⬅ Zurück</button>
     
-    <h1>Stammdaten Verwaltung</h1>
+    <h1>Stammdaten</h1>
 
     <div class="nav-btns">
-        <button id="nav-mat" class="btn-nav active" onclick="showSection('sec-mat')">Materialien</button>
-        <button id="nav-dn" class="btn-nav" onclick="showSection('sec-dn')">Nennweiten</button>
-        <button id="nav-kat" class="btn-nav" onclick="showSection('sec-kat')">Kategorien</button>
+        <button id="nav-mat" class="btn-nav active" onclick="showSection('sec-mat')">Material</button>
+        <button id="nav-dn" class="btn-nav" onclick="showSection('sec-dn')">DN</button>
+        <button id="nav-kat" class="btn-nav" onclick="showSection('sec-kat')">Kat</button>
+        <button id="nav-typ" class="btn-nav" onclick="showSection('sec-typ')">DN-Typen</button>
+        <button id="nav-grp" class="btn-nav" onclick="showSection('sec-grp')">DN-Gruppen</button>
     </div>
 
     <div id="sec-mat" class="section active">
-        <label>1. Material Name</label>
-        <input type="text" id="matName" placeholder="z.B. KG-Rohr">
-        
-        <label>2. Einheit</label>
+        <label>Material Name</label>
+        <input type="text" id="matName" placeholder="Name">
+        <label>Einheit</label>
         <select id="matUnit">
             <option value="m">Meter (m)</option>
             <option value="Stk">Stück (Stk)</option>
             <option value="Set">Set</option>
-            <option value="Paar">Paar</option>
-            <option value="Rolle">Rolle</option>
-            <option value="Sack">Sack</option>
         </select>
-        
-        <label>3. Kategorien zuordnen</label>
+        <label>Kategorien</label>
         <div id="newMatKatList" class="scroll-list"></div>
-
-        <label>4. Nennweiten zuordnen</label>
+        <label>Nennweiten</label>
         <div id="newMatDnList" class="scroll-list"></div>
-
-        <button class="btn-save" onclick="saveMaterial()">Material Speichern</button>
+        <button class="btn-save" onclick="saveMaterial()">Speichern</button>
         <div class="list-container" id="matList"></div>
     </div>
 
     <div id="sec-dn" class="section">
         <div class="dn-row">
             <div><label>Typ</label><select id="dnTypSelect"></select></div>
-            <div><label>Wert</label><input type="text" id="dnWert" placeholder="110"></div>
+            <div><label>Wert</label><input type="text" id="dnWert"></div>
             <div><label>Gruppe</label><select id="dnGruppeSelect"></select></div>
         </div>
-        <button class="btn-save" onclick="saveDN()">Nennweite Speichern</button>
+        <button class="btn-save" onclick="saveDN()">Speichern</button>
         <div class="list-container" id="dnList"></div>
     </div>
 
     <div id="sec-kat" class="section">
-        <label>Neue Kategorie</label>
-        <input type="text" id="katName" placeholder="z.B. Tiefbau">
-        <button class="btn-save" onclick="saveCategory()">Kategorie Speichern</button>
+        <label>Kategorie Name</label>
+        <input type="text" id="katName">
+        <button class="btn-save" onclick="saveCategory()">Speichern</button>
         <div class="list-container" id="katList"></div>
+    </div>
+
+    <div id="sec-typ" class="section">
+        <label>Neuer Typ (z.B. KG, HT)</label>
+        <input type="text" id="typName">
+        <button class="btn-save" onclick="saveDnType()">Speichern</button>
+        <div class="list-container" id="typList"></div>
+    </div>
+
+    <div id="sec-grp" class="section">
+        <label>Neue Gruppe (z.B. Abwasser)</label>
+        <input type="text" id="grpName">
+        <button class="btn-save" onclick="saveDnGroup()">Speichern</button>
+        <div class="list-container" id="grpList"></div>
     </div>
 
     <div id="status">Bereit</div>
@@ -122,13 +115,11 @@
 
 <div id="editModal" class="modal">
     <div class="modal-content">
-        <h3 id="modalTitle" style="margin-top:0;">Eintrag bearbeiten</h3>
-        
+        <h3 id="modalTitle">Bearbeiten</h3>
         <div id="editNameContainer">
-            <label>Bezeichnung / Name</label>
+            <label>Name</label>
             <input type="text" id="editInput">
         </div>
-
         <div id="editDnFields" style="display:none;">
             <div class="dn-row">
                 <div><label>Typ</label><select id="editDnTypSelect"></select></div>
@@ -136,26 +127,19 @@
                 <div><label>Gruppe</label><select id="editDnGruppeSelect"></select></div>
             </div>
         </div>
-        
-        <div id="editUnitContainer" style="display:none; margin-top:15px;">
+        <div id="editUnitContainer" style="display:none;">
             <label>Einheit</label>
             <select id="editUnitInput">
                 <option value="m">Meter (m)</option>
                 <option value="Stk">Stück (Stk)</option>
-                <option value="Set">Set</option>
-                <option value="Paar">Paar</option>
-                <option value="Rolle">Rolle</option>
-                <option value="Sack">Sack</option>
             </select>
         </div>
-
-        <div id="materialEditExtras" style="display:none; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
-            <label>Zugeordnete Kategorien</label>
+        <div id="materialEditExtras" style="display:none; border-top:1px solid #eee; margin-top:10px;">
+            <label>Kategorien</label>
             <div id="editKatList" class="scroll-list"></div>
-            <label>Zugeordnete Nennweiten</label>
+            <label>Nennweiten</label>
             <div id="editDnList" class="scroll-list"></div>
         </div>
-
         <div class="modal-btns">
             <button id="btnSaveEdit" class="btn-modal-save">Speichern</button>
             <button id="btnDeleteConfirm" class="btn-modal-del">Löschen</button>
@@ -165,17 +149,13 @@
 </div>
 
 <script type="module" src="admin.js"></script>
-
 <script>
     window.showSection = function(id) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        if (id === 'sec-mat') document.getElementById('nav-mat').classList.add('active');
-        if (id === 'sec-dn') document.getElementById('nav-dn').classList.add('active');
-        if (id === 'sec-kat') document.getElementById('nav-kat').classList.add('active');
+        document.getElementById('nav-' + id.split('-')[1]).classList.add('active');
     }
 </script>
-
 </body>
 </html>

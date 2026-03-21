@@ -32,6 +32,8 @@ async function init() {
             ladeKategorien(),
             ladeMaterialien(),
             ladeNennweiten(),
+            ladeTypenListe(),
+            ladeGruppenListe(),
             befuelleNeuanlageListen()
         ]);
         status.innerText = "Bereit";
@@ -41,12 +43,12 @@ async function init() {
     }
 }
 
-// --- DROPDOWNS BEFÜLLEN ---
+// --- DROPDOWNS & LISTEN LADEN ---
 
 async function ladeTypenUndGruppen() {
     const [{ data: typen }, { data: gruppen }] = await Promise.all([
-        supa.from('nennweiten_typen').select('*').order('name'),
-        supa.from('nennweiten_gruppen').select('*').order('name')
+        supa.from('dn_typen').select('*').order('name'),
+        supa.from('dn_gruppen').select('*').order('name')
     ]);
 
     const befuelleDropdown = (el, data) => {
@@ -64,8 +66,6 @@ async function ladeTypenUndGruppen() {
     befuelleDropdown(dnGruppeSelect, gruppen);
     befuelleDropdown(editDnGruppeSelect, gruppen);
 }
-
-// --- HILFSFUNKTIONEN FÜR LISTEN ---
 
 async function befuelleNeuanlageListen() {
     const [{ data: kats }, { data: dns }] = await Promise.all([
@@ -102,14 +102,28 @@ function createCheckRow(id, label, className, checked = false) {
 
 async function ladeKategorien() {
     const { data } = await supa.from('material_kategorien').select('*').order('name');
-    const list = document.getElementById('katList');
+    renderStandardList('katList', data, 'material_kategorien');
+}
+
+async function ladeTypenListe() {
+    const { data } = await supa.from('dn_typen').select('*').order('name');
+    renderStandardList('typList', data, 'dn_typen');
+}
+
+async function ladeGruppenListe() {
+    const { data } = await supa.from('dn_gruppen').select('*').order('name');
+    renderStandardList('grpList', data, 'dn_gruppen');
+}
+
+function renderStandardList(elementId, data, table) {
+    const list = document.getElementById(elementId);
     list.innerHTML = "";
-    data?.forEach(k => {
-        const item = document.createElement('div');
-        item.className = "list-item";
-        item.onclick = () => openEditPopup('material_kategorien', k.id, k.name);
-        item.innerHTML = `<span>${k.name}</span><span style="color:#007bff">⚙</span>`;
-        list.appendChild(item);
+    data?.forEach(item => {
+        const div = document.createElement('div');
+        div.className = "list-item";
+        div.onclick = () => openEditPopup(table, item.id, item.name);
+        div.innerHTML = `<span>${item.name}</span><span style="color:#007bff">⚙</span>`;
+        list.appendChild(div);
     });
 }
 
@@ -196,11 +210,7 @@ btnSaveEdit.onclick = async () => {
     status.innerText = "Speichere...";
     
     if (currentEditTable === 'nennweiten') {
-        await supa.from('nennweiten').update({ 
-            typ: editDnTypSelect.value, 
-            wert: editDnWert.value, 
-            gruppe: editDnGruppeSelect.value 
-        }).eq('id', currentEditId);
+        await supa.from('nennweiten').update({ typ: editDnTypSelect.value, wert: editDnWert.value, gruppe: editDnGruppeSelect.value }).eq('id', currentEditId);
     } else if (currentEditTable === 'material_katalog') {
         await supa.from('material_katalog').update({ name: editInput.value, einheit: editUnitInput.value }).eq('id', currentEditId);
         
@@ -238,6 +248,20 @@ window.saveCategory = async () => {
     init();
 };
 
+window.saveDnType = async () => {
+    const name = document.getElementById('typName').value;
+    if (name) await supa.from('dn_typen').insert([{ name }]);
+    document.getElementById('typName').value = "";
+    init();
+};
+
+window.saveDnGroup = async () => {
+    const name = document.getElementById('grpName').value;
+    if (name) await supa.from('dn_gruppen').insert([{ name }]);
+    document.getElementById('grpName').value = "";
+    init();
+};
+
 window.saveMaterial = async () => {
     const name = document.getElementById('matName').value;
     const einheit = document.getElementById('matUnit').value;
@@ -257,9 +281,7 @@ window.saveMaterial = async () => {
 };
 
 window.saveDN = async () => {
-    const typ = dnTypSelect.value;
-    const wert = document.getElementById('dnWert').value;
-    const gruppe = dnGruppeSelect.value;
+    const typ = dnTypSelect.value, wert = document.getElementById('dnWert').value, gruppe = dnGruppeSelect.value;
     if (wert) await supa.from('nennweiten').insert([{ typ, wert, gruppe }]);
     document.getElementById('dnWert').value = "";
     init();
