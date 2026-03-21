@@ -22,7 +22,10 @@ const editKatSel = document.getElementById('editKat');
 const editDnSel = document.getElementById('editDn');
 let currentEditId = null;
 
-// HILFSFUNKTIONEN (Sicher gegen Zoll-Zeichen ")
+// Zwischenspeicher für Nennweiten des aktuellen Materials zum Filtern
+let aktuelleNennweiten = [];
+
+// HILFSFUNKTIONEN
 function formatDN(dn) {
     if (!dn) return "";
     const teile = [];
@@ -45,14 +48,13 @@ async function init() {
 
         const { data: kats } = await supa.from('material_kategorien').select('*').order('name');
         
-        // Dropdowns sicher befüllen
         [katSel, editKatSel].forEach(sel => {
             if (!sel) return;
             sel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
             kats?.forEach(k => {
                 const opt = document.createElement('option');
                 opt.value = k.id;
-                opt.textContent = k.name; // textContent ist sicher gegen "
+                opt.textContent = k.name;
                 sel.appendChild(opt);
             });
         });
@@ -88,21 +90,71 @@ matSel.addEventListener('change', async () => {
     const matId = matSel.value;
     const opt = matSel.options[matSel.selectedIndex];
     einheitDisplay.textContent = opt.dataset.unit || "---";
+    
+    // Filterbar leeren
+    const filterBar = document.getElementById('dnFilterBar');
+    if(filterBar) filterBar.innerHTML = "";
+
     if (!matId) { dnSel.disabled = true; return; }
 
     const { data } = await supa.from('material_katalog_nennweiten').select('nennweiten ( id, wert, typ, gruppe )').eq('katalog_id', matId);
-    dnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
-    data?.forEach(item => {
-        const d = item.nennweiten;
-        if (d) {
-            const o = document.createElement('option');
-            o.value = d.id;
-            o.textContent = formatDN(d); // Zoll-Zeichen sicher
-            dnSel.appendChild(o);
-        }
-    });
+    
+    // Nennweiten für Filterung speichern
+    aktuelleNennweiten = data?.map(item => item.nennweiten).filter(d => d !== null) || [];
+    
+    // Buttons erstellen
+    erstelleFilterButtons();
+    
+    // Dropdown initial befüllen
+    befuelleDnDropdown(aktuelleNennweiten);
     dnSel.disabled = false;
 });
+
+function erstelleFilterButtons() {
+    const filterBar = document.getElementById('dnFilterBar');
+    if (!filterBar) return;
+    filterBar.innerHTML = "";
+
+    // Eindeutige Gruppen extrahieren, die tatsächlich vorhanden sind
+    const gruppen = [...new Set(aktuelleNennweiten.map(d => d.gruppe).filter(g => g))].sort();
+
+    if (gruppen.length > 0) {
+        // "Alle" Button
+        filterBar.appendChild(createFilterBtn("Alle", null));
+        gruppen.forEach(g => {
+            filterBar.appendChild(createFilterBtn(g, g));
+        });
+    }
+}
+
+function createFilterBtn(label, gruppe) {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.className = "filter-btn"; // Styling erfolgt über CSS
+    btn.onclick = (e) => {
+        e.preventDefault();
+        // Aktiven Status optisch setzen
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Dropdown filtern
+        const gefiltert = gruppe 
+            ? aktuelleNennweiten.filter(d => d.gruppe === gruppe)
+            : aktuelleNennweiten;
+        befuelleDnDropdown(gefiltert);
+    };
+    return btn;
+}
+
+function befuelleDnDropdown(dns) {
+    dnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
+    dns.forEach(d => {
+        const o = document.createElement('option');
+        o.value = d.id;
+        o.textContent = formatDN(d);
+        dnSel.appendChild(o);
+    });
+}
 
 window.addToList = async () => {
     const matId = matSel.value;
@@ -205,7 +257,6 @@ async function ladeMaterialListe() {
             itemDiv.className = "list-item";
             if (!toggleGroup?.checked) itemDiv.onclick = () => openEditModal(m);
 
-            // Innere Struktur sicher aufbauen
             const infoDiv = document.createElement('div');
             infoDiv.className = "mat-info";
             
