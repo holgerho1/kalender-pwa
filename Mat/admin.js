@@ -52,7 +52,7 @@ async function ladeTypenUndGruppen() {
     ]);
 
     const befuelleDropdown = (el, data) => {
-        el.innerHTML = '<option value="">-- wählen --</option>';
+        el.innerHTML = el.multiple ? '' : '<option value="">-- wählen --</option>';
         data?.forEach(item => {
             const opt = document.createElement('option');
             opt.value = item.name;
@@ -281,30 +281,41 @@ window.saveMaterial = async () => {
 };
 
 window.saveDN = async () => {
-    const typ = dnTypSelect.value;
+    const typen = Array.from(dnTypSelect.selectedOptions).map(opt => opt.value);
     const wert = document.getElementById('dnWert').value.trim();
-    const gruppe = dnGruppeSelect.value;
+    const gruppen = Array.from(dnGruppeSelect.selectedOptions).map(opt => opt.value);
     
-    // Prüfen, ob überhaupt etwas ausgewählt/eingegeben wurde
-    if (typ || wert || gruppe) {
-        status.innerText = "Speichere Nennweite...";
-        const { error } = await supa.from('nennweiten').insert([{ 
-            typ: typ || null, 
-            wert: wert || null, 
-            gruppe: gruppe || null 
-        }]);
-        
-        if (error) {
-            console.error("Fehler beim Speichern:", error);
-            alert("Fehler beim Speichern: " + error.message);
-        } else {
-            document.getElementById('dnWert').value = "";
-            dnTypSelect.selectedIndex = 0;
-            dnGruppeSelect.selectedIndex = 0;
-            await init();
-        }
+    if (typen.length === 0 && !wert && gruppen.length === 0) {
+        return alert("Bitte mindestens ein Feld ausfüllen.");
+    }
+
+    status.innerText = "Speichere Kombinationen...";
+    
+    // Arrays für die Schleifen vorbereiten (mindestens ein Element für den Durchlauf)
+    const tList = typen.length > 0 ? typen : [null];
+    const gList = gruppen.length > 0 ? gruppen : [null];
+    
+    const inserts = [];
+    tList.forEach(t => {
+        gList.forEach(g => {
+            inserts.push({
+                typ: t,
+                wert: wert || null,
+                gruppe: g
+            });
+        });
+    });
+
+    const { error } = await supa.from('nennweiten').insert(inserts);
+    
+    if (error) {
+        console.error("Fehler beim Speichern:", error);
+        alert("Fehler beim Speichern: " + error.message);
     } else {
-        alert("Bitte fülle mindestens ein Feld (Typ, Wert oder Gruppe) aus.");
+        document.getElementById('dnWert').value = "";
+        dnTypSelect.selectedIndex = -1;
+        dnGruppeSelect.selectedIndex = -1;
+        await init();
     }
 };
 
