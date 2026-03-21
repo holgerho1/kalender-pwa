@@ -80,7 +80,6 @@ async function befuelleNeuanlageListen() {
     const dnDiv = document.getElementById('newMatDnList');
     dnDiv.innerHTML = "";
     dns?.forEach(d => {
-        // Hier ebenfalls die einreihige Anzeige für die Checkboxen
         const txt = `${d.typ || ''} ${d.wert || ''} ${d.gruppe || ''}`.replace(/\s+/g, ' ').trim();
         dnDiv.appendChild(createCheckRow(d.id, txt, "new-mat-dn-cb"));
     });
@@ -149,14 +148,8 @@ async function ladeNennweiten() {
         const item = document.createElement('div');
         item.className = "list-item";
         item.onclick = () => openEditPopup('nennweiten', d.id, null, null, d.typ, d.wert, d.gruppe);
-        
-        // Kombinierter String: Typ Wert Gruppe einfarbig in einer Reihe
         const kombinierterText = `${d.typ || ''} ${d.wert || ''} ${d.gruppe || ''}`.replace(/\s+/g, ' ').trim();
-        
-        item.innerHTML = `
-            <div class="item-main" style="font-weight: normal;">${kombinierterText}</div>
-            <span style="color:#007bff">⚙</span>
-        `;
+        item.innerHTML = `<div class="item-main" style="font-weight: normal;">${kombinierterText || "Unbenannt"}</div><span style="color:#007bff">⚙</span>`;
         list.appendChild(item);
     });
 }
@@ -221,13 +214,10 @@ btnSaveEdit.onclick = async () => {
         await supa.from('nennweiten').update({ typ: editDnTypSelect.value, wert: editDnWert.value, gruppe: editDnGruppeSelect.value }).eq('id', currentEditId);
     } else if (currentEditTable === 'material_katalog') {
         await supa.from('material_katalog').update({ name: editInput.value, einheit: editUnitInput.value }).eq('id', currentEditId);
-        
         const kats = Array.from(document.querySelectorAll('.edit-kat-cb:checked')).map(cb => cb.value);
         const dns = Array.from(document.querySelectorAll('.edit-dn-cb:checked')).map(cb => cb.value);
-
         await supa.from('material_katalog_kategorien').delete().eq('material_id', currentEditId);
         if (kats.length > 0) await supa.from('material_katalog_kategorien').insert(kats.map(kid => ({ material_id: currentEditId, kategorie_id: kid })));
-
         await supa.from('material_katalog_nennweiten').delete().eq('katalog_id', currentEditId);
         if (dns.length > 0) await supa.from('material_katalog_nennweiten').insert(dns.map(did => ({ katalog_id: currentEditId, nennweite_id: did })));
     } else {
@@ -275,9 +265,7 @@ window.saveMaterial = async () => {
     const einheit = document.getElementById('matUnit').value;
     const kats = Array.from(document.querySelectorAll('.new-mat-kat-cb:checked')).map(cb => cb.value);
     const dns = Array.from(document.querySelectorAll('.new-mat-dn-cb:checked')).map(cb => cb.value);
-
     if (!name || kats.length === 0) return alert("Name und Kategorie fehlen!");
-
     const { data } = await supa.from('material_katalog').insert([{ name, einheit }]).select();
     if (data?.[0]) {
         const mId = data[0].id;
@@ -289,10 +277,21 @@ window.saveMaterial = async () => {
 };
 
 window.saveDN = async () => {
-    const typ = dnTypSelect.value, wert = document.getElementById('dnWert').value, gruppe = dnGruppeSelect.value;
-    if (wert) await supa.from('nennweiten').insert([{ typ, wert, gruppe }]);
-    document.getElementById('dnWert').value = "";
-    init();
+    const typ = dnTypSelect.value;
+    const wert = document.getElementById('dnWert').value;
+    const gruppe = dnGruppeSelect.value;
+    
+    // Erlaubt das Speichern, wenn mindestens ein Feld ausgefüllt ist
+    if (typ || wert || gruppe) {
+        await supa.from('nennweiten').insert([{ typ, wert, gruppe }]);
+        document.getElementById('dnWert').value = "";
+        // Selects zurücksetzen
+        dnTypSelect.selectedIndex = 0;
+        dnGruppeSelect.selectedIndex = 0;
+        init();
+    } else {
+        alert("Bitte mindestens ein Feld ausfüllen.");
+    }
 };
 
 init();
