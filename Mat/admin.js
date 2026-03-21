@@ -80,7 +80,8 @@ async function befuelleNeuanlageListen() {
     const dnDiv = document.getElementById('newMatDnList');
     dnDiv.innerHTML = "";
     dns?.forEach(d => {
-        const txt = `${d.typ || ''} ${d.wert || ''} ${d.gruppe || ''}`.trim();
+        // Hier ebenfalls die einreihige Anzeige für die Checkboxen
+        const txt = `${d.typ || ''} ${d.wert || ''} ${d.gruppe || ''}`.replace(/\s+/g, ' ').trim();
         dnDiv.appendChild(createCheckRow(d.id, txt, "new-mat-dn-cb"));
     });
 }
@@ -148,7 +149,14 @@ async function ladeNennweiten() {
         const item = document.createElement('div');
         item.className = "list-item";
         item.onclick = () => openEditPopup('nennweiten', d.id, null, null, d.typ, d.wert, d.gruppe);
-        item.innerHTML = `<div><div class="item-main">${d.wert}</div><div class="item-sub">${d.typ || ''} ${d.gruppe || ''}</div></div><span style="color:#007bff">⚙</span>`;
+        
+        // Kombinierter String: Typ Wert Gruppe einfarbig in einer Reihe
+        const kombinierterText = `${d.typ || ''} ${d.wert || ''} ${d.gruppe || ''}`.replace(/\s+/g, ' ').trim();
+        
+        item.innerHTML = `
+            <div class="item-main" style="font-weight: normal;">${kombinierterText}</div>
+            <span style="color:#007bff">⚙</span>
+        `;
         list.appendChild(item);
     });
 }
@@ -201,7 +209,7 @@ async function ladeModalVerknuepfungen(materialId) {
     dnList.innerHTML = "";
     alleDN?.forEach(d => {
         const isChecked = meineDN?.some(md => md.nennweite_id === d.id);
-        const txt = `${d.typ || ''} ${d.wert || ''} ${d.gruppe || ''}`.trim();
+        const txt = `${d.typ || ''} ${d.wert || ''} ${d.gruppe || ''}`.replace(/\s+/g, ' ').trim();
         dnList.appendChild(createCheckRow(d.id, txt, "edit-dn-cb", isChecked));
     });
 }
