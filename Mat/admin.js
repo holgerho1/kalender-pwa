@@ -13,6 +13,7 @@ const dnTypenList = document.getElementById('dnTypenList');
 const matModal = document.getElementById('matEditModal');
 const katModal = document.getElementById('katEditModal');
 const dnModal = document.getElementById('dnEditModal');
+const stammModal = document.getElementById('stammModal');
 
 const editMatDnContainer = document.getElementById('editMatDnContainer');
 const editMatKatContainer = document.getElementById('editMatKatContainer');
@@ -24,34 +25,49 @@ let currentEditDNId = null;
 let allMaterials = [];
 
 async function init() {
-    await ladeStammdatenListen(); // Gruppen & Typen
+    await ladeStammdatenListen(); // Lädt Gruppen & Typen Tabellen
     ladeKategorien();
     ladeKatalog();
     ladeNennweitenStamm();
 }
 
-// --- A & B: GRUPPEN UND TYPEN VERWALTUNG ---
+// --- STAMMDATEN POPUP (GRUPPEN & TYPEN) ---
+
+window.openStammModal = () => stammModal.style.display = "flex";
+window.closeStammModal = () => stammModal.style.display = "none";
 
 async function ladeStammdatenListen() {
     const { data: gruppen } = await supa.from('dn_gruppen').select('*').order('name');
     const { data: typen } = await supa.from('dn_typen').select('*').order('name');
 
-    // Listen in der Admin-Ansicht anzeigen (einfache Text-Liste)
-    dnGruppenList.innerHTML = gruppen?.map(g => `<div class="list-item"><span>${g.name}</span><button onclick="deleteStamm('dn_gruppen','${g.id}')">X</button></div>`).join('') || '';
-    dnTypenList.innerHTML = typen?.map(t => `<div class="list-item"><span>${t.name}</span><button onclick="deleteStamm('dn_typen','${t.id}')">X</button></div>`).join('') || '';
+    // Anzeige im Popup
+    dnGruppenList.innerHTML = gruppen?.map(g => `
+        <div class="list-item" style="padding: 5px; font-size: 0.8rem;">
+            <span>${g.name}</span>
+            <button onclick="deleteStamm('dn_gruppen','${g.id}')" style="background:none; color:red; padding:2px 5px;">X</button>
+        </div>`).join('') || '';
 
-    // Dropdowns befüllen
-    updateDNSelectOptions(gruppen, typen);
+    dnTypenList.innerHTML = typen?.map(t => `
+        <div class="list-item" style="padding: 5px; font-size: 0.8rem;">
+            <span>${t.name}</span>
+            <button onclick="deleteStamm('dn_typen','${t.id}')" style="background:none; color:red; padding:2px 5px;">X</button>
+        </div>`).join('') || '';
+
+    // Alle Dropdowns im HTML befüllen
+    updateDNSelectOptions(gruppen || [], typen || []);
 }
 
 function updateDNSelectOptions(gruppen, typen) {
     const optG = '<option value="">Gruppe wählen...</option>' + gruppen.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
     const optT = '<option value="">Typ wählen...</option>' + typen.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
 
-    document.getElementById('newDNGruppe').innerHTML = optG;
-    document.getElementById('newDNTyp').innerHTML = optT;
-    document.getElementById('editDNGruppe').innerHTML = optG;
-    document.getElementById('editDNTyp').innerHTML = optT;
+    // Neuanlage-Bereich
+    if(document.getElementById('newDNGruppe')) document.getElementById('newDNGruppe').innerHTML = optG;
+    if(document.getElementById('newDNTyp')) document.getElementById('newDNTyp').innerHTML = optT;
+    
+    // DN-Edit-Modal
+    if(document.getElementById('editDNGruppe')) document.getElementById('editDNGruppe').innerHTML = optG;
+    if(document.getElementById('editDNTyp')) document.getElementById('editDNTyp').innerHTML = optT;
 }
 
 window.addDNGruppe = async () => {
@@ -76,7 +92,7 @@ window.deleteStamm = async (table, id) => {
     ladeStammdatenListen();
 };
 
-// --- 1. NENNWEITEN (Stammdaten) ---
+// --- 1. NENNWEITEN ---
 
 async function ladeNennweitenStamm() {
     const { data } = await supa.from('nennweiten').select('*').order('wert');
@@ -97,9 +113,7 @@ window.addDN = async () => {
     const wert = document.getElementById('newDNWert').value.trim();
     const gruppe = document.getElementById('newDNGruppe').value;
     const typ = document.getElementById('newDNTyp').value;
-
     if (!wert) return alert("Bezeichnung fehlt!");
-
     await supa.from('nennweiten').insert([{ wert, gruppe, typ }]);
     document.getElementById('newDNWert').value = "";
     ladeNennweitenStamm();
@@ -170,7 +184,7 @@ window.saveKatChanges = async () => {
 };
 
 window.deleteKatFull = async () => {
-    if (!confirm("Löschen?")) return;
+    if (!confirm("Kategorie löschen?")) return;
     await supa.from('material_kategorien').delete().eq('id', currentEditKatId);
     closeKatModal();
     ladeKategorien();
@@ -187,7 +201,7 @@ async function ladeKatalog() {
 }
 
 function renderKatalog(liste) {
-    matList.innerHTML = `<button onclick="openMaterialEdit(null)" class="btn-add">+ Neues Material</button>`;
+    matList.innerHTML = `<button onclick="openMaterialEdit(null)" class="btn-add" style="margin-top:10px;">+ Neues Material</button>`;
     liste.forEach(m => {
         const div = document.createElement('div');
         div.className = 'list-item';
@@ -210,7 +224,7 @@ window.openMaterialEdit = async (id) => {
     const { data: alleKat } = await supa.from('material_kategorien').select('*').order('name');
     const { data: alleDN } = await supa.from('nennweiten').select('*').order('wert');
     
-    // Filter-Dropdowns im Modal befüllen
+    // Filter befüllen
     const gruppen = [...new Set(alleDN.map(d => d.gruppe).filter(Boolean))].sort();
     const typen = [...new Set(alleDN.map(d => d.typ).filter(Boolean))].sort();
     document.getElementById('filterDNGruppe').innerHTML = '<option value="">Alle Gruppen</option>' + gruppen.map(g => `<option value="${g}">${g}</option>`).join('');
@@ -235,7 +249,6 @@ window.openMaterialEdit = async (id) => {
         document.getElementById('editMatEinheit').value = "Stk";
     }
 
-    // Checkboxen rendern
     editMatKatContainer.innerHTML = alleKat?.map(k => `<label style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><input type="checkbox" class="kat-checkbox" value="${k.id}" ${verbundeneKatIds.includes(k.id)?'checked':''}> ${k.name}</label>`).join('') || '';
     editMatDnContainer.innerHTML = alleDN?.map(dn => `<label class="dn-label" data-gruppe="${dn.gruppe || ''}" data-typ="${dn.typ || ''}" style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><input type="checkbox" class="dn-checkbox" value="${dn.id}" ${verbundeneDNIds.includes(dn.id)?'checked':''}> ${dn.wert} <small>(${dn.typ || ''})</small></label>`).join('') || '';
 
