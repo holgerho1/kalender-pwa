@@ -30,7 +30,6 @@
         .check-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; cursor: pointer; }
         .check-row input { width: 20px; height: 20px; margin: 0; }
 
-        /* Optimierte DN-Zeile für gleiche Höhe */
         .dn-row { display: flex; gap: 8px; align-items: flex-start; }
         .dn-row div { flex: 1; }
         .dn-row .scroll-list { height: 120px; margin-bottom: 0; }
@@ -87,15 +86,15 @@
     <div id="sec-dn" class="section">
         <div class="dn-row">
             <div>
-                <label>Typ (Wahl)</label>
+                <label>Typ</label>
                 <div id="dnTypList" class="scroll-list"></div>
             </div>
             <div>
-                <label>Wert (Eingabe)</label>
+                <label>Wert</label>
                 <input type="text" id="dnWert" placeholder="z.B. 110">
             </div>
             <div>
-                <label>Gruppe (Wahl)</label>
+                <label>Gruppe</label>
                 <div id="dnGruppeList" class="scroll-list"></div>
             </div>
         </div>
