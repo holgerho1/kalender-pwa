@@ -19,7 +19,7 @@
         select:disabled { background: #eee; cursor: not-allowed; }
         
         .qty-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .qty-row input { margin-bottom: 0; width: 90px; text-align: center; }
+        .qty-row input { margin-bottom: 0; width: 100px; text-align: center; }
         #einheitDisplay { font-weight: bold; color: #333; min-width: 50px; font-size: 0.9rem; }
         
         button { width: 100%; padding: 14px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1rem; }
@@ -39,11 +39,9 @@
             display: flex; justify-content: space-between; align-items: center; 
             background: white; cursor: pointer; -webkit-tap-highlight-color: transparent;
         }
-        .mat-info { display: flex; flex-direction: column; flex: 1; padding-right: 10px; }
+        .mat-info { display: flex; flex-direction: column; flex: 1; }
         .mat-name { font-weight: bold; font-size: 0.95rem; color: #333; }
-        /* Badge für die formatierte Nennweite */
-        .mat-dn { font-size: 0.8rem; color: #007bff; font-weight: bold; background: #e7f1ff; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 4px; }
-        .mat-details { font-size: 0.75rem; color: #888; margin-top: 2px; }
+        .mat-dn { font-size: 0.75rem; color: #007bff; font-weight: bold; background: #e7f1ff; padding: 2px 6px; border-radius: 4px; }
         
         /* Modal Styles */
         .modal {
@@ -107,7 +105,13 @@
         <h3 id="editModalTitle">Eintrag bearbeiten</h3>
         
         <label>Menge:</label>
-        <input type="number" id="editMenge" step="any" inputmode="decimal" style="margin-bottom: 20px;">
+        <input type="number" id="editMenge" step="any" inputmode="decimal">
+        
+        <label>Kategorie:</label>
+        <select id="editKat"></select>
+
+        <label>Nennweite:</label>
+        <select id="editDn"></select>
         
         <div class="modal-btns">
             <button id="btnSaveEdit" style="background:#28a745; color:white;">Speichern</button>
