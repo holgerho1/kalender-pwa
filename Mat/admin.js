@@ -1,10 +1,9 @@
 import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 const status = document.getElementById('status');
 
-// Hilfsfunktion für die Anzeige (Zoll-sicher)
+// Hilfsfunktion für die Anzeige (Zoll-sicher durch textContent)
 function formatDN(dn) {
     if (!dn) return "";
     const teile = [];
@@ -16,13 +15,11 @@ function formatDN(dn) {
 
 async function init() {
     try {
-        await ladeKategorien();
-        await ladeMaterialien();
-        await ladeNennweiten();
+        await Promise.all([ladeKategorien(), ladeMaterialien(), ladeNennweiten()]);
         status.innerText = "Bereit";
     } catch (e) {
+        status.innerText = "Fehler beim Laden";
         console.error(e);
-        status.innerText = "Fehler beim Laden!";
     }
 }
 
@@ -43,11 +40,19 @@ async function ladeKategorien() {
 
         const item = document.createElement('div');
         item.className = "list-item";
-        item.innerHTML = `<span>${k.name}</span>`;
+        const txt = document.createElement('span');
+        txt.textContent = k.name;
+        item.appendChild(txt);
+
         const btn = document.createElement('button');
         btn.className = "btn-del";
         btn.textContent = "Löschen";
-        btn.onclick = () => deleteEntry('material_kategorien', k.id, ladeKategorien);
+        btn.onclick = async () => {
+            if(confirm(`Kategorie "${k.name}" löschen?`)) {
+                await supa.from('material_kategorien').delete().eq('id', k.id);
+                ladeKategorien();
+            }
+        };
         item.appendChild(btn);
         list.appendChild(item);
     });
@@ -78,11 +83,28 @@ async function ladeMaterialien() {
 
         const item = document.createElement('div');
         item.className = "list-item";
-        item.innerHTML = `<div><div class="item-main">${m.name}</div><div style="font-size:0.7rem; color:#888;">${m.einheit}</div></div>`;
+        
+        const info = document.createElement('div');
+        const title = document.createElement('div');
+        title.className = "item-main";
+        title.textContent = m.name;
+        const sub = document.createElement('div');
+        sub.style.fontSize = "0.7rem";
+        sub.textContent = m.einheit;
+        
+        info.appendChild(title);
+        info.appendChild(sub);
+        item.appendChild(info);
+
         const btn = document.createElement('button');
         btn.className = "btn-del";
         btn.textContent = "Löschen";
-        btn.onclick = () => deleteEntry('material_katalog', m.id, ladeMaterialien);
+        btn.onclick = async () => {
+            if(confirm(`Material "${m.name}" löschen?`)) {
+                await supa.from('material_katalog').delete().eq('id', m.id);
+                ladeMaterialien();
+            }
+        };
         item.appendChild(btn);
         list.appendChild(item);
     });
@@ -96,15 +118,18 @@ window.saveMaterial = async () => {
     if (!name || !einheit || !katId) return alert("Bitte alles ausfüllen!");
 
     const { data, error } = await supa.from('material_katalog').insert([{ name, einheit }]).select();
-    if (data) {
-        await supa.from('material_katalog_kategorien').insert([{ material_id: data[0].id, kategorie_id: katId }]);
+    if (data && data[0]) {
+        await supa.from('material_katalog_kategorien').insert([{ 
+            material_id: data[0].id, 
+            kategorie_id: katId 
+        }]);
     }
     document.getElementById('matName').value = "";
     document.getElementById('matUnit').value = "";
     await ladeMaterialien();
 };
 
-// --- NENNWEITEN (TYP, WERT, GRUPPE) ---
+// --- NENNWEITEN ---
 async function ladeNennweiten() {
     const { data } = await supa.from('nennweiten').select('*').order('wert');
     const list = document.getElementById('dnList');
@@ -116,11 +141,9 @@ async function ladeNennweiten() {
         
         const info = document.createElement('div');
         info.className = "item-info";
-        
         const main = document.createElement('div');
         main.className = "item-main";
-        main.textContent = d.wert || ""; // Zoll-sicher
-        
+        main.textContent = d.wert || ""; 
         const sub = document.createElement('div');
         sub.className = "item-sub";
         sub.textContent = `${d.typ || ''} ${d.gruppe || ''}`.trim();
@@ -132,8 +155,12 @@ async function ladeNennweiten() {
         const btn = document.createElement('button');
         btn.className = "btn-del";
         btn.textContent = "Löschen";
-        btn.onclick = () => deleteEntry('nennweiten', d.id, ladeNennweiten);
-        
+        btn.onclick = async () => {
+            if(confirm(`Nennweite "${formatDN(d)}" löschen?`)) {
+                await supa.from('nennweiten').delete().eq('id', d.id);
+                ladeNennweiten();
+            }
+        };
         item.appendChild(btn);
         list.appendChild(item);
     });
@@ -145,12 +172,15 @@ window.saveDN = async () => {
     const gruppe = document.getElementById('dnGruppe').value;
     const matId = document.getElementById('dnMatSelect').value;
 
-    if (!wert) return alert("Mindestens ein Wert (z.B. 110 oder 1\") wird benötigt!");
+    if (!wert) return alert("Wert (z.B. 110 oder 1\") fehlt!");
 
     const { data, error } = await supa.from('nennweiten').insert([{ typ, wert, gruppe }]).select();
     
-    if (data && matId) {
-        await supa.from('material_katalog_nennweiten').insert([{ katalog_id: matId, nennweite_id: data[0].id }]);
+    if (data && data[0] && matId) {
+        await supa.from('material_katalog_nennweiten').insert([{ 
+            katalog_id: matId, 
+            nennweite_id: data[0].id 
+        }]);
     }
 
     document.getElementById('dnTyp').value = "";
@@ -158,12 +188,5 @@ window.saveDN = async () => {
     document.getElementById('dnGruppe').value = "";
     await ladeNennweiten();
 };
-
-// --- ALLGEMEIN ---
-async function deleteEntry(table, id, callback) {
-    if (!confirm("Wirklich löschen?")) return;
-    await supa.from(table).delete().eq('id', id);
-    await callback();
-}
 
 init();
