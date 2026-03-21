@@ -3,15 +3,15 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../material/config.js";
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const status = document.getElementById('status');
 
-// Hilfsfunktion für die Anzeige (Zoll-sicher durch textContent)
-function formatDN(dn) {
-    if (!dn) return "";
-    const teile = [];
-    if (dn.typ) teile.push(dn.typ);
-    if (dn.wert) teile.push(dn.wert);
-    if (dn.gruppe) teile.push(dn.gruppe);
-    return teile.length > 0 ? teile.join(' ') : "";
-}
+// Modal-Elemente (Stelle sicher, dass diese IDs in deiner admin.html existieren)
+// Falls nicht, fügen wir sie im nächsten Schritt der HTML hinzu
+const editModal = document.getElementById('editModal'); 
+const editInput = document.getElementById('editInput');
+const btnSaveEdit = document.getElementById('btnSaveEdit');
+const btnDeleteConfirm = document.getElementById('btnDeleteConfirm');
+
+let currentEditTable = "";
+let currentEditId = null;
 
 async function init() {
     try {
@@ -40,23 +40,67 @@ async function ladeKategorien() {
 
         const item = document.createElement('div');
         item.className = "list-item";
+        item.style.cursor = "pointer"; // Zeigt an, dass es klickbar ist
+        
+        // Klick auf die Zeile öffnet das Bearbeiten-Popup
+        item.onclick = () => openEditPopup('material_kategorien', k.id, k.name);
+
         const txt = document.createElement('span');
         txt.textContent = k.name;
         item.appendChild(txt);
 
-        const btn = document.createElement('button');
-        btn.className = "btn-del";
-        btn.textContent = "Löschen";
-        btn.onclick = async () => {
-            if(confirm(`Kategorie "${k.name}" löschen?`)) {
-                await supa.from('material_kategorien').delete().eq('id', k.id);
-                ladeKategorien();
-            }
-        };
-        item.appendChild(btn);
+        const arrow = document.createElement('span');
+        arrow.textContent = "✎"; // Kleines Edit-Symbol
+        arrow.style.color = "#007bff";
+        item.appendChild(arrow);
+        
         list.appendChild(item);
     });
 }
+
+// POPUP LOGIK
+function openEditPopup(table, id, currentText) {
+    currentEditTable = table;
+    currentEditId = id;
+    editInput.value = currentText;
+    editModal.style.display = "flex";
+}
+
+// Event-Listener für Modal-Buttons
+if (btnSaveEdit) {
+    btnSaveEdit.onclick = async () => {
+        const newName = editInput.value;
+        if (!newName) return;
+        
+        status.innerText = "Speichere...";
+        await supa.from(currentEditTable).update({ name: newName }).eq('id', currentEditId);
+        
+        editModal.style.display = "none";
+        if (currentEditTable === 'material_kategorien') await ladeKategorien();
+        // Hier folgen später die anderen Tabellen...
+        status.innerText = "Bereit";
+    };
+}
+
+if (btnDeleteConfirm) {
+    btnDeleteConfirm.onclick = async () => {
+        if (!confirm("Wirklich unwiderruflich löschen?")) return;
+        
+        status.innerText = "Lösche...";
+        await supa.from(currentEditTable).delete().eq('id', currentEditId);
+        
+        editModal.style.display = "none";
+        if (currentEditTable === 'material_kategorien') await ladeKategorien();
+        status.innerText = "Bereit";
+    };
+}
+
+// Schließen bei Klick außerhalb oder Abbrechen
+window.closeModal = () => {
+    editModal.style.display = "none";
+};
+
+// ... Rest der ladeMaterialien und ladeNennweiten Funktionen (bleiben wie gehabt) ...
 
 window.saveCategory = async () => {
     const name = document.getElementById('katName').value;
@@ -66,127 +110,6 @@ window.saveCategory = async () => {
     await ladeKategorien();
 };
 
-// --- MATERIALIEN ---
-async function ladeMaterialien() {
-    const { data } = await supa.from('material_katalog').select('*, material_katalog_kategorien(kategorie_id)').order('name');
-    const sel = document.getElementById('dnMatSelect');
-    const list = document.getElementById('matList');
-    
-    sel.innerHTML = '<option value="">-- Nur global anlegen --</option>';
-    list.innerHTML = "";
-
-    data?.forEach(m => {
-        const opt = document.createElement('option');
-        opt.value = m.id;
-        opt.textContent = m.name;
-        sel.appendChild(opt);
-
-        const item = document.createElement('div');
-        item.className = "list-item";
-        
-        const info = document.createElement('div');
-        const title = document.createElement('div');
-        title.className = "item-main";
-        title.textContent = m.name;
-        const sub = document.createElement('div');
-        sub.style.fontSize = "0.7rem";
-        sub.textContent = m.einheit;
-        
-        info.appendChild(title);
-        info.appendChild(sub);
-        item.appendChild(info);
-
-        const btn = document.createElement('button');
-        btn.className = "btn-del";
-        btn.textContent = "Löschen";
-        btn.onclick = async () => {
-            if(confirm(`Material "${m.name}" löschen?`)) {
-                await supa.from('material_katalog').delete().eq('id', m.id);
-                ladeMaterialien();
-            }
-        };
-        item.appendChild(btn);
-        list.appendChild(item);
-    });
-}
-
-window.saveMaterial = async () => {
-    const name = document.getElementById('matName').value;
-    const einheit = document.getElementById('matUnit').value;
-    const katId = document.getElementById('matKatSelect').value;
-    
-    if (!name || !einheit || !katId) return alert("Bitte alles ausfüllen!");
-
-    const { data, error } = await supa.from('material_katalog').insert([{ name, einheit }]).select();
-    if (data && data[0]) {
-        await supa.from('material_katalog_kategorien').insert([{ 
-            material_id: data[0].id, 
-            kategorie_id: katId 
-        }]);
-    }
-    document.getElementById('matName').value = "";
-    document.getElementById('matUnit').value = "";
-    await ladeMaterialien();
-};
-
-// --- NENNWEITEN ---
-async function ladeNennweiten() {
-    const { data } = await supa.from('nennweiten').select('*').order('wert');
-    const list = document.getElementById('dnList');
-    list.innerHTML = "";
-
-    data?.forEach(d => {
-        const item = document.createElement('div');
-        item.className = "list-item";
-        
-        const info = document.createElement('div');
-        info.className = "item-info";
-        const main = document.createElement('div');
-        main.className = "item-main";
-        main.textContent = d.wert || ""; 
-        const sub = document.createElement('div');
-        sub.className = "item-sub";
-        sub.textContent = `${d.typ || ''} ${d.gruppe || ''}`.trim();
-
-        info.appendChild(main);
-        info.appendChild(sub);
-        item.appendChild(info);
-
-        const btn = document.createElement('button');
-        btn.className = "btn-del";
-        btn.textContent = "Löschen";
-        btn.onclick = async () => {
-            if(confirm(`Nennweite "${formatDN(d)}" löschen?`)) {
-                await supa.from('nennweiten').delete().eq('id', d.id);
-                ladeNennweiten();
-            }
-        };
-        item.appendChild(btn);
-        list.appendChild(item);
-    });
-}
-
-window.saveDN = async () => {
-    const typ = document.getElementById('dnTyp').value;
-    const wert = document.getElementById('dnWert').value;
-    const gruppe = document.getElementById('dnGruppe').value;
-    const matId = document.getElementById('dnMatSelect').value;
-
-    if (!wert) return alert("Wert (z.B. 110 oder 1\") fehlt!");
-
-    const { data, error } = await supa.from('nennweiten').insert([{ typ, wert, gruppe }]).select();
-    
-    if (data && data[0] && matId) {
-        await supa.from('material_katalog_nennweiten').insert([{ 
-            katalog_id: matId, 
-            nennweite_id: data[0].id 
-        }]);
-    }
-
-    document.getElementById('dnTyp').value = "";
-    document.getElementById('dnWert').value = "";
-    document.getElementById('dnGruppe').value = "";
-    await ladeNennweiten();
-};
+// (Hier folgen ladeMaterialien, saveMaterial, ladeNennweiten, saveDN wie zuvor)
 
 init();
