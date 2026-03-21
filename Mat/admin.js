@@ -141,7 +141,7 @@ async function ladeMaterialien() {
 }
 
 async function ladeNennweiten() {
-    const { data } = await supa.from('nennweiten').select('*').order('wert');
+    const { data } = await supa.from('nennweiten').select('*');
     const list = document.getElementById('dnList');
     list.innerHTML = "";
     data?.forEach(d => {
@@ -211,7 +211,11 @@ btnSaveEdit.onclick = async () => {
     status.innerText = "Speichere...";
     
     if (currentEditTable === 'nennweiten') {
-        await supa.from('nennweiten').update({ typ: editDnTypSelect.value, wert: editDnWert.value, gruppe: editDnGruppeSelect.value }).eq('id', currentEditId);
+        await supa.from('nennweiten').update({ 
+            typ: editDnTypSelect.value, 
+            wert: editDnWert.value, 
+            gruppe: editDnGruppeSelect.value 
+        }).eq('id', currentEditId);
     } else if (currentEditTable === 'material_katalog') {
         await supa.from('material_katalog').update({ name: editInput.value, einheit: editUnitInput.value }).eq('id', currentEditId);
         const kats = Array.from(document.querySelectorAll('.edit-kat-cb:checked')).map(cb => cb.value);
@@ -278,19 +282,29 @@ window.saveMaterial = async () => {
 
 window.saveDN = async () => {
     const typ = dnTypSelect.value;
-    const wert = document.getElementById('dnWert').value;
+    const wert = document.getElementById('dnWert').value.trim();
     const gruppe = dnGruppeSelect.value;
     
-    // Erlaubt das Speichern, wenn mindestens ein Feld ausgefüllt ist
+    // Prüfen, ob überhaupt etwas ausgewählt/eingegeben wurde
     if (typ || wert || gruppe) {
-        await supa.from('nennweiten').insert([{ typ, wert, gruppe }]);
-        document.getElementById('dnWert').value = "";
-        // Selects zurücksetzen
-        dnTypSelect.selectedIndex = 0;
-        dnGruppeSelect.selectedIndex = 0;
-        init();
+        status.innerText = "Speichere Nennweite...";
+        const { error } = await supa.from('nennweiten').insert([{ 
+            typ: typ || null, 
+            wert: wert || null, 
+            gruppe: gruppe || null 
+        }]);
+        
+        if (error) {
+            console.error("Fehler beim Speichern:", error);
+            alert("Fehler beim Speichern: " + error.message);
+        } else {
+            document.getElementById('dnWert').value = "";
+            dnTypSelect.selectedIndex = 0;
+            dnGruppeSelect.selectedIndex = 0;
+            await init();
+        }
     } else {
-        alert("Bitte mindestens ein Feld ausfüllen.");
+        alert("Bitte fülle mindestens ein Feld (Typ, Wert oder Gruppe) aus.");
     }
 };
 
