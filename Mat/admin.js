@@ -293,28 +293,46 @@ window.saveDN = async () => {
         return alert("Bitte mindestens ein Feld ausfüllen.");
     }
 
-    status.innerText = "Speichere Kombinationen...";
-    
+    status.innerText = "Prüfe Dubletten...";
+    const { data: existingDN } = await supa.from('nennweiten').select('typ, wert, gruppe');
+
     const tList = typen.length > 0 ? typen : [null];
     const gList = gruppen.length > 0 ? gruppen : [null];
     
     const inserts = [];
+    let dubletten = 0;
+
     tList.forEach(t => {
         gList.forEach(g => {
-            inserts.push({
-                typ: t,
-                wert: wert || null,
-                gruppe: g
-            });
+            const neuTyp = t || null;
+            const neuWert = wert || null;
+            const neuGruppe = g || null;
+
+            const istDublette = existingDN?.some(ex => 
+                (ex.typ === neuTyp) && (ex.wert === neuWert) && (ex.gruppe === neuGruppe)
+            );
+
+            if (!istDublette) {
+                inserts.push({ typ: neuTyp, wert: neuWert, gruppe: neuGruppe });
+            } else {
+                dubletten++;
+            }
         });
     });
 
+    if (inserts.length === 0) {
+        status.innerText = "Bereit";
+        return alert("Kombination(en) bereits vorhanden!");
+    }
+
+    status.innerText = "Speichere neue Einträge...";
     const { error } = await supa.from('nennweiten').insert(inserts);
     
     if (error) {
         console.error("Fehler beim Speichern:", error);
         alert("Fehler beim Speichern: " + error.message);
     } else {
+        if (dubletten > 0) alert(`${inserts.length} neu angelegt, ${dubletten} Dubletten übersprungen.`);
         document.getElementById('dnWert').value = "";
         document.querySelectorAll('.dn-new-typ-cb, .dn-new-grp-cb').forEach(cb => cb.checked = false);
         await init();
