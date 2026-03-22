@@ -243,9 +243,32 @@ async function ladeMaterialListe() {
         `).eq('projekt_id', projektId);
 
     if (error) return;
-    listEl.innerHTML = "";
     
+    // --- DATEN FÜR VORANSICHT SORTIEREN ---
+    if (data) {
+        data.sort((a, b) => {
+            // Erst nach Kategoriename sortieren
+            const katA = a.material_kategorien?.name || "";
+            const katB = b.material_kategorien?.name || "";
+            const katCompare = katA.localeCompare(katB);
+            if (katCompare !== 0) return katCompare;
+
+            // Dann nach Materialname
+            const nameA = a.material_katalog?.name || "";
+            const nameB = b.material_katalog?.name || "";
+            const nameCompare = nameA.localeCompare(nameB);
+            if (nameCompare !== 0) return nameCompare;
+
+            // Dann nach Nennweite (numerisch)
+            const dnA = formatDN(a.nennweiten);
+            const dnB = formatDN(b.nennweiten);
+            return dnA.localeCompare(dnB, undefined, { numeric: true });
+        });
+    }
+
+    listEl.innerHTML = "";
     localStorage.setItem('materialDaten', JSON.stringify(data || []));
+    // --------------------------------------
 
     const gruppen = {};
     data?.forEach(m => {
@@ -270,21 +293,14 @@ async function ladeMaterialListe() {
                 else { temp[key].summe += m.menge; temp[key].anzahl += 1; }
             });
             anzeigeListe = Object.values(temp);
-        }
 
-        // NEU: Sortierung der Anzeige-Liste innerhalb der Kategorie
-        anzeigeListe.sort((a, b) => {
-            const nameA = a.material_katalog?.name || "";
-            const nameB = b.material_katalog?.name || "";
-            // Erst nach Materialname sortieren
-            const nameCompare = nameA.localeCompare(nameB);
-            if (nameCompare !== 0) return nameCompare;
-            
-            // Wenn Name gleich, dann nach Nennweite sortieren
-            const dnA = formatDN(a.nennweiten);
-            const dnB = formatDN(b.nennweiten);
-            return dnA.localeCompare(dnB, undefined, { numeric: true });
-        });
+            // Nach Gruppierung erneut sortieren, da die "temp"-Objekte unsortiert sein könnten
+            anzeigeListe.sort((a, b) => {
+                const nameCompare = (a.material_katalog?.name || "").localeCompare(b.material_katalog?.name || "");
+                if (nameCompare !== 0) return nameCompare;
+                return formatDN(a.nennweiten).localeCompare(formatDN(b.nennweiten), undefined, { numeric: true });
+            });
+        }
 
         anzeigeListe.forEach(m => {
             const itemDiv = document.createElement('div');
