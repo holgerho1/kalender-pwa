@@ -34,6 +34,9 @@
         .btn-add { background: #28a745; color: white; flex: 1; }
         .btn-back { background: #6c757d; color: white; width: auto; padding: 8px 15px; font-size: 0.8rem; margin-bottom: 10px; }
         
+        /* Neuer Button für die Voransicht */
+        .btn-preview { background: #007bff; color: white; margin-top: 20px; margin-bottom: 10px; }
+
         .view-control { 
             display: flex; justify-content: space-between; align-items: center; 
             padding: 12px; background: #eef2f7; border-radius: 6px; margin-top: 20px; border: 1px solid #d1d9e6;
@@ -50,7 +53,6 @@
         .mat-info { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
         .mat-name { font-weight: bold; font-size: 0.95rem; color: #333; }
         
-        /* Nennweite jetzt ohne farbigen Hintergrund und in Standardschrift */
         .mat-dn { 
             font-size: 0.95rem; color: #333; 
             white-space: nowrap; display: inline-block;
@@ -111,6 +113,9 @@
     </div>
 
     <div id="materialList"></div>
+    
+    <button id="btnGoToVoransicht" class="btn-preview">📋 Liste bereitstellen (Voransicht)</button>
+    
     <div id="status">Verbindung wird geprüft...</div>
 </div>
 
@@ -136,6 +141,14 @@
 </div>
 
 <script type="module" src="material.js"></script>
+
+<script>
+    // Einfache Navigation zur Voransicht. 
+    // Die material.js muss sicherstellen, dass die Liste im localStorage gespeichert ist.
+    document.getElementById('btnGoToVoransicht').addEventListener('click', () => {
+        window.location.href = 'voransicht.html';
+    });
+</script>
 
 </body>
 </html>

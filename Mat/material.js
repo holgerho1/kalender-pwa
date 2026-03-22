@@ -219,6 +219,11 @@ async function ladeMaterialListe() {
     if (error) return;
     listEl.innerHTML = "";
     
+    // --- NEU: Daten für die Voransicht zwischenspeichern ---
+    // Wir speichern die Rohdaten, damit die voransicht.html darauf zugreifen kann
+    localStorage.setItem('materialDaten', JSON.stringify(data || []));
+    // -------------------------------------------------------
+
     const gruppen = {};
     data?.forEach(m => {
         const katName = m.material_kategorien?.name || "Sonstiges";
@@ -270,7 +275,6 @@ async function ladeMaterialListe() {
             
             infoDiv.appendChild(row);
 
-            // NEU: Anzeige der Anzahl der zusammengefassten Einträge
             if (toggleGroup?.checked && m.anzahl > 1) {
                 const subLine = document.createElement('div');
                 subLine.style = "font-size: 0.7rem; color: #888; font-style: italic;";
