@@ -76,7 +76,6 @@ katSel.addEventListener('change', async () => {
 
     const { data } = await supa.from('material_katalog_kategorien').select('material_katalog ( id, name, einheit )').eq('kategorie_id', katId);
     
-    // Sortierung der Materialien (alphabetisch)
     const sortierteMaterialien = data?.map(item => item.material_katalog).filter(m => m !== null) || [];
     sortierteMaterialien.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -107,7 +106,6 @@ matSel.addEventListener('change', async () => {
 
     const { data } = await supa.from('material_katalog_nennweiten').select('nennweiten ( id, wert, typ, gruppe )').eq('katalog_id', matId);
     
-    // Sortierung der Nennweiten (alphabetisch/numerisch nach formatDN)
     aktuelleNennweiten = data?.map(item => item.nennweiten).filter(d => d !== null) || [];
     aktuelleNennweiten.sort((a, b) => formatDN(a).localeCompare(formatDN(b), undefined, { numeric: true, sensitivity: 'base' }));
     
@@ -263,6 +261,7 @@ async function ladeMaterialListe() {
         listEl.appendChild(header);
 
         let anzeigeListe = gruppen[katName];
+        
         if (toggleGroup?.checked) {
             const temp = {};
             anzeigeListe.forEach(m => {
@@ -272,6 +271,20 @@ async function ladeMaterialListe() {
             });
             anzeigeListe = Object.values(temp);
         }
+
+        // NEU: Sortierung der Anzeige-Liste innerhalb der Kategorie
+        anzeigeListe.sort((a, b) => {
+            const nameA = a.material_katalog?.name || "";
+            const nameB = b.material_katalog?.name || "";
+            // Erst nach Materialname sortieren
+            const nameCompare = nameA.localeCompare(nameB);
+            if (nameCompare !== 0) return nameCompare;
+            
+            // Wenn Name gleich, dann nach Nennweite sortieren
+            const dnA = formatDN(a.nennweiten);
+            const dnB = formatDN(b.nennweiten);
+            return dnA.localeCompare(dnB, undefined, { numeric: true });
+        });
 
         anzeigeListe.forEach(m => {
             const itemDiv = document.createElement('div');
