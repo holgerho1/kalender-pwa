@@ -34,7 +34,6 @@
         .btn-add { background: #28a745; color: white; flex: 1; }
         .btn-back { background: #6c757d; color: white; width: auto; padding: 8px 15px; font-size: 0.8rem; margin-bottom: 10px; }
         
-        /* Neuer Button für die Voransicht */
         .btn-preview { background: #007bff; color: white; margin-top: 20px; margin-bottom: 10px; }
 
         .view-control { 
@@ -143,9 +142,16 @@
 <script type="module" src="material.js"></script>
 
 <script>
-    // Einfache Navigation zur Voransicht. 
-    // Die material.js muss sicherstellen, dass die Liste im localStorage gespeichert ist.
     document.getElementById('btnGoToVoransicht').addEventListener('click', () => {
+        // ID aus der aktuellen URL extrahieren
+        const urlParams = new URLSearchParams(window.location.search);
+        const projektId = urlParams.get('id');
+        
+        // ID im localStorage merken, damit "Zurück" später funktioniert
+        if (projektId) {
+            localStorage.setItem('aktuelleProjektId', projektId);
+        }
+        
         window.location.href = 'voransicht.html';
     });
 </script>

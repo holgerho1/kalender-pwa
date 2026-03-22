@@ -45,7 +45,7 @@
     <div class="btn-group">
         <button onclick="copyToClipboard()" class="btn-copy-text">📋 Liste kopieren (OneNote/Kalender)</button>
         <button onclick="downloadCSV()" class="btn-download">💾 Als CSV Datei speichern (Excel)</button>
-        <button onclick="window.location.href='material.html' + window.location.search" class="btn-back">⬅ Zurück zur Erfassung</button>
+        <button onclick="geheZurueck()" class="btn-back">⬅ Zurück zur Erfassung</button>
     </div>
 </div>
 
@@ -116,6 +116,17 @@
         document.body.removeChild(link);
     }
 
+    function geheZurueck() {
+        // ID aus dem Speicher holen, die wir in material.html gesetzt haben
+        const projektId = localStorage.getItem('aktuelleProjektId');
+        if (projektId) {
+            window.location.href = `material.html?id=${projektId}`;
+        } else {
+            window.location.href = 'index.html';
+        }
+    }
+
+    // Beim Laden: Gespeicherte Präferenz für Einrückung anwenden
     const savedPref = localStorage.getItem('prefIndent') || 'tab';
     radios.forEach(r => {
         if (r.value === savedPref) r.checked = true;
