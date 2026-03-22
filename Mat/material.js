@@ -7,6 +7,7 @@ const projektId = urlParams.get('id');
 const katSel = document.getElementById('katSelect');
 const matSel = document.getElementById('matSelect');
 const dnSel = document.getElementById('dnSelect');
+const dnSearchInp = document.getElementById('dnSearchInput'); // NEU
 const mengeInp = document.getElementById('mengeInput');
 const einheitDisplay = document.getElementById('einheitDisplay');
 const listEl = document.getElementById('materialList');
@@ -69,6 +70,8 @@ katSel.addEventListener('change', async () => {
     const katId = katSel.value;
     matSel.disabled = true; dnSel.disabled = true;
     matSel.innerHTML = '<option value="">-- Lädt... --</option>';
+    if (dnSearchInp) dnSearchInp.style.display = "none"; // Suche ausblenden
+
     if (!katId) return;
 
     const { data } = await supa.from('material_katalog_kategorien').select('material_katalog ( id, name, einheit )').eq('kategorie_id', katId);
@@ -93,6 +96,10 @@ matSel.addEventListener('change', async () => {
     
     const filterBar = document.getElementById('dnFilterBar');
     if(filterBar) filterBar.innerHTML = "";
+    if(dnSearchInp) {
+        dnSearchInp.value = "";
+        dnSearchInp.style.display = matId ? "block" : "none"; // Suche einblenden
+    }
 
     if (!matId) { dnSel.disabled = true; return; }
 
@@ -103,6 +110,24 @@ matSel.addEventListener('change', async () => {
     erstelleFilterButtons();
     befuelleDnDropdown(aktuelleNennweiten);
     dnSel.disabled = false;
+});
+
+// NEU: Event Listener für das Suchfeld
+dnSearchInp?.addEventListener('input', () => {
+    const searchTerm = dnSearchInp.value.toLowerCase();
+    
+    // Prüfen, ob ein Gruppen-Filter aktiv ist
+    const activeBtn = document.querySelector('.filter-btn.active');
+    const aktiveGruppe = activeBtn && activeBtn.textContent !== "Alle" ? activeBtn.textContent : null;
+
+    const gefiltert = aktuelleNennweiten.filter(d => {
+        const text = formatDN(d).toLowerCase();
+        const matchesSearch = text.includes(searchTerm);
+        const matchesGroup = aktiveGruppe ? d.gruppe === aktiveGruppe : true;
+        return matchesSearch && matchesGroup;
+    });
+
+    befuelleDnDropdown(gefiltert);
 });
 
 function erstelleFilterButtons() {
@@ -129,9 +154,14 @@ function createFilterBtn(label, gruppe) {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         
-        const gefiltert = gruppe 
-            ? aktuelleNennweiten.filter(d => d.gruppe === gruppe)
-            : aktuelleNennweiten;
+        // Suche berücksichtigen beim Filtern über Buttons
+        const searchTerm = dnSearchInp?.value.toLowerCase() || "";
+        const gefiltert = aktuelleNennweiten.filter(d => {
+            const matchesGroup = gruppe ? d.gruppe === gruppe : true;
+            const matchesSearch = formatDN(d).toLowerCase().includes(searchTerm);
+            return matchesGroup && matchesSearch;
+        });
+        
         befuelleDnDropdown(gefiltert);
     };
     return btn;
@@ -219,10 +249,7 @@ async function ladeMaterialListe() {
     if (error) return;
     listEl.innerHTML = "";
     
-    // --- NEU: Daten für die Voransicht zwischenspeichern ---
-    // Wir speichern die Rohdaten, damit die voransicht.html darauf zugreifen kann
     localStorage.setItem('materialDaten', JSON.stringify(data || []));
-    // -------------------------------------------------------
 
     const gruppen = {};
     data?.forEach(m => {

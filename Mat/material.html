@@ -26,6 +26,9 @@
         }
         .filter-btn.active { background: #007bff; color: white; }
 
+        /* Styling für die neue Suche */
+        #dnSearchInput { margin-bottom: 10px; padding: 8px; font-size: 0.9rem; border-color: #007bff; }
+
         .qty-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         .qty-row input { margin-bottom: 0; width: 100px; text-align: center; }
         #einheitDisplay { font-weight: bold; color: #333; min-width: 50px; font-size: 0.9rem; }
@@ -92,6 +95,8 @@
         <label>2b. Nennweite filtern</label>
         <div id="dnFilterBar"></div>
         
+        <input type="text" id="dnSearchInput" placeholder="Nennweite suchen (z.B. 110)..." style="display: none;">
+        
         <select id="dnSelect" disabled>
             <option value="">-- Erst Material wählen --</option>
         </select>
@@ -143,11 +148,9 @@
 
 <script>
     document.getElementById('btnGoToVoransicht').addEventListener('click', () => {
-        // ID aus der aktuellen URL extrahieren
         const urlParams = new URLSearchParams(window.location.search);
         const projektId = urlParams.get('id');
         
-        // ID im localStorage merken, damit "Zurück" später funktioniert
         if (projektId) {
             localStorage.setItem('aktuelleProjektId', projektId);
         }
