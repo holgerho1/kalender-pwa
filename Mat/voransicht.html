@@ -13,7 +13,7 @@
         .format-selector label { cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; color: #444; }
 
         textarea { 
-            width: 100%; height: 300px; padding: 12px; border: 1px solid #ccc; border-radius: 4px; 
+            width: 100%; height: 280px; padding: 12px; border: 1px solid #ccc; border-radius: 4px; 
             font-size: 0.95rem; box-sizing: border-box; font-family: 'Courier New', Courier, monospace; 
             line-height: 1.5; background-color: #fff; resize: vertical; white-space: pre;
         }
@@ -22,7 +22,8 @@
         button { width: 100%; padding: 14px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.95rem; -webkit-tap-highlight-color: transparent; }
         
         .btn-copy-text { background-color: #28a745; color: white; }
-        .btn-copy-csv { background-color: #17a2b8; color: white; } /* Türkis für CSV */
+        .btn-copy-csv { background-color: #17a2b8; color: white; }
+        .btn-download { background-color: #007bff; color: white; } /* Blau für Download */
         .btn-back { background-color: #6c757d; color: white; text-align: center; text-decoration: none; display: block; line-height: 1.2; }
         
         #copyStatus { text-align: center; font-size: 0.8rem; color: #28a745; margin-top: 8px; font-weight: bold; height: 1rem; }
@@ -43,8 +44,9 @@
     <div id="copyStatus"></div>
 
     <div class="btn-group">
-        <button onclick="copyToClipboard('text')" class="btn-copy-text">📋 Text kopieren (Kalender)</button>
-        <button onclick="copyToClipboard('csv')" class="btn-copy-csv">📊 CSV kopieren (Excel)</button>
+        <button onclick="copyToClipboard('text')" class="btn-copy-text">📋 Text kopieren</button>
+        <button onclick="copyToClipboard('csv')" class="btn-copy-csv">📊 CSV kopieren</button>
+        <button onclick="downloadCSV()" class="btn-download">💾 Als CSV Datei speichern</button>
         <button onclick="window.location.href='material.html' + window.location.search" class="btn-back">⬅ Zurück</button>
     </div>
 </div>
@@ -69,7 +71,7 @@
         
         const daten = JSON.parse(rohdaten);
         const selectedRadio = document.querySelector('input[name="indent"]:checked');
-        const indentType = selectedRadio ? selectedRadio.value : 'tab';
+        const indentType = selectedRadio ? selectedRadio.value : (localStorage.getItem('prefIndent') || 'tab');
         
         localStorage.setItem('prefIndent', indentType);
         const prefix = indentType === 'tab' ? '\t' : '';
@@ -97,25 +99,36 @@
     function generiereCSV() {
         const rohdaten = localStorage.getItem('materialDaten');
         if (!rohdaten) return "";
-        
         const daten = JSON.parse(rohdaten);
-        // Header für Excel
         let csv = "Kategorie;Menge;Einheit;Material;Nennweite\n";
-        
         daten.forEach(m => {
-            const kat = m.material_kategorien?.name || "Sonstiges";
-            const menge = m.menge;
-            const einheit = m.material_katalog?.einheit || "";
-            const name = m.material_katalog?.name || "Unbekannt";
-            const dn = formatDN(m.nennweiten);
-            
-            csv += `${kat};${menge};${einheit};${name};${dn}\n`;
+            csv += `${m.material_kategorien?.name || "Sonstiges"};${m.menge};${m.material_katalog?.einheit || ""};${m.material_katalog?.name || "Unbekannt"};${formatDN(m.nennweiten)}\n`;
         });
         return csv.trim();
     }
 
+    function downloadCSV() {
+        const csvContent = generiereCSV();
+        if (!csvContent) return alert("Keine Daten zum Download vorhanden.");
+
+        // Blob erstellen (mit UTF-8 BOM für Excel-Kompatibilität)
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        
+        // Dateiname mit heutigem Datum
+        const date = new Date().toISOString().split('T')[0];
+        link.setAttribute("href", url);
+        link.setAttribute("download", `materialliste_${date}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    const savedPref = localStorage.getItem('prefIndent') || 'tab';
     radios.forEach(r => {
-        const savedPref = localStorage.getItem('prefIndent') || 'tab';
         if (r.value === savedPref) r.checked = true;
         r.addEventListener('change', generiereText);
     });
@@ -123,21 +136,13 @@
     generiereText();
 
     async function copyToClipboard(mode) {
-        let content = "";
-        if (mode === 'csv') {
-            content = generiereCSV();
-        } else {
-            content = output.value; // Nimmt den Text inkl. manueller Änderungen
-        }
-
+        let content = (mode === 'csv') ? generiereCSV() : output.value;
         try {
             await navigator.clipboard.writeText(content);
-            statusMsg.innerText = mode === 'csv' ? "CSV-Daten kopiert!" : "Text kopiert!";
+            statusMsg.innerText = mode === 'csv' ? "CSV kopiert!" : "Text kopiert!";
             statusMsg.style.color = mode === 'csv' ? "#17a2b8" : "#28a745";
             setTimeout(() => { statusMsg.innerText = ""; }, 3000);
-        } catch (err) {
-            alert('Fehler beim Kopieren.');
-        }
+        } catch (err) { alert('Fehler beim Kopieren.'); }
     }
 </script>
 
