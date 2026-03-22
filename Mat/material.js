@@ -7,7 +7,7 @@ const projektId = urlParams.get('id');
 const katSel = document.getElementById('katSelect');
 const matSel = document.getElementById('matSelect');
 const dnSel = document.getElementById('dnSelect');
-const dnSearchInp = document.getElementById('dnSearchInput'); // NEU
+const dnSearchInp = document.getElementById('dnSearchInput');
 const mengeInp = document.getElementById('mengeInput');
 const einheitDisplay = document.getElementById('einheitDisplay');
 const listEl = document.getElementById('materialList');
@@ -70,21 +70,23 @@ katSel.addEventListener('change', async () => {
     const katId = katSel.value;
     matSel.disabled = true; dnSel.disabled = true;
     matSel.innerHTML = '<option value="">-- Lädt... --</option>';
-    if (dnSearchInp) dnSearchInp.style.display = "none"; // Suche ausblenden
+    if (dnSearchInp) dnSearchInp.style.display = "none";
 
     if (!katId) return;
 
     const { data } = await supa.from('material_katalog_kategorien').select('material_katalog ( id, name, einheit )').eq('kategorie_id', katId);
+    
+    // Sortierung der Materialien (alphabetisch)
+    const sortierteMaterialien = data?.map(item => item.material_katalog).filter(m => m !== null) || [];
+    sortierteMaterialien.sort((a, b) => a.name.localeCompare(b.name));
+
     matSel.innerHTML = '<option value="">-- Material wählen --</option>';
-    data?.forEach(item => {
-        const m = item.material_katalog;
-        if (m) {
-            const opt = document.createElement('option');
-            opt.value = m.id;
-            opt.textContent = m.name;
-            opt.dataset.unit = m.einheit;
-            matSel.appendChild(opt);
-        }
+    sortierteMaterialien.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.name;
+        opt.dataset.unit = m.einheit;
+        matSel.appendChild(opt);
     });
     matSel.disabled = false;
 });
@@ -98,25 +100,24 @@ matSel.addEventListener('change', async () => {
     if(filterBar) filterBar.innerHTML = "";
     if(dnSearchInp) {
         dnSearchInp.value = "";
-        dnSearchInp.style.display = matId ? "block" : "none"; // Suche einblenden
+        dnSearchInp.style.display = matId ? "block" : "none";
     }
 
     if (!matId) { dnSel.disabled = true; return; }
 
     const { data } = await supa.from('material_katalog_nennweiten').select('nennweiten ( id, wert, typ, gruppe )').eq('katalog_id', matId);
     
+    // Sortierung der Nennweiten (alphabetisch/numerisch nach formatDN)
     aktuelleNennweiten = data?.map(item => item.nennweiten).filter(d => d !== null) || [];
+    aktuelleNennweiten.sort((a, b) => formatDN(a).localeCompare(formatDN(b), undefined, { numeric: true, sensitivity: 'base' }));
     
     erstelleFilterButtons();
     befuelleDnDropdown(aktuelleNennweiten);
     dnSel.disabled = false;
 });
 
-// NEU: Event Listener für das Suchfeld
 dnSearchInp?.addEventListener('input', () => {
     const searchTerm = dnSearchInp.value.toLowerCase();
-    
-    // Prüfen, ob ein Gruppen-Filter aktiv ist
     const activeBtn = document.querySelector('.filter-btn.active');
     const aktiveGruppe = activeBtn && activeBtn.textContent !== "Alle" ? activeBtn.textContent : null;
 
@@ -154,7 +155,6 @@ function createFilterBtn(label, gruppe) {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         
-        // Suche berücksichtigen beim Filtern über Buttons
         const searchTerm = dnSearchInp?.value.toLowerCase() || "";
         const gefiltert = aktuelleNennweiten.filter(d => {
             const matchesGroup = gruppe ? d.gruppe === gruppe : true;
@@ -193,7 +193,6 @@ window.addToList = async () => {
     status.innerText = "Bereit";
 };
 
-// MODAL (BEARBEITEN)
 async function openEditModal(m) {
     if (toggleGroup?.checked) return;
     currentEditId = m.id;
@@ -205,15 +204,15 @@ async function openEditModal(m) {
         .select('nennweiten ( id, wert, typ, gruppe )').eq('katalog_id', m.katalog_id);
 
     if (editDnSel) {
+        const sortierteNenns = nenns?.map(item => item.nennweiten).filter(d => d !== null) || [];
+        sortierteNenns.sort((a, b) => formatDN(a).localeCompare(formatDN(b), undefined, { numeric: true }));
+
         editDnSel.innerHTML = '<option value="">-- Keine / Standard --</option>';
-        nenns?.forEach(item => {
-            const d = item.nennweiten;
-            if (d) {
-                const opt = document.createElement('option');
-                opt.value = d.id;
-                opt.textContent = formatDN(d);
-                editDnSel.appendChild(opt);
-            }
+        sortierteNenns.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = formatDN(d);
+            editDnSel.appendChild(opt);
         });
         editDnSel.value = m.nennweite_id || "";
     }
@@ -237,7 +236,6 @@ document.getElementById('btnDeleteEntry').onclick = async () => {
     await ladeMaterialListe();
 };
 
-// LISTE RENDERN
 async function ladeMaterialListe() {
     const { data, error } = await supa.from('materialien').select(`
             id, menge, katalog_id, kategorie_id, nennweite_id,
