@@ -64,43 +64,48 @@
     }
 
     function generiereText() {
-        const rohdaten = localStorage.getItem('materialDaten');
-        console.log("Rohdaten aus localStorage:", rohdaten); // Test-Ausgabe 1
+        console.log("--- Generiere Text Start ---");
+        try {
+            const rohdaten = localStorage.getItem('materialDaten');
+            console.log("Rohdaten aus localStorage:", rohdaten);
 
-        if (!rohdaten) { 
-            output.value = "Keine Daten verfügbar."; 
-            return; 
-        }
-        
-        const daten = JSON.parse(rohdaten);
-        const selectedRadio = document.querySelector('input[name="indent"]:checked');
-        const indentType = selectedRadio ? selectedRadio.value : (localStorage.getItem('prefIndent') || 'tab');
-        
-        console.log("Gewählte Einrückung:", indentType); // Test-Ausgabe 2
-        
-        localStorage.setItem('prefIndent', indentType);
-        const prefix = indentType === 'tab' ? '\t' : '';
+            if (!rohdaten) { 
+                console.warn("Keine Materialdaten gefunden.");
+                output.value = "Keine Daten verfügbar."; 
+                return; 
+            }
+            
+            const daten = JSON.parse(rohdaten);
+            const selectedRadio = document.querySelector('input[name="indent"]:checked');
+            const indentType = selectedRadio ? selectedRadio.value : (localStorage.getItem('prefIndent') || 'tab');
+            
+            console.log("Gewählte Einrückung:", indentType);
+            localStorage.setItem('prefIndent', indentType);
+            const prefix = indentType === 'tab' ? '\t' : '';
 
-        const kategorien = {};
-        daten.forEach(m => {
-            const katName = m.material_kategorien?.name || "Sonstiges";
-            if (!kategorien[katName]) kategorien[katName] = [];
-            kategorien[katName].push(m);
-        });
-
-        console.log("Sortierte Kategorien:", Object.keys(kategorien)); // Test-Ausgabe 3
-
-        let finalerText = "";
-        Object.keys(kategorien).sort().forEach(kat => {
-            finalerText += `${kat.toUpperCase()}\n`;
-            kategorien[kat].forEach(m => {
-                const dnText = formatDN(m.nennweiten);
-                const dnSuffix = dnText ? ` (${dnText})` : "";
-                finalerText += `${prefix}• ${m.menge} ${m.material_katalog?.einheit || ''} ${m.material_katalog?.name || 'Unbekannt'}${dnSuffix}\n`;
+            const kategorien = {};
+            daten.forEach(m => {
+                const katName = m.material_kategorien?.name || "Sonstiges";
+                if (!kategorien[katName]) kategorien[katName] = [];
+                kategorien[katName].push(m);
             });
-            finalerText += '\n';
-        });
-        output.value = finalerText.trim();
+
+            console.log("Sortierte Kategorien:", Object.keys(kategorien));
+
+            let finalerText = "";
+            Object.keys(kategorien).sort().forEach(kat => {
+                finalerText += `${kat.toUpperCase()}\n`;
+                kategorien[kat].forEach(m => {
+                    const dnText = formatDN(m.nennweiten);
+                    const dnSuffix = dnText ? ` (${dnText})` : "";
+                    finalerText += `${prefix}• ${m.menge} ${m.material_katalog?.einheit || ''} ${m.material_katalog?.name || 'Unbekannt'}${dnSuffix}\n`;
+                });
+                finalerText += '\n';
+            });
+            output.value = finalerText.trim();
+        } catch (e) {
+            console.error("Fehler beim Generieren:", e);
+        }
     }
 
     function downloadCSV() {
