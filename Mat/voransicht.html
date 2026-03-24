@@ -67,19 +67,22 @@
         console.log("--- Generiere Text Start ---");
         try {
             const rohdaten = localStorage.getItem('materialDaten');
-            console.log("Rohdaten aus localStorage:", rohdaten);
-
+            
             if (!rohdaten) { 
-                console.warn("Keine Materialdaten gefunden.");
+                console.warn("Keine Materialdaten im localStorage gefunden.");
                 output.value = "Keine Daten verfügbar."; 
                 return; 
             }
+            
+            // Loggt die Länge, um sicherzugehen, dass alles geladen wurde
+            console.log("Rohdaten geladen, Länge:", rohdaten.length);
             
             const daten = JSON.parse(rohdaten);
             const selectedRadio = document.querySelector('input[name="indent"]:checked');
             const indentType = selectedRadio ? selectedRadio.value : (localStorage.getItem('prefIndent') || 'tab');
             
-            console.log("Gewählte Einrückung:", indentType);
+            console.log("Formatierung gewählt:", indentType);
+            
             localStorage.setItem('prefIndent', indentType);
             const prefix = indentType === 'tab' ? '\t' : '';
 
@@ -90,7 +93,7 @@
                 kategorien[katName].push(m);
             });
 
-            console.log("Sortierte Kategorien:", Object.keys(kategorien));
+            console.log("Kategorien gefunden:", Object.keys(kategorien));
 
             let finalerText = "";
             Object.keys(kategorien).sort().forEach(kat => {
@@ -103,35 +106,45 @@
                 finalerText += '\n';
             });
             output.value = finalerText.trim();
-        } catch (e) {
-            console.error("Fehler beim Generieren:", e);
+            console.log("Text erfolgreich in Textarea geschrieben.");
+
+        } catch (error) {
+            console.error("Fehler in generiereText():", error);
+            output.value = "Fehler beim Verarbeiten der Daten.";
         }
     }
 
     function downloadCSV() {
-        const rohdaten = localStorage.getItem('materialDaten');
-        if (!rohdaten) return alert("Keine Daten vorhanden.");
-        const daten = JSON.parse(rohdaten);
-        
-        let csv = "Kategorie;Menge;Einheit;Material;Nennweite\n";
-        daten.forEach(m => {
-            csv += `${m.material_kategorien?.name || "Sonstiges"};${m.menge};${m.material_katalog?.einheit || ""};${m.material_katalog?.name || "Unbekannt"};${formatDN(m.nennweiten)}\n`;
-        });
+        console.log("CSV Export gestartet...");
+        try {
+            const rohdaten = localStorage.getItem('materialDaten');
+            if (!rohdaten) return alert("Keine Daten vorhanden.");
+            const daten = JSON.parse(rohdaten);
+            
+            let csv = "Kategorie;Menge;Einheit;Material;Nennweite\n";
+            daten.forEach(m => {
+                csv += `${m.material_kategorien?.name || "Sonstiges"};${m.menge};${m.material_katalog?.einheit || ""};${m.material_katalog?.name || "Unbekannt"};${formatDN(m.nennweiten)}\n`;
+            });
 
-        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        const date = new Date().toISOString().split('T')[0];
-        
-        link.setAttribute("href", url);
-        link.setAttribute("download", `materialliste_${date}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            const date = new Date().toISOString().split('T')[0];
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", `materialliste_${date}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            console.log("CSV Download erfolgreich angestoßen.");
+        } catch (err) {
+            console.error("Fehler beim CSV Download:", err);
+        }
     }
 
     function geheZurueck() {
         const projektId = localStorage.getItem('aktuelleProjektId');
+        console.log("Navigiere zurück. ProjektID:", projektId);
         if (projektId) {
             window.location.href = `material.html?id=${projektId}`;
         } else {
@@ -139,20 +152,30 @@
         }
     }
 
+    // Beim Laden: Gespeicherte Präferenz für Einrückung anwenden
     const savedPref = localStorage.getItem('prefIndent') || 'tab';
     radios.forEach(r => {
         if (r.value === savedPref) r.checked = true;
-        r.addEventListener('change', generiereText);
+        r.addEventListener('change', () => {
+            console.log("Einrückung geändert auf:", r.value);
+            generiereText();
+        });
     });
 
+    // Start
     generiereText();
 
     async function copyToClipboard() {
+        console.log("Kopierversuch in Zwischenablage...");
         try {
             await navigator.clipboard.writeText(output.value);
             statusMsg.innerText = "Liste kopiert!";
+            console.log("Kopieren erfolgreich.");
             setTimeout(() => { statusMsg.innerText = ""; }, 3000);
-        } catch (err) { alert('Fehler beim Kopieren.'); }
+        } catch (err) { 
+            console.error("Kopierfehler:", err);
+            alert('Fehler beim Kopieren.'); 
+        }
     }
 </script>
 
