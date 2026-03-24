@@ -65,11 +65,18 @@
 
     function generiereText() {
         const rohdaten = localStorage.getItem('materialDaten');
-        if (!rohdaten) { output.value = "Keine Daten verfügbar."; return; }
+        console.log("Rohdaten aus localStorage:", rohdaten); // Test-Ausgabe 1
+
+        if (!rohdaten) { 
+            output.value = "Keine Daten verfügbar."; 
+            return; 
+        }
         
         const daten = JSON.parse(rohdaten);
         const selectedRadio = document.querySelector('input[name="indent"]:checked');
         const indentType = selectedRadio ? selectedRadio.value : (localStorage.getItem('prefIndent') || 'tab');
+        
+        console.log("Gewählte Einrückung:", indentType); // Test-Ausgabe 2
         
         localStorage.setItem('prefIndent', indentType);
         const prefix = indentType === 'tab' ? '\t' : '';
@@ -80,6 +87,8 @@
             if (!kategorien[katName]) kategorien[katName] = [];
             kategorien[katName].push(m);
         });
+
+        console.log("Sortierte Kategorien:", Object.keys(kategorien)); // Test-Ausgabe 3
 
         let finalerText = "";
         Object.keys(kategorien).sort().forEach(kat => {
@@ -117,7 +126,6 @@
     }
 
     function geheZurueck() {
-        // ID aus dem Speicher holen, die wir in material.html gesetzt haben
         const projektId = localStorage.getItem('aktuelleProjektId');
         if (projektId) {
             window.location.href = `material.html?id=${projektId}`;
@@ -126,7 +134,6 @@
         }
     }
 
-    // Beim Laden: Gespeicherte Präferenz für Einrückung anwenden
     const savedPref = localStorage.getItem('prefIndent') || 'tab';
     radios.forEach(r => {
         if (r.value === savedPref) r.checked = true;
