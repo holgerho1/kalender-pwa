@@ -56,7 +56,7 @@ export async function zeigeTermine(targetId = null) {
       fehlendeKarten.push({
         id: "missing-" + i,
         timestamp: fehlendesDatum.toISOString(),
-        titel: `${wochentage[i]} nicht vorhanden`,
+        titel: "nicht vorhanden",
         isMissing: true
       });
     }
