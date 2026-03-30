@@ -40,15 +40,44 @@ export async function zeigeTermine(targetId = null) {
   if (!container) return;
   container.innerHTML = "";
 
-  const gefiltert = holeGefilterteTermine(zeitraum);
+  // Vorhandene Termine holen
+  let gefiltert = holeGefilterteTermine(zeitraum);
 
-  if (gefiltert.length === 0) {
+  // --- ERWEITERUNG: PRÜFUNG AUF FEHLENDE WERKSTAGE ---
+  const vorhandeneTage = gefiltert.map(t => new Date(t.timestamp).getDay());
+  const fehlendeKarten = [];
+
+  // Montag (1) bis Freitag (5) prüfen
+  for (let i = 1; i <= 5; i++) {
+    if (!vorhandeneTage.includes(i)) {
+      const fehlendesDatum = new Date(zeitraum.montag);
+      fehlendesDatum.setDate(zeitraum.montag.getDate() + (i - 1));
+      
+      fehlendeKarten.push({
+        id: "missing-" + i,
+        timestamp: fehlendesDatum.toISOString(),
+        titel: `${wochentage[i]} nicht vorhanden`,
+        isMissing: true
+      });
+    }
+  }
+
+  // Fehlende Karten in die Liste mischen und nach Datum sortieren
+  const anzeigeListe = [...gefiltert, ...fehlendeKarten].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  if (anzeigeListe.length === 0) {
     const leer = document.createElement("div");
     leer.style = "text-align:center; padding:20px; color:#777; font-style:italic;";
     leer.textContent = "Keine Termine im gewählten Zeitraum.";
     container.appendChild(leer);
   } else {
-    gefiltert.forEach(event => container.appendChild(erstelleTerminKarte(event)));
+    anzeigeListe.forEach(event => {
+      if (event.isMissing) {
+        container.appendChild(erstelleFehlendKarte(event));
+      } else {
+        container.appendChild(erstelleTerminKarte(event));
+      }
+    });
     wochenFarbenLogik(gefiltert);
   }
 
@@ -81,6 +110,21 @@ export async function zeigeTermine(targetId = null) {
 /* ==========================================================================
    2. UI-KOMPONENTEN
    ========================================================================== */
+
+function erstelleFehlendKarte(event) {
+  const block = document.createElement("div");
+  block.style = `background:#fff5f5; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:${CARD_SHADOW}; border-left:5px solid #cf6679; box-sizing:border-box; width:100%;`;
+  
+  const d = new Date(event.timestamp);
+  const datumStr = `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")} (${wochentage[d.getDay()]})`;
+  
+  block.innerHTML = `
+    <div style="font-weight:bold; color:#cf6679; display:flex; align-items:center; gap:5px;">
+      <span class="material-icons" style="font-size:18px;">warning</span> ${datumStr}: ${event.titel}
+    </div>
+  `;
+  return block;
+}
 
 function erstelleTerminKarte(event) {
   const block = document.createElement("div");
