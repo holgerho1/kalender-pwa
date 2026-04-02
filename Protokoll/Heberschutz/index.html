@@ -1,3 +1,27 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse: PruefungHeberschutz</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        h1 { font-size: 1.2rem; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px; }
+        #status { padding: 10px; border-radius: 5px; margin-bottom: 15px; background: #e8f4fd; color: #0056b3; font-size: 0.9rem; }
+        .error { background: #fde8e8 !important; color: #c81e1e !important; border: 1px solid #f8b4b4; }
+        ul { list-style: none; padding: 0; }
+        li { background: #fff; border: 1px solid #ddd; margin-bottom: 5px; padding: 10px; border-radius: 6px; font-family: monospace; font-weight: bold; color: #007bff; }
+    </style>
+</head>
+<body>
+
+<div class="card" id="app">
+    <h1>Einfügemarken Analyse</h1>
+    <div id="status">Warte auf Seite...</div>
+    <ul id="markenListe"></ul>
+</div>
+
 <script type="module">
     import PizZip from 'https://esm.sh/pizzip@3.1.4';
     import Docxtemplater from 'https://esm.sh/docxtemplater@3.45.0';
@@ -5,32 +29,27 @@
     async function initialisieren() {
         const status = document.getElementById('status');
         const liste = document.getElementById('markenListe');
+        
+        // Sicherheitscheck: Wenn Elemente noch nicht da sind, kurz warten
+        if (!status || !liste) return;
+
         const gefundeneTags = new Set();
-        // Datei-Pfad (absolut)
         const dateiPfad = '/Protokoll/Heberschutz/PruefungHeberschutz.docx';
 
         try {
-            status.textContent = "Lade Datei binär...";
+            status.textContent = "Lade Dokument...";
 
-            // '?nocache=' + Date.now() zwingt den Browser, die Datei frisch zu laden
             const response = await fetch(dateiPfad + '?nocache=' + Date.now());
-            
-            if (!response.ok) throw new Error(`Datei nicht gefunden (404)`);
+            if (!response.ok) throw new Error(`Datei nicht gefunden (Status ${response.status})`);
             
             const buffer = await response.arrayBuffer();
             
-            // Erstmal schauen, ob die Datei überhaupt Daten enthält
-            if (buffer.byteLength < 100) {
-                throw new Error("Datei ist zu klein oder leer (LFS Link?).");
-            }
-
-            status.textContent = "Extrahiere Marken...";
-            
+            // ZIP Validierung
             const zip = new PizZip(buffer);
+            
             const doc = new Docxtemplater(zip, {
                 parser: (tag) => ({
                     get: (scope) => {
-                        // Marken wie {Name} sammeln, Befehle wie {#Liste} ignorieren
                         if (!['#', '/', '^', '$'].includes(tag[0])) {
                             gefundeneTags.add(tag);
                         }
@@ -41,14 +60,14 @@
                 linebreaks: true
             });
 
-            // Scannen
             try { doc.render({}); } catch (e) { }
 
             status.style.display = "none";
+            
             if (gefundeneTags.size === 0) {
-                liste.innerHTML = "<li>Keine Marken gefunden. Hast du {Klammern} im Dokument?</li>";
+                liste.innerHTML = "<li>Keine Marken wie {Beispiel} gefunden.</li>";
             } else {
-                // Sortieren und anzeigen
+                liste.innerHTML = ""; // Liste leeren
                 Array.from(gefundeneTags).sort().forEach(tag => {
                     const li = document.createElement('li');
                     li.textContent = `{${tag}}`;
@@ -57,11 +76,21 @@
             }
 
         } catch (error) {
-            status.className = "error";
-            status.textContent = "❌ " + error.message;
-            console.error("Debug-Info:", error);
+            if (status) {
+                status.className = "error";
+                status.textContent = "❌ " + error.message;
+            }
+            console.error("Fehler im Detail:", error);
         }
     }
 
-    initialisieren();
+    // Sicherstellen, dass das HTML bereit ist, bevor JS loslegt
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialisieren);
+    } else {
+        initialisieren();
+    }
 </script>
+
+</body>
+</html>
