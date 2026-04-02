@@ -5,16 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protokoll-Editor</title>
     <style>
-        body { font-family: sans-serif; padding: 15px; background: #f0f2f5; }
+        body { font-family: sans-serif; padding: 15px; background: #f0f2f5; color: #333; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        h1 { font-size: 1.2rem; color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h1 { font-size: 1.2rem; color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
         #formular { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
         .field-group { display: flex; flex-direction: column; }
-        label { font-size: 0.85rem; color: #666; margin-bottom: 5px; font-weight: bold; }
-        input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+        label { font-size: 0.85rem; color: #666; margin-bottom: 5px; font-weight: bold; text-transform: capitalize; }
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
         input:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,0.1); }
         #status { font-size: 0.9rem; color: #0056b3; background: #e7f3ff; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
-        .error { background: #fff0f0 !important; color: #d32f2f !important; }
+        .error { background: #fff0f0 !important; color: #d32f2f !important; border: 1px solid #f8b4b4; }
+        
+        button { 
+            margin-top: 20px; padding: 15px; background: #28a745; color: white; 
+            border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; 
+            cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        button:active { background: #218838; transform: translateY(1px); }
+        button:disabled { background: #ccc; }
     </style>
 </head>
 <body>
@@ -23,24 +31,28 @@
     <h1>Protokoll ausfüllen</h1>
     <div id="status">Lade Felder aus Dokument...</div>
     <form id="formular"></form>
+    <button id="downloadBtn" style="display: none;">Protokoll erstellen & herunterladen</button>
 </div>
 
 <script type="module">
     import PizZip from 'https://esm.sh/pizzip@3.1.4';
     import Docxtemplater from 'https://esm.sh/docxtemplater@3.45.0';
 
+    let originalBuffer = null;
+    const gefundeneTags = new Set();
+    const dateiPfad = '/Protokoll/Heberschutz/PruefungHeberschutz.docx';
+
     async function initialisieren() {
         const status = document.getElementById('status');
         const formular = document.getElementById('formular');
-        const gefundeneTags = new Set();
-        const dateiPfad = '/Protokoll/Heberschutz/PruefungHeberschutz.docx';
+        const btn = document.getElementById('downloadBtn');
 
         try {
             const response = await fetch(dateiPfad + '?t=' + Date.now());
             if (!response.ok) throw new Error("Datei nicht gefunden.");
             
-            const buffer = await response.arrayBuffer();
-            const zip = new PizZip(buffer);
+            originalBuffer = await response.arrayBuffer();
+            const zip = new PizZip(originalBuffer);
             
             const doc = new Docxtemplater(zip, {
                 parser: (tag) => ({
@@ -59,24 +71,22 @@
             
             if (gefundeneTags.size === 0) {
                 status.style.display = "block";
-                status.textContent = "Keine Marken gefunden.";
+                status.textContent = "Keine Marken wie {Beispiel} gefunden.";
             } else {
                 Array.from(gefundeneTags).sort().forEach(tag => {
                     const group = document.createElement('div');
                     group.className = 'field-group';
-                    
                     const label = document.createElement('label');
-                    label.textContent = tag.replace(/_/g, ' '); // Ersetzt Unterstriche durch Leerzeichen
-                    
+                    label.textContent = tag.replace(/_/g, ' ');
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.name = tag;
-                    input.placeholder = `Wert für ${tag}...`;
-                    
+                    input.id = `input_${tag}`;
                     group.appendChild(label);
                     group.appendChild(input);
                     formular.appendChild(group);
                 });
+                btn.style.display = "block";
             }
         } catch (error) {
             status.className = "error";
@@ -84,6 +94,46 @@
         }
     }
 
+    async function erstelleDokument() {
+        if (!originalBuffer) return;
+
+        const data = {};
+        gefundeneTags.forEach(tag => {
+            data[tag] = document.getElementById(`input_${tag}`).value || "";
+        });
+
+        try {
+            const zip = new PizZip(originalBuffer);
+            const doc = new window.docxtemplater(zip, {
+                paragraphLoop: true,
+                linebreaks: true
+            });
+
+            doc.render(data);
+
+            const out = doc.getZip().generate({
+                type: "blob",
+                mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            });
+
+            // Download-Link simulieren
+            const url = window.URL.createObjectURL(out);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "Fertiges_Protokoll.docx";
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 0);
+
+        } catch (error) {
+            alert("Fehler beim Erstellen: " + error.message);
+        }
+    }
+
+    document.getElementById('downloadBtn').addEventListener('click', erstelleDokument);
     initialisieren();
 </script>
 
