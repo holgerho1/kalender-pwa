@@ -374,30 +374,25 @@ async function ladeMitarbeiterId() {
 }
 
 function wochenFarbenLogik(gefiltert) {
+  const COLOR_GREEN = "#f1f8e9";
+  const COLOR_RED = "#fff5f5";
+
   gefiltert.forEach(e => {
     const tEvents = gefiltert.filter(x => new Date(x.timestamp).toDateString() === new Date(e.timestamp).toDateString());
-    let s = 0, u = 0, sonder = false, urgentGreen = false;
+    let s = 0, u = 0, sonder = false;
 
     tEvents.forEach(ev => {
-      const titel = (ev.titel || "").toLowerCase();
-      // Priorisierte Erkennung für Urlaub und Feiertag
-      if (fuzzyMatch(ev.titel, ["urlaub", "feiertag"])) {
-        urgentGreen = true;
-      }
-      if (fuzzyMatch(ev.titel, ["krank", "bereitschaft"])) {
+      // Prüfen auf Urlaub, Feiertag, Krank oder Bereitschaft
+      if (fuzzyMatch(ev.titel, ["urlaub", "feiertag", "krank", "bereitschaft"])) {
         sonder = true;
       }
       s += (parseFloat(String(ev.arbeit || 0).replace(",", ".")) || 0) + (parseFloat(String(ev.fahr || 0).replace(",", ".")) || 0);
       u += (parseFloat(String(ev.über || 0).replace(",", ".")) || 0);
     });
 
-    let farbe = "#fff5f5"; // Standard: Rot (Fehlerhaft)
-    if (urgentGreen) {
-      farbe = "#e8f5e9"; // Deutliches Grün für Urlaub/Feiertag
-    } else if (sonder || (Math.abs(s - (8 + u)) < 0.01)) {
-      farbe = "#f1f8e9"; // Helles Grün für korrekte Arbeitszeiten/Krankheit
-    }
-
+    // Karte grün färben, wenn Sonderstatus vorliegt ODER die Stundenanzahl exakt passt
+    const farbe = sonder || (Math.abs(s - (8 + u)) < 0.01) ? COLOR_GREEN : COLOR_RED;
+    
     const el = document.querySelector(`div[data-id="${e.id}"]`);
     if (el) el.style.backgroundColor = farbe;
   });
