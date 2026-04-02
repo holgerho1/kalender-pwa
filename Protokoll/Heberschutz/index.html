@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analyse: PruefungHeberschutz</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
     <style>
         body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
         .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { font-size: 1.1rem; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
-        .error-msg { color: #d32f2f; background: #fee; padding: 10px; border-radius: 5px; }
-        ul { color: #007bff; font-weight: bold; }
+        h1 { font-size: 1.1rem; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-top: 0; }
+        .error-msg { color: #d32f2f; background: #fee; padding: 10px; border-radius: 5px; word-break: break-all; }
+        ul { color: #007bff; font-weight: bold; padding-left: 20px; }
+        li { margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -27,22 +28,29 @@
         const status = document.getElementById('status');
         const liste = document.getElementById('markenListe');
         
-        // Wir nutzen den absoluten Pfad, damit Vercels Routing kein Problem darstellt
+        // Absoluter Pfad zu deiner Datei
         const dateiPfad = '/Protokoll/Heberschutz/PruefungHeberschutz.docx';
 
         try {
+            // Sicherstellen, dass PizZip verfügbar ist
+            if (typeof window.PizZip === 'undefined') {
+                throw new Error("Bibliothek PizZip konnte nicht geladen werden.");
+            }
+
             const response = await fetch(dateiPfad);
-            
             if (!response.ok) {
-                throw new Error(`Datei nicht gefunden unter ${dateiPfad} (Status ${response.status})`);
+                throw new Error(`Datei nicht gefunden: ${dateiPfad} (Status ${response.status})`);
             }
             
             const buffer = await response.arrayBuffer();
-            const zip = new PizZip(buffer);
+            
+            // PizZip Instanz erstellen
+            const zip = new window.PizZip(buffer);
             const gefundeneTags = new Set();
 
             const parser = (tag) => ({
                 get: (scope) => {
+                    // Filter für docxtemplater Steuerzeichen
                     if (!['#', '/', '^', '$'].includes(tag[0])) {
                         gefundeneTags.add(tag);
                     }
@@ -50,18 +58,24 @@
                 }
             });
 
+            // docxtemplater Instanz erstellen
             const doc = new window.docxtemplater(zip, {
                 parser: parser,
                 paragraphLoop: true,
                 linebreaks: true
             });
 
-            try { doc.render({}); } catch (e) {}
+            // Trockenlauf zum Sammeln der Marken
+            try { 
+                doc.render({}); 
+            } catch (e) {
+                // Fehler beim Rendern ohne Daten sind hier normal
+            }
 
             status.style.display = "none";
             
             if (gefundeneTags.size === 0) {
-                liste.innerHTML = "<li>Datei geladen, aber keine {Marken} gefunden.</li>";
+                liste.innerHTML = "<li>Keine Marken wie {Beispiel} gefunden.</li>";
             } else {
                 Array.from(gefundeneTags).sort().forEach(tag => {
                     const li = document.createElement('li');
@@ -72,9 +86,11 @@
 
         } catch (error) {
             status.innerHTML = `<div class="error-msg">❌ ${error.message}</div>`;
+            console.error(error);
         }
     }
 
+    // Warten bis alle Skripte geladen sind
     window.onload = analysiere;
 </script>
 
