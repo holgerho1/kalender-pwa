@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse PruefungHeberschutz</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        .container { max-width: 600px; margin: auto; border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
+        h1 { font-size: 1.2rem; color: #333; }
+        ul { background: #f9f9f9; padding: 20px; border-radius: 5px; list-style-type: square; }
+        li { margin-bottom: 5px; font-family: monospace; color: #d63384; }
+        .loading { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Gefundene Einfügemarken</h1>
+    <p>Datei: <strong>PruefungHeberschutz.docx</strong></p>
+    
+    <div id="status" class="loading">Lade Datei und analysiere Marken...</div>
+    <ul id="markenListe"></ul>
+</div>
+
+<script>
+    async function analysiereDatei() {
+        const liste = document.getElementById('markenListe');
+        const status = document.getElementById('status');
+        const gefundeneTags = new Set();
+
+        try {
+            // 1. Datei vom gleichen Verzeichnis laden
+            const response = await fetch('PruefungHeberschutz.docx');
+            if (!response.ok) throw new Error("Datei konnte nicht geladen werden. Prüfe den Dateinamen.");
+            
+            const arrayBuffer = await response.arrayBuffer();
+            const zip = new PizZip(arrayBuffer);
+
+            // 2. Custom Parser, um die Tags zu sammeln
+            const customParser = function(tag) {
+                return {
+                    get: function(scope) {
+                        // Wir speichern jeden gefundenen Tag im Set
+                        gefundeneTags.add(tag);
+                        return scope[tag];
+                    }
+                };
+            };
+
+            // 3. Docxtemplater initialisieren
+            const doc = new window.docxtemplater(zip, {
+                parser: customParser,
+                paragraphLoop: true,
+                linebreaks: true,
+            });
+
+            // 4. Einmal leer rendern, um alle Marken zu triggern
+            try {
+                doc.render({});
+            } catch (e) {
+                // Fehler beim eigentlichen Ersetzen ignorieren wir hier
+            }
+
+            // 5. Anzeige aktualisieren
+            status.style.display = "none";
+            
+            if (gefundeneTags.size === 0) {
+                liste.innerHTML = "<li>Keine Einfügemarken (z.B. {name}) gefunden.</li>";
+            } else {
+                // Alphabetisch sortieren und anzeigen
+                Array.from(gefundeneTags).sort().forEach(tag => {
+                    const li = document.createElement('li');
+                    li.textContent = `{${tag}}`;
+                    liste.appendChild(li);
+                });
+            }
+
+        } catch (error) {
+            status.textContent = "Fehler: " + error.message;
+            status.style.color = "red";
+            console.error(error);
+        }
+    }
+
+    // Direkt beim Laden starten
+    window.onload = analysiereDatei;
+</script>
+
+</body>
+</html>
