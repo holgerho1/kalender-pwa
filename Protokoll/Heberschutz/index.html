@@ -1,29 +1,4 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analyse: PruefungHeberschutz</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        h1 { font-size: 1.2rem; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px; }
-        #status { padding: 10px; border-radius: 5px; margin-bottom: 15px; background: #e8f4fd; color: #0056b3; font-size: 0.9rem; white-space: pre-wrap; }
-        .error { background: #fde8e8 !important; color: #c81e1e !important; border: 1px solid #f8b4b4; }
-        ul { list-style: none; padding: 0; }
-        li { background: #fff; border: 1px solid #ddd; margin-bottom: 5px; padding: 10px; border-radius: 6px; font-family: monospace; font-weight: bold; }
-    </style>
-</head>
-<body>
-
-<div class="card">
-    <h1>Einfügemarken Analyse</h1>
-    <div id="status">Initialisiere Module...</div>
-    <ul id="markenListe"></ul>
-</div>
-
 <script type="module">
-    // Wir importieren die Bibliotheken als ES-Module von einem alternativen Anbieter
     import PizZip from 'https://esm.sh/pizzip@3.1.4';
     import Docxtemplater from 'https://esm.sh/docxtemplater@3.45.0';
 
@@ -31,45 +6,49 @@
         const status = document.getElementById('status');
         const liste = document.getElementById('markenListe');
         const gefundeneTags = new Set();
+        // Datei-Pfad (absolut)
         const dateiPfad = '/Protokoll/Heberschutz/PruefungHeberschutz.docx';
 
         try {
-            status.textContent = "Lade Dokument: PruefungHeberschutz.docx";
+            status.textContent = "Lade Datei binär...";
 
-            // Datei laden
-            const response = await fetch(dateiPfad);
-            if (!response.ok) throw new Error(`Datei nicht gefunden (404) unter: ${dateiPfad}`);
+            // '?nocache=' + Date.now() zwingt den Browser, die Datei frisch zu laden
+            const response = await fetch(dateiPfad + '?nocache=' + Date.now());
+            
+            if (!response.ok) throw new Error(`Datei nicht gefunden (404)`);
             
             const buffer = await response.arrayBuffer();
             
-            // PizZip Instanz
-            const zip = new PizZip(buffer);
-            
-            // Parser Logik
-            const parser = (tag) => ({
-                get: (scope) => {
-                    if (!['#', '/', '^', '$'].includes(tag[0])) {
-                        gefundeneTags.add(tag);
-                    }
-                    return scope[tag];
-                }
-            });
+            // Erstmal schauen, ob die Datei überhaupt Daten enthält
+            if (buffer.byteLength < 100) {
+                throw new Error("Datei ist zu klein oder leer (LFS Link?).");
+            }
 
-            // Docxtemplater Instanz
+            status.textContent = "Extrahiere Marken...";
+            
+            const zip = new PizZip(buffer);
             const doc = new Docxtemplater(zip, {
-                parser: parser,
+                parser: (tag) => ({
+                    get: (scope) => {
+                        // Marken wie {Name} sammeln, Befehle wie {#Liste} ignorieren
+                        if (!['#', '/', '^', '$'].includes(tag[0])) {
+                            gefundeneTags.add(tag);
+                        }
+                        return scope[tag];
+                    }
+                }),
                 paragraphLoop: true,
                 linebreaks: true
             });
 
-            // Scan
-            try { doc.render({}); } catch (e) {}
+            // Scannen
+            try { doc.render({}); } catch (e) { }
 
-            // Anzeige
             status.style.display = "none";
             if (gefundeneTags.size === 0) {
-                liste.innerHTML = "<li>Keine Marken wie {Beispiel} gefunden.</li>";
+                liste.innerHTML = "<li>Keine Marken gefunden. Hast du {Klammern} im Dokument?</li>";
             } else {
+                // Sortieren und anzeigen
                 Array.from(gefundeneTags).sort().forEach(tag => {
                     const li = document.createElement('li');
                     li.textContent = `{${tag}}`;
@@ -79,14 +58,10 @@
 
         } catch (error) {
             status.className = "error";
-            status.textContent = "❌ Fehler: " + error.message;
-            console.error(error);
+            status.textContent = "❌ " + error.message;
+            console.error("Debug-Info:", error);
         }
     }
 
-    // Start
     initialisieren();
 </script>
-
-</body>
-</html>
