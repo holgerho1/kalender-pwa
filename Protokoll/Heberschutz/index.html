@@ -3,47 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fehlersuche: PruefungHeberschutz</title>
+    <title>Analyse: PruefungHeberschutz</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #fff5f5; }
-        .debug-card { background: white; padding: 20px; border-radius: 8px; border: 1px solid #ff0000; shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        code { background: #eee; padding: 2px 5px; border-radius: 4px; font-family: monospace; }
-        .error-msg { color: #d32f2f; font-weight: bold; margin-top: 10px; }
-        .info { color: #666; font-size: 0.9rem; margin-bottom: 15px; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { font-size: 1.1rem; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .error-msg { color: #d32f2f; background: #fee; padding: 10px; border-radius: 5px; }
+        ul { color: #007bff; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="debug-card">
-    <h1>Datei-Check</h1>
-    <div class="info">
-        Aktuelle URL der Seite:<br>
-        <code id="currentUrl"></code>
-    </div>
-    
-    <div id="status">Versuche Datei zu laden...</div>
+<div class="card">
+    <h1>Gefundene Marken</h1>
+    <div id="status">Analysiere Dokument...</div>
     <ul id="markenListe"></ul>
 </div>
 
 <script>
-    document.getElementById('currentUrl').textContent = window.location.href;
-
-    async function checkFile() {
+    async function analysiere() {
         const status = document.getElementById('status');
         const liste = document.getElementById('markenListe');
         
-        // EXAKTER DATEINAME (Prüfe dies im GitHub Dateibaum!)
-        const dateiName = 'PruefungHeberschutz.docx';
+        // Wir nutzen den absoluten Pfad, damit Vercels Routing kein Problem darstellt
+        const dateiPfad = '/Protokoll/Heberschutz/PruefungHeberschutz.docx';
 
         try {
-            status.innerHTML = `Suche nach: <code>${dateiName}</code>...`;
-            
-            const response = await fetch(dateiName);
+            const response = await fetch(dateiPfad);
             
             if (!response.ok) {
-                throw new Error(`Status ${response.status}: ${response.statusText}`);
+                throw new Error(`Datei nicht gefunden unter ${dateiPfad} (Status ${response.status})`);
             }
             
             const buffer = await response.arrayBuffer();
@@ -59,10 +50,15 @@
                 }
             });
 
-            const doc = new window.docxtemplater(zip, { parser: parser });
+            const doc = new window.docxtemplater(zip, {
+                parser: parser,
+                paragraphLoop: true,
+                linebreaks: true
+            });
+
             try { doc.render({}); } catch (e) {}
 
-            status.innerHTML = "<span style='color:green;'>✓ Datei gefunden und geladen!</span>";
+            status.style.display = "none";
             
             if (gefundeneTags.size === 0) {
                 liste.innerHTML = "<li>Datei geladen, aber keine {Marken} gefunden.</li>";
@@ -75,16 +71,11 @@
             }
 
         } catch (error) {
-            status.className = "error-msg";
-            status.innerHTML = `
-                ❌ Fehler beim Laden!<br><br>
-                Grund: ${error.message}<br><br>
-                <small>Stelle sicher, dass die Datei exakt <code>${dateiName}</code> heißt (Groß/Kleinschreibung!) und im selben Ordner liegt.</small>
-            `;
+            status.innerHTML = `<div class="error-msg">❌ ${error.message}</div>`;
         }
     }
 
-    window.onload = checkFile;
+    window.onload = analysiere;
 </script>
 
 </body>
