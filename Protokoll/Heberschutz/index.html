@@ -3,46 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analyse: PruefungHeberschutz</title>
+    <title>Fehlersuche: PruefungHeberschutz</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; padding: 15px; background: #fafafa; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h1 { font-size: 1.1rem; color: #333; margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        ul { padding-left: 20px; color: #007bff; }
-        li { margin-bottom: 8px; font-weight: bold; }
-        #status { font-size: 0.9rem; color: #666; }
+        body { font-family: sans-serif; padding: 20px; background: #fff5f5; }
+        .debug-card { background: white; padding: 20px; border-radius: 8px; border: 1px solid #ff0000; shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        code { background: #eee; padding: 2px 5px; border-radius: 4px; font-family: monospace; }
+        .error-msg { color: #d32f2f; font-weight: bold; margin-top: 10px; }
+        .info { color: #666; font-size: 0.9rem; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h1>Gefundene Marken</h1>
-    <div id="status">Lese Dokument ein...</div>
+<div class="debug-card">
+    <h1>Datei-Check</h1>
+    <div class="info">
+        Aktuelle URL der Seite:<br>
+        <code id="currentUrl"></code>
+    </div>
+    
+    <div id="status">Versuche Datei zu laden...</div>
     <ul id="markenListe"></ul>
 </div>
 
 <script>
-    async function holeMarken() {
-        const liste = document.getElementById('markenListe');
-        const status = document.getElementById('status');
-        const gefundeneTags = new Set();
+    document.getElementById('currentUrl').textContent = window.location.href;
 
-        // Da index.html und docx im gleichen Ordner liegen:
+    async function checkFile() {
+        const status = document.getElementById('status');
+        const liste = document.getElementById('markenListe');
+        
+        // EXAKTER DATEINAME (Prüfe dies im GitHub Dateibaum!)
         const dateiName = 'PruefungHeberschutz.docx';
 
         try {
+            status.innerHTML = `Suche nach: <code>${dateiName}</code>...`;
+            
             const response = await fetch(dateiName);
-            if (!response.ok) throw new Error("Datei nicht gefunden.");
+            
+            if (!response.ok) {
+                throw new Error(`Status ${response.status}: ${response.statusText}`);
+            }
             
             const buffer = await response.arrayBuffer();
             const zip = new PizZip(buffer);
+            const gefundeneTags = new Set();
 
-            // Parser, um Marken zu finden
             const parser = (tag) => ({
                 get: (scope) => {
-                    // Ignoriere Steuerbefehle wie {#..} oder {/..}
                     if (!['#', '/', '^', '$'].includes(tag[0])) {
                         gefundeneTags.add(tag);
                     }
@@ -50,19 +59,13 @@
                 }
             });
 
-            const doc = new window.docxtemplater(zip, {
-                parser: parser,
-                paragraphLoop: true,
-                linebreaks: true
-            });
-
-            // "Trockenlauf" zum Sammeln der Tags
+            const doc = new window.docxtemplater(zip, { parser: parser });
             try { doc.render({}); } catch (e) {}
 
-            status.style.display = "none";
+            status.innerHTML = "<span style='color:green;'>✓ Datei gefunden und geladen!</span>";
             
             if (gefundeneTags.size === 0) {
-                liste.innerHTML = "<li>Keine Marken wie {Beispiel} gefunden.</li>";
+                liste.innerHTML = "<li>Datei geladen, aber keine {Marken} gefunden.</li>";
             } else {
                 Array.from(gefundeneTags).sort().forEach(tag => {
                     const li = document.createElement('li');
@@ -70,13 +73,18 @@
                     liste.appendChild(li);
                 });
             }
+
         } catch (error) {
-            status.textContent = "Fehler: " + error.message;
-            status.style.color = "red";
+            status.className = "error-msg";
+            status.innerHTML = `
+                ❌ Fehler beim Laden!<br><br>
+                Grund: ${error.message}<br><br>
+                <small>Stelle sicher, dass die Datei exakt <code>${dateiName}</code> heißt (Groß/Kleinschreibung!) und im selben Ordner liegt.</small>
+            `;
         }
     }
 
-    window.onload = holeMarken;
+    window.onload = checkFile;
 </script>
 
 </body>
