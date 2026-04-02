@@ -3,23 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analyse: PruefungHeberschutz</title>
+    <title>Protokoll-Editor</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        h1 { font-size: 1.2rem; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px; }
-        #status { padding: 10px; border-radius: 5px; margin-bottom: 15px; background: #e8f4fd; color: #0056b3; font-size: 0.9rem; }
-        .error { background: #fde8e8 !important; color: #c81e1e !important; border: 1px solid #f8b4b4; }
-        ul { list-style: none; padding: 0; }
-        li { background: #fff; border: 1px solid #ddd; margin-bottom: 5px; padding: 10px; border-radius: 6px; font-family: monospace; font-weight: bold; color: #007bff; }
+        body { font-family: sans-serif; padding: 15px; background: #f0f2f5; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        h1 { font-size: 1.2rem; color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        #formular { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        .field-group { display: flex; flex-direction: column; }
+        label { font-size: 0.85rem; color: #666; margin-bottom: 5px; font-weight: bold; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+        input:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,0.1); }
+        #status { font-size: 0.9rem; color: #0056b3; background: #e7f3ff; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
+        .error { background: #fff0f0 !important; color: #d32f2f !important; }
     </style>
 </head>
 <body>
 
-<div class="card" id="app">
-    <h1>Einfügemarken Analyse</h1>
-    <div id="status">Warte auf Seite...</div>
-    <ul id="markenListe"></ul>
+<div class="card">
+    <h1>Protokoll ausfüllen</h1>
+    <div id="status">Lade Felder aus Dokument...</div>
+    <form id="formular"></form>
 </div>
 
 <script type="module">
@@ -28,23 +31,15 @@
 
     async function initialisieren() {
         const status = document.getElementById('status');
-        const liste = document.getElementById('markenListe');
-        
-        // Sicherheitscheck: Wenn Elemente noch nicht da sind, kurz warten
-        if (!status || !liste) return;
-
+        const formular = document.getElementById('formular');
         const gefundeneTags = new Set();
         const dateiPfad = '/Protokoll/Heberschutz/PruefungHeberschutz.docx';
 
         try {
-            status.textContent = "Lade Dokument...";
-
-            const response = await fetch(dateiPfad + '?nocache=' + Date.now());
-            if (!response.ok) throw new Error(`Datei nicht gefunden (Status ${response.status})`);
+            const response = await fetch(dateiPfad + '?t=' + Date.now());
+            if (!response.ok) throw new Error("Datei nicht gefunden.");
             
             const buffer = await response.arrayBuffer();
-            
-            // ZIP Validierung
             const zip = new PizZip(buffer);
             
             const doc = new Docxtemplater(zip, {
@@ -55,41 +50,41 @@
                         }
                         return scope[tag];
                     }
-                }),
-                paragraphLoop: true,
-                linebreaks: true
+                })
             });
 
-            try { doc.render({}); } catch (e) { }
+            try { doc.render({}); } catch (e) {}
 
             status.style.display = "none";
             
             if (gefundeneTags.size === 0) {
-                liste.innerHTML = "<li>Keine Marken wie {Beispiel} gefunden.</li>";
+                status.style.display = "block";
+                status.textContent = "Keine Marken gefunden.";
             } else {
-                liste.innerHTML = ""; // Liste leeren
                 Array.from(gefundeneTags).sort().forEach(tag => {
-                    const li = document.createElement('li');
-                    li.textContent = `{${tag}}`;
-                    liste.appendChild(li);
+                    const group = document.createElement('div');
+                    group.className = 'field-group';
+                    
+                    const label = document.createElement('label');
+                    label.textContent = tag.replace(/_/g, ' '); // Ersetzt Unterstriche durch Leerzeichen
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.name = tag;
+                    input.placeholder = `Wert für ${tag}...`;
+                    
+                    group.appendChild(label);
+                    group.appendChild(input);
+                    formular.appendChild(group);
                 });
             }
-
         } catch (error) {
-            if (status) {
-                status.className = "error";
-                status.textContent = "❌ " + error.message;
-            }
-            console.error("Fehler im Detail:", error);
+            status.className = "error";
+            status.textContent = "❌ Fehler: " + error.message;
         }
     }
 
-    // Sicherstellen, dass das HTML bereit ist, bevor JS loslegt
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialisieren);
-    } else {
-        initialisieren();
-    }
+    initialisieren();
 </script>
 
 </body>
