@@ -71,6 +71,11 @@
         <div id="previewTextAnlage" class="preview-text"></div>
     </div>
 
+    <div id="mechanikPreview" class="section-preview" style="display: none;" onclick="openModal('mechanikModal')">
+        <h2>🔧 Mechanische Bewertung</h2>
+        <div id="previewTextMechanik" class="preview-text"></div>
+    </div>
+
     <form id="formular"></form>
     <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
 </div>
@@ -87,6 +92,14 @@
     <div class="modal-content">
         <h2 style="margin-top:0; font-size: 1.1rem;">Anlagenbeschreibung</h2>
         <div id="anlageModalFields"></div>
+        <button class="btn-save" onclick="closeModals()">Fertig</button>
+    </div>
+</div>
+
+<div id="mechanikModal" class="modal">
+    <div class="modal-content">
+        <h2 style="margin-top:0; font-size: 1.1rem;">Mechanische Bewertung</h2>
+        <div id="mechanikModalFields"></div>
         <button class="btn-save" onclick="closeModals()">Fertig</button>
     </div>
 </div>
@@ -110,6 +123,7 @@
     
     const adressTags = ['Adress1', 'Adress2', 'Adress3', 'Adress4'];
     const anlageTags = ['Diesel', 'Hersteller', 'FabNummer', 'Inhalt', 'Baujahr', 'Durch', 'Ventil'];
+    const mechanikTags = ['Allgemeinzustand', 'Zustand', 'Dichtung', 'Einstellung'];
 
     const fieldConfig = {
         'Adress1': { label: 'Zusatz (Firma / Herr / Frau)', placeholder: 'Firma...' },
@@ -122,7 +136,12 @@
         'Inhalt': { label: 'Inhalt', placeholder: 'Menge...', unit: 'Liter' },
         'Baujahr': { label: 'Baujahr', placeholder: 'JJJJ' },
         'Durch': { label: 'Durchmesser', placeholder: 'Wert...', unit: 'cm' },
-        'Ventil': { label: 'Heberschutzventil', placeholder: 'Typ...' }
+        'Ventil': { label: 'Heberschutzventil', placeholder: 'Typ...' },
+        // Mechanik
+        'Allgemeinzustand': { label: 'Allgemeinzustand', placeholder: 'Bewertung...' },
+        'Zustand': { label: 'Ventilkörper', placeholder: 'Zustand...' },
+        'Dichtung': { label: 'Dichtungen', placeholder: 'Zustand...' },
+        'Einstellung': { label: 'Einstellung', placeholder: 'Wert...' }
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -156,11 +175,13 @@
             
             if (gefundeneTags.size > 0) {
                 const anlageContainer = document.getElementById('anlageModalFields');
-                let rowGroup = null;
+                const mechanikContainer = document.getElementById('mechanikModalFields');
+                let rowGroupAnlage = null;
 
+                const order = [...adressTags, ...anlageTags, ...mechanikTags];
                 const sortedTags = Array.from(gefundeneTags).sort((a, b) => {
-                    let idxA = anlageTags.indexOf(a);
-                    let idxB = anlageTags.indexOf(b);
+                    let idxA = order.indexOf(a);
+                    let idxB = order.indexOf(b);
                     return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
                 });
 
@@ -201,17 +222,20 @@
                         document.getElementById('addressPreview').style.display = "block";
                     } else if (anlageTags.includes(tag)) {
                         if (tag === 'Inhalt') {
-                            rowGroup = document.createElement('div');
-                            rowGroup.className = 'row-group';
-                            rowGroup.appendChild(group);
-                            anlageContainer.appendChild(rowGroup);
-                        } else if (tag === 'Baujahr' && rowGroup) {
-                            rowGroup.appendChild(group);
+                            rowGroupAnlage = document.createElement('div');
+                            rowGroupAnlage.className = 'row-group';
+                            rowGroupAnlage.appendChild(group);
+                            anlageContainer.appendChild(rowGroupAnlage);
+                        } else if (tag === 'Baujahr' && rowGroupAnlage) {
+                            rowGroupAnlage.appendChild(group);
                         } else {
                             anlageContainer.appendChild(group);
-                            rowGroup = null; 
+                            rowGroupAnlage = null; 
                         }
                         document.getElementById('anlagePreview').style.display = "block";
+                    } else if (mechanikTags.includes(tag)) {
+                        mechanikContainer.appendChild(group);
+                        document.getElementById('mechanikPreview').style.display = "block";
                     } else {
                         document.getElementById('formular').appendChild(group);
                     }
@@ -224,16 +248,23 @@
 
     function updatePreviews() {
         const adr = adressTags.map(id => document.getElementById(`input_${id}`)?.value || "").filter(t => t.trim() !== "").join("\n");
-        document.getElementById('previewTextAddr').textContent = adr || "Keine Adresse hinterlegt";
+        document.getElementById('addressPreview').querySelector('.preview-text').textContent = adr || "Keine Adresse hinterlegt";
         
         const anlage = anlageTags.map(id => {
             const val = document.getElementById(`input_${id}`)?.value;
             const config = fieldConfig[id];
-            const label = config?.label || id;
             if (!val) return null;
-            return config?.unit ? `${label}: ${val} ${config.unit}` : `${label}: ${val}`;
+            return config?.unit ? `${config.label}: ${val} ${config.unit}` : `${config.label}: ${val}`;
         }).filter(t => t).join("\n");
-        document.getElementById('previewTextAnlage').textContent = anlage || "Keine Anlagendaten";
+        document.getElementById('anlagePreview').querySelector('.preview-text').textContent = anlage || "Keine Anlagendaten";
+
+        const mechanik = mechanikTags.map(id => {
+            const val = document.getElementById(`input_${id}`)?.value;
+            const config = fieldConfig[id];
+            if (!val) return null;
+            return `${config.label}: ${val}`;
+        }).filter(t => t).join("\n");
+        document.getElementById('mechanikPreview').querySelector('.preview-text').textContent = mechanik || "Keine Bewertung";
 
         const d = new Date(document.getElementById('dateInput').value);
         if (!isNaN(d)) {
