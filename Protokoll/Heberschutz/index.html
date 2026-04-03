@@ -9,25 +9,35 @@
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
         h1 { font-size: 1.2rem; color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
         
-        /* Adress-Sektion Styling */
-        .address-section { background: #f8f9fa; border: 1px solid #e1e4e8; padding: 15px; border-radius: 8px; margin-bottom: 25px; display: flex; flex-direction: column; gap: 12px; }
-        .address-section h2 { font-size: 0.85rem; margin: 0; color: #555; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        
-        #formular { display: flex; flex-direction: column; gap: 15px; }
-        .field-group { display: flex; flex-direction: column; }
-        label { font-size: 0.8rem; color: #666; margin-bottom: 4px; font-weight: bold; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; transition: border 0.2s; }
-        input:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,0.1); }
-        
-        #status { font-size: 0.9rem; color: #0056b3; background: #e7f3ff; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
-        .error { background: #fff0f0 !important; color: #d32f2f !important; border: 1px solid #f8b4b4; }
-        
-        button { 
-            margin-top: 25px; width: 100%; padding: 15px; background: #28a745; color: white; 
-            border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; 
-            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        /* Adress-Vorschau (Klickbar) */
+        .address-preview { 
+            background: #f8f9fa; border: 1px dashed #007bff; padding: 15px; border-radius: 8px; 
+            margin-bottom: 25px; cursor: pointer; transition: background 0.2s;
         }
-        button:active { background: #218838; transform: scale(0.98); }
+        .address-preview:hover { background: #eef6ff; }
+        .address-preview h2 { font-size: 0.7rem; margin: 0 0 5px 0; color: #007bff; text-transform: uppercase; }
+        .address-text { font-family: monospace; font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap; }
+        .placeholder-text { color: #999; font-style: italic; }
+
+        /* Popup / Modal Styling */
+        .modal { 
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; 
+        }
+        .modal-content { 
+            background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3); animation: slideIn 0.3s;
+        }
+        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .field-group { display: flex; flex-direction: column; margin-bottom: 12px; }
+        label { font-size: 0.75rem; color: #666; margin-bottom: 3px; font-weight: bold; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+        
+        #formular { display: flex; flex-direction: column; gap: 12px; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-save { background: #007bff; color: white; }
+        .btn-download { background: #28a745; color: white; margin-top: 25px; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -36,14 +46,21 @@
     <h1>Protokoll ausfüllen</h1>
     <div id="status">Lade Felder...</div>
     
-    <div id="addressContainer" class="address-section" style="display: none;">
-        <h2>📍 Empfänger / Adresse</h2>
-        <div id="addressFields" style="display: flex; flex-direction: column; gap: 10px;"></div>
+    <div id="addressPreview" class="address-preview" style="display: none;" onclick="openModal()">
+        <h2>📍 Empfänger (Tippen zum Ändern)</h2>
+        <div id="previewText" class="address-text"></div>
     </div>
 
     <form id="formular"></form>
-    
-    <button id="downloadBtn" style="display: none;">Protokoll speichern</button>
+    <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
+</div>
+
+<div id="addressModal" class="modal">
+    <div class="modal-content">
+        <h2 style="margin-top:0; font-size: 1.1rem;">Adresse bearbeiten</h2>
+        <div id="modalFields"></div>
+        <button class="btn-save" onclick="closeModal()">Fertig</button>
+    </div>
 </div>
 
 <script type="module">
@@ -52,21 +69,25 @@
 
     let originalBuffer = null;
     const gefundeneTags = new Set();
-    
-    // Definition der Adress-Logik
     const adressLogik = {
-        'Adress1': { label: 'Zusatz (Firma / Herr / Frau)', placeholder: 'z.B. Firma Muster GmbH' },
-        'Adress2': { label: 'Name / Vorname', placeholder: 'Max Mustermann' },
-        'Adress3': { label: 'Straße / Hausnummer', placeholder: 'Musterstraße 123' },
-        'Adress4': { label: 'PLZ / Ort', placeholder: '12345 Musterstadt' }
+        'Adress1': { label: 'Zusatz (Firma / Herr / Frau)', placeholder: 'Firma...' },
+        'Adress2': { label: 'Name / Vorname', placeholder: 'Name...' },
+        'Adress3': { label: 'Straße / Hausnummer', placeholder: 'Straße...' },
+        'Adress4': { label: 'PLZ / Ort', placeholder: 'Ort...' }
+    };
+
+    // Funktionen für das Modal (global machen für onclick)
+    window.openModal = () => document.getElementById('addressModal').style.display = 'flex';
+    window.closeModal = () => {
+        document.getElementById('addressModal').style.display = 'none';
+        updatePreview();
     };
 
     async function initialisieren() {
         const status = document.getElementById('status');
         const formular = document.getElementById('formular');
-        const addressFields = document.getElementById('addressFields');
-        const addressContainer = document.getElementById('addressContainer');
-        const btn = document.getElementById('downloadBtn');
+        const modalFields = document.getElementById('modalFields');
+        const preview = document.getElementById('addressPreview');
 
         try {
             const response = await fetch('/Protokoll/Heberschutz/PruefungHeberschutz.docx?t=' + Date.now());
@@ -74,80 +95,75 @@
             
             originalBuffer = await response.arrayBuffer();
             const zip = new PizZip(originalBuffer);
-            
-            const doc = new Docxtemplater(zip, {
-                parser: (tag) => ({
-                    get: (scope) => {
-                        if (!['#', '/', '^', '$'].includes(tag[0])) {
-                            gefundeneTags.add(tag);
-                        }
-                        return scope[tag];
-                    }
-                })
-            });
+            const doc = new Docxtemplater(zip, { parser: (tag) => ({ get: (scope) => {
+                if (!['#', '/', '^', '$'].includes(tag[0])) gefundeneTags.add(tag);
+                return scope[tag];
+            }})});
 
             try { doc.render({}); } catch (e) {}
             status.style.display = "none";
             
             if (gefundeneTags.size > 0) {
-                // Wir sortieren die Adressfelder fest nach 1, 2, 3, 4
-                const sortedTags = Array.from(gefundeneTags).sort();
-                
-                sortedTags.forEach(tag => {
+                Array.from(gefundeneTags).sort().forEach(tag => {
                     const group = document.createElement('div');
                     group.className = 'field-group';
-                    const label = document.createElement('label');
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.id = `input_${tag}`;
+                    input.oninput = updatePreview; // Live-Update bei Tippen
 
+                    const label = document.createElement('label');
                     if (adressLogik[tag]) {
                         label.textContent = adressLogik[tag].label;
                         input.placeholder = adressLogik[tag].placeholder;
                         group.appendChild(label);
                         group.appendChild(input);
-                        addressFields.appendChild(group);
-                        addressContainer.style.display = "flex";
+                        modalFields.appendChild(group);
+                        preview.style.display = "block";
                     } else {
                         label.textContent = tag.replace(/_/g, ' ');
-                        input.placeholder = 'Wert eingeben...';
                         group.appendChild(label);
                         group.appendChild(input);
                         formular.appendChild(group);
                     }
                 });
-                btn.style.display = "block";
+                updatePreview();
+                document.getElementById('downloadBtn').style.display = "block";
             }
         } catch (error) {
-            status.className = "error";
             status.textContent = "❌ " + error.message;
+            status.className = "error";
         }
     }
 
-    function erstelleDokument() {
+    function updatePreview() {
+        const adr1 = document.getElementById('input_Adress1')?.value || "";
+        const adr2 = document.getElementById('input_Adress2')?.value || "";
+        const adr3 = document.getElementById('input_Adress3')?.value || "";
+        const adr4 = document.getElementById('input_Adress4')?.value || "";
+        
+        const previewText = [adr1, adr2, adr3, adr4].filter(t => t.trim() !== "").join("\n");
+        document.getElementById('previewText').innerHTML = previewText || '<span class="placeholder-text">Keine Adresse hinterlegt (hier tippen)</span>';
+    }
+
+    document.getElementById('downloadBtn').onclick = () => {
         if (!originalBuffer) return;
         const data = {};
-        gefundeneTags.forEach(tag => {
-            data[tag] = document.getElementById(`input_${tag}`).value || "";
-        });
-
+        gefundeneTags.forEach(tag => data[tag] = document.getElementById(`input_${tag}`).value || "");
+        
         try {
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
             doc.render(data);
             const out = doc.getZip().generate({ type: "blob" });
-
             const url = window.URL.createObjectURL(out);
             const a = document.createElement("a");
             a.href = url;
             a.download = "Protokoll_Heberschutz.docx";
             a.click();
-        } catch (error) {
-            alert("Fehler beim Erstellen: " + error.message);
-        }
-    }
+        } catch (e) { alert("Fehler: " + e.message); }
+    };
 
-    document.getElementById('downloadBtn').onclick = erstelleDokument;
     initialisieren();
 </script>
 
