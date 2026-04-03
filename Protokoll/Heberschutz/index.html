@@ -16,7 +16,6 @@
         .date-display h2 { font-size: 0.65rem; margin: 0; color: #999; text-transform: uppercase; }
         .date-value { font-size: 0.9rem; color: #333; }
 
-        /* Sektions-Vorschauen */
         .section-preview { 
             background: #f8f9fa; border: 1px dashed #007bff; padding: 12px; border-radius: 8px; 
             margin-bottom: 15px; cursor: pointer;
@@ -104,7 +103,7 @@
     const gefundeneTags = new Set();
     
     const adressTags = ['Adress1', 'Adress2', 'Adress3', 'Adress4'];
-    const anlageTags = ['Hersteller', 'Inhalt', 'Diesel', 'Durch', 'Baujahr', 'Ventil'];
+    const anlageTags = ['Hersteller', 'FabNummer', 'Inhalt', 'Diesel', 'Durch', 'Baujahr', 'Ventil'];
 
     const adressLogik = {
         'Adress1': { label: 'Zusatz (Firma / Herr / Frau)', placeholder: 'Firma...' },
@@ -143,7 +142,18 @@
             document.getElementById('status').style.display = "none";
             
             if (gefundeneTags.size > 0) {
-                Array.from(gefundeneTags).sort().forEach(tag => {
+                // Wir definieren die Reihenfolge für das Anlagen-Modal
+                const order = [...adressTags, ...anlageTags];
+                
+                const sortedTags = Array.from(gefundeneTags).sort((a, b) => {
+                    let idxA = order.indexOf(a);
+                    let idxB = order.indexOf(b);
+                    if (idxA === -1) idxA = 999;
+                    if (idxB === -1) idxB = 999;
+                    return idxA - idxB;
+                });
+
+                sortedTags.forEach(tag => {
                     if (tag === 'Datum') return;
 
                     const input = document.createElement('input');
@@ -179,18 +189,15 @@
     }
 
     function updatePreviews() {
-        // Adresse Preview
         const adr = adressTags.map(id => document.getElementById(`input_${id}`)?.value || "").filter(t => t.trim() !== "").join("\n");
         document.getElementById('previewTextAddr').textContent = adr || "Keine Adresse hinterlegt";
         
-        // Anlage Preview
         const anlage = anlageTags.map(id => {
             const val = document.getElementById(`input_${id}`)?.value;
             return val ? `${id}: ${val}` : null;
         }).filter(t => t).join(" | ");
         document.getElementById('previewTextAnlage').textContent = anlage || "Keine Anlagendaten";
 
-        // Datum Preview
         const d = new Date(document.getElementById('dateInput').value);
         if (!isNaN(d)) {
             const dd = String(d.getDate()).padStart(2, '0');
