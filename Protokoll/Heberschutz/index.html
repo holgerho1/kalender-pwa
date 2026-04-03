@@ -155,11 +155,10 @@
         'Körper': { label: 'Ventilkörper', placeholder: 'Zustand...' },
         'Dichtung': { label: 'Dichtungen', placeholder: 'Zustand...' },
         'Einstellung': { label: 'Einstellung', placeholder: 'Wert...' },
-        // Messtechnik
-        'MFüll': { label: 'Maximaler Füllstand', placeholder: 'in cm...' },
-        'AFüll': { label: 'Aktueller Füllstand', placeholder: 'in cm...' },
-        'Höhe': { label: 'Höhe EV über Scheitel', placeholder: 'in cm...' },
-        'Abstand': { label: 'Abstand Behälterboden - Fläche', placeholder: 'in cm...' }
+        'MFüll': { label: 'Maximaler Füllstand', placeholder: 'Wert...', unit: 'cm' },
+        'AFüll': { label: 'Aktueller Füllstand', placeholder: 'Wert...', unit: 'cm' },
+        'Höhe': { label: 'Höhe EV über Scheitel', placeholder: 'Wert...', unit: 'cm' },
+        'Abstand': { label: 'Abstand Behälter - Fläche', placeholder: 'Wert...', unit: 'cm' }
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -292,7 +291,7 @@
             const val = document.getElementById(`input_${id}`)?.value;
             const config = fieldConfig[id];
             if (!val) return null;
-            return `${config.label}: ${val}`;
+            return config?.unit ? `${config.label}: ${val} ${config.unit}` : `${config.label}: ${val}`;
         }).filter(t => t).join("\n");
         document.getElementById('messPreview').querySelector('.preview-text').textContent = mess || "Keine Messdaten";
 
