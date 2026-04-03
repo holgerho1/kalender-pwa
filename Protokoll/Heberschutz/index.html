@@ -42,7 +42,6 @@
         .input-with-unit input { padding-right: 45px; }
         .unit-label { position: absolute; right: 10px; color: #888; font-size: 0.9rem; pointer-events: none; }
 
-        #formular { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-save { background: #007bff; color: white; margin-top: 10px; }
         .btn-download { background: #28a745; color: white; margin-top: 25px; font-size: 1.1rem; }
@@ -81,7 +80,6 @@
         <div id="previewTextMess" class="preview-text"></div>
     </div>
 
-    <form id="formular"></form>
     <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
 </div>
 
@@ -159,7 +157,7 @@
         'AFüll': { label: 'Aktueller Füllstand', placeholder: 'Wert...', unit: 'cm' },
         'Höhe': { label: 'Höhe EV über Scheitel', placeholder: 'Wert...', unit: 'cm' },
         'Abstand': { label: 'Abstand Behälter - Fläche', placeholder: 'Wert...', unit: 'cm' },
-        'Mindest': { label: 'mindestens zu erreichender Unterdruck', placeholder: 'wird berechnet...', unit: 'bar' }
+        'Mindest': { label: 'mind. Unterdruck', placeholder: 'Berechnet...', unit: 'bar' }
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -173,6 +171,27 @@
         updatePreviews();
         setTimeout(window.closeModals, 150);
     };
+
+    function berechneMindestdruck() {
+        const durch = parseFloat(document.getElementById('input_Durch')?.value) || 0;
+        const hoehe = parseFloat(document.getElementById('input_Höhe')?.value) || 0;
+        const mFuell = parseFloat(document.getElementById('input_MFüll')?.value) || 0;
+        const abstand = parseFloat(document.getElementById('input_Abstand')?.value) || 0;
+        const aFuell = parseFloat(document.getElementById('input_AFüll')?.value) || 0;
+        
+        const medium = (document.getElementById('input_Diesel')?.value || "").toLowerCase();
+        const dichte = medium.includes("diesel") ? 0.00083 : 0.00084; // Umrechnung für cm -> bar
+
+        if (durch && mFuell) {
+            const ergebnis = (durch + hoehe + mFuell + abstand - aFuell) * dichte;
+            const mindestFeld = document.getElementById('input_Mindest');
+            if (mindestFeld) {
+                const gerundet = ergebnis.toFixed(3);
+                mindestFeld.value = gerundet;
+                localStorage.setItem('form_Mindest', gerundet);
+            }
+        }
+    }
 
     async function initialisieren() {
         const dateInput = document.getElementById('dateInput');
@@ -192,22 +211,25 @@
             document.getElementById('status').style.display = "none";
             
             if (gefundeneTags.size > 0) {
-                const anlageContainer = document.getElementById('anlageModalFields');
-                const mechanikContainer = document.getElementById('mechanikModalFields');
-                const messContainer = document.getElementById('messModalFields');
-                let rowGroupAnlage = null;
+                const containers = {
+                    addr: document.getElementById('addrModalFields'),
+                    anlage: document.getElementById('anlageModalFields'),
+                    mechanik: document.getElementById('mechanikModalFields'),
+                    mess: document.getElementById('messModalFields')
+                };
 
                 const order = [...adressTags, ...anlageTags, ...mechanikTags, ...messTags];
-                const sortedTags = Array.from(gefundeneTags).sort((a, b) => {
-                    let idxA = order.indexOf(a);
-                    let idxB = order.indexOf(b);
-                    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
-                });
+                const sortedTags = Array.from(gefundeneTags).sort((a, b) => (order.indexOf(a) === -1 ? 99 : order.indexOf(a)) - (order.indexOf(b) === -1 ? 99 : order.indexOf(b)));
 
                 sortedTags.forEach(tag => {
                     if (tag === 'Datum') return;
-
                     const config = fieldConfig[tag];
+                    
+                    const group = document.createElement('div');
+                    group.className = 'field-group';
+                    const label = document.createElement('label');
+                    label.textContent = config?.label || tag;
+                    
                     const inputWrapper = document.createElement('div');
                     inputWrapper.className = config?.unit ? 'input-with-unit' : '';
 
@@ -215,13 +237,11 @@
                     input.type = 'text';
                     input.id = `input_${tag}`;
                     input.value = localStorage.getItem(`form_${tag}`) || "";
-                    input.placeholder = config?.placeholder || "Wert...";
-                    
-                    // Das Feld Mindest als "readonly" markieren, da es berechnet wird
-                    if(tag === 'Mindest') input.readOnly = true;
+                    if (tag === 'Mindest') input.readOnly = true;
 
                     input.oninput = () => { 
                         localStorage.setItem(`form_${tag}`, input.value); 
+                        if (['Durch', 'Höhe', 'MFüll', 'Abstand', 'AFüll', 'Diesel'].includes(tag)) berechneMindestdruck();
                         updatePreviews(); 
                     };
 
@@ -233,39 +253,16 @@
                         inputWrapper.appendChild(unit);
                     }
 
-                    const group = document.createElement('div');
-                    group.className = 'field-group';
-                    const label = document.createElement('label');
-                    label.textContent = config?.label || tag.replace(/_/g, ' ');
                     group.appendChild(label);
                     group.appendChild(inputWrapper);
 
-                    if (adressTags.includes(tag)) {
-                        document.getElementById('addrModalFields').appendChild(group);
-                        document.getElementById('addressPreview').style.display = "block";
-                    } else if (anlageTags.includes(tag)) {
-                        if (tag === 'Inhalt') {
-                            rowGroupAnlage = document.createElement('div');
-                            rowGroupAnlage.className = 'row-group';
-                            rowGroupAnlage.appendChild(group);
-                            anlageContainer.appendChild(rowGroupAnlage);
-                        } else if (tag === 'Baujahr' && rowGroupAnlage) {
-                            rowGroupAnlage.appendChild(group);
-                        } else {
-                            anlageContainer.appendChild(group);
-                            rowGroupAnlage = null; 
-                        }
-                        document.getElementById('anlagePreview').style.display = "block";
-                    } else if (mechanikTags.includes(tag)) {
-                        mechanikContainer.appendChild(group);
-                        document.getElementById('mechanikPreview').style.display = "block";
-                    } else if (messTags.includes(tag)) {
-                        messContainer.appendChild(group);
-                        document.getElementById('messPreview').style.display = "block";
-                    } else {
-                        document.getElementById('formular').appendChild(group);
-                    }
+                    if (adressTags.includes(tag)) containers.addr.appendChild(group);
+                    else if (anlageTags.includes(tag)) containers.anlage.appendChild(group);
+                    else if (mechanikTags.includes(tag)) containers.mechanik.appendChild(group);
+                    else if (messTags.includes(tag)) containers.mess.appendChild(group);
                 });
+
+                document.querySelectorAll('.section-preview').forEach(p => p.style.display = "block");
                 updatePreviews();
                 document.getElementById('downloadBtn').style.display = "block";
             }
@@ -273,39 +270,25 @@
     }
 
     function updatePreviews() {
-        const adr = adressTags.map(id => document.getElementById(`input_${id}`)?.value || "").filter(t => t.trim() !== "").join("\n");
-        document.getElementById('addressPreview').querySelector('.preview-text').textContent = adr || "Keine Adresse hinterlegt";
-        
-        const anlage = anlageTags.map(id => {
-            const val = document.getElementById(`input_${id}`)?.value;
-            const config = fieldConfig[id];
-            if (!val) return null;
-            return config?.unit ? `${config.label}: ${val} ${config.unit}` : `${config.label}: ${val}`;
-        }).filter(t => t).join("\n");
-        document.getElementById('anlagePreview').querySelector('.preview-text').textContent = anlage || "Keine Anlagendaten";
+        const sets = [
+            { id: 'Addr', tags: adressTags, pre: '📍' },
+            { id: 'Anlage', tags: anlageTags, pre: '' },
+            { id: 'Mechanik', tags: mechanikTags, pre: '' },
+            { id: 'Mess', tags: messTags, pre: '' }
+        ];
 
-        const mechanik = mechanikTags.map(id => {
-            const val = document.getElementById(`input_${id}`)?.value;
-            const config = fieldConfig[id];
-            if (!val) return null;
-            return `${config.label}: ${val}`;
-        }).filter(t => t).join("\n");
-        document.getElementById('mechanikPreview').querySelector('.preview-text').textContent = mechanik || "Keine Bewertung";
-
-        const mess = messTags.map(id => {
-            const val = document.getElementById(`input_${id}`)?.value;
-            const config = fieldConfig[id];
-            if (!val) return null;
-            return config?.unit ? `${config.label}: ${val} ${config.unit}` : `${config.label}: ${val}`;
-        }).filter(t => t).join("\n");
-        document.getElementById('messPreview').querySelector('.preview-text').textContent = mess || "Keine Messdaten";
+        sets.forEach(set => {
+            const text = set.tags.map(tag => {
+                const val = document.getElementById(`input_${tag}`)?.value;
+                const conf = fieldConfig[tag];
+                return val ? (conf?.unit ? `${conf.label}: ${val} ${conf.unit}` : `${conf.label}: ${val}`) : null;
+            }).filter(t => t).join("\n");
+            const el = document.getElementById(`previewText${set.id}`);
+            if (el) el.textContent = text || "Keine Daten";
+        });
 
         const d = new Date(document.getElementById('dateInput').value);
-        if (!isNaN(d)) {
-            const dd = String(d.getDate()).padStart(2, '0');
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            document.getElementById('datePreview').textContent = `${dd}.${mm}.${d.getFullYear()}`;
-        }
+        if (!isNaN(d)) document.getElementById('datePreview').textContent = d.toLocaleDateString('de-DE');
     }
 
     document.getElementById('downloadBtn').onclick = () => {
@@ -313,11 +296,9 @@
         gefundeneTags.forEach(tag => {
             if (tag === 'Datum') {
                 const d = new Date(document.getElementById('dateInput').value);
-                const dd = String(d.getDate()).padStart(2, '0');
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                data[tag] = `${dd}.${mm}.${d.getFullYear()}`;
+                data[tag] = d.toLocaleDateString('de-DE');
             } else {
-                data[tag] = document.getElementById(`input_${tag}`).value || "";
+                data[tag] = document.getElementById(`input_${tag}`)?.value || "";
             }
         });
         
@@ -325,13 +306,10 @@
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
             doc.render(data);
-            const out = doc.getZip().generate({ 
-                type: "blob",
-                mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
-            });
-            const url = window.URL.createObjectURL(out);
+            const out = doc.getZip().generate({ type: "blob" });
             const a = document.createElement("a");
-            a.href = url; a.download = "Protokoll_Heberschutz.docx";
+            a.href = URL.createObjectURL(out);
+            a.download = "PruefungHeberschutz.docx";
             a.click();
         } catch (e) { alert("Fehler: " + e.message); }
     };
