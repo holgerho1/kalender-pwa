@@ -10,13 +10,13 @@
         h1 { font-size: 1.2rem; color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
         
         /* Adress-Sektion Styling */
-        .address-section { background: #f8f9fa; border: 1px solid #e1e4e8; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .address-section h2 { font-size: 0.9rem; margin: 0 0 5px 0; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+        .address-section { background: #f8f9fa; border: 1px solid #e1e4e8; padding: 15px; border-radius: 8px; margin-bottom: 25px; display: flex; flex-direction: column; gap: 12px; }
+        .address-section h2 { font-size: 0.85rem; margin: 0; color: #555; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
         
         #formular { display: flex; flex-direction: column; gap: 15px; }
         .field-group { display: flex; flex-direction: column; }
-        label { font-size: 0.85rem; color: #666; margin-bottom: 5px; font-weight: bold; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
+        label { font-size: 0.8rem; color: #666; margin-bottom: 4px; font-weight: bold; }
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; transition: border 0.2s; }
         input:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,0.1); }
         
         #status { font-size: 0.9rem; color: #0056b3; background: #e7f3ff; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
@@ -37,13 +37,13 @@
     <div id="status">Lade Felder...</div>
     
     <div id="addressContainer" class="address-section" style="display: none;">
-        <h2>📍 Adresse</h2>
-        <div id="addressFields"></div>
+        <h2>📍 Empfänger / Adresse</h2>
+        <div id="addressFields" style="display: flex; flex-direction: column; gap: 10px;"></div>
     </div>
 
     <form id="formular"></form>
     
-    <button id="downloadBtn" style="display: none;">Fertiges Protokoll speichern</button>
+    <button id="downloadBtn" style="display: none;">Protokoll speichern</button>
 </div>
 
 <script type="module">
@@ -52,8 +52,14 @@
 
     let originalBuffer = null;
     const gefundeneTags = new Set();
-    const adressTags = ['Adress1', 'Adress2', 'Adress3', 'Adress4'];
-    const dateiPfad = '/Protokoll/Heberschutz/PruefungHeberschutz.docx';
+    
+    // Definition der Adress-Logik
+    const adressLogik = {
+        'Adress1': { label: 'Zusatz (Firma / Herr / Frau)', placeholder: 'z.B. Firma Muster GmbH' },
+        'Adress2': { label: 'Name / Vorname', placeholder: 'Max Mustermann' },
+        'Adress3': { label: 'Straße / Hausnummer', placeholder: 'Musterstraße 123' },
+        'Adress4': { label: 'PLZ / Ort', placeholder: '12345 Musterstadt' }
+    };
 
     async function initialisieren() {
         const status = document.getElementById('status');
@@ -63,8 +69,8 @@
         const btn = document.getElementById('downloadBtn');
 
         try {
-            const response = await fetch(dateiPfad + '?t=' + Date.now());
-            if (!response.ok) throw new Error("Dokument konnte nicht geladen werden.");
+            const response = await fetch('/Protokoll/Heberschutz/PruefungHeberschutz.docx?t=' + Date.now());
+            if (!response.ok) throw new Error("Dokument nicht gefunden.");
             
             originalBuffer = await response.arrayBuffer();
             const zip = new PizZip(originalBuffer);
@@ -81,32 +87,32 @@
             });
 
             try { doc.render({}); } catch (e) {}
-
             status.style.display = "none";
             
-            if (gefundeneTags.size === 0) {
-                status.style.display = "block";
-                status.textContent = "Keine Marken im Dokument gefunden.";
-            } else {
-                // Felder sortieren und aufteilen
-                const tagsArray = Array.from(gefundeneTags).sort();
+            if (gefundeneTags.size > 0) {
+                // Wir sortieren die Adressfelder fest nach 1, 2, 3, 4
+                const sortedTags = Array.from(gefundeneTags).sort();
                 
-                tagsArray.forEach(tag => {
+                sortedTags.forEach(tag => {
                     const group = document.createElement('div');
                     group.className = 'field-group';
                     const label = document.createElement('label');
-                    label.textContent = tag.replace(/_/g, ' ');
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.id = `input_${tag}`;
-                    group.appendChild(label);
-                    group.appendChild(input);
 
-                    // Wenn es ein Adress-Tag ist, oben einfügen, sonst unten ins Formular
-                    if (adressTags.includes(tag)) {
+                    if (adressLogik[tag]) {
+                        label.textContent = adressLogik[tag].label;
+                        input.placeholder = adressLogik[tag].placeholder;
+                        group.appendChild(label);
+                        group.appendChild(input);
                         addressFields.appendChild(group);
                         addressContainer.style.display = "flex";
                     } else {
+                        label.textContent = tag.replace(/_/g, ' ');
+                        input.placeholder = 'Wert eingeben...';
+                        group.appendChild(label);
+                        group.appendChild(input);
                         formular.appendChild(group);
                     }
                 });
@@ -120,7 +126,6 @@
 
     function erstelleDokument() {
         if (!originalBuffer) return;
-
         const data = {};
         gefundeneTags.forEach(tag => {
             data[tag] = document.getElementById(`input_${tag}`).value || "";
@@ -128,29 +133,15 @@
 
         try {
             const zip = new PizZip(originalBuffer);
-            const doc = new Docxtemplater(zip, {
-                paragraphLoop: true,
-                linebreaks: true
-            });
-
+            const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
             doc.render(data);
-
-            const out = doc.getZip().generate({
-                type: "blob",
-                mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            });
+            const out = doc.getZip().generate({ type: "blob" });
 
             const url = window.URL.createObjectURL(out);
             const a = document.createElement("a");
             a.href = url;
             a.download = "Protokoll_Heberschutz.docx";
-            document.body.appendChild(a);
             a.click();
-            setTimeout(() => {
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            }, 100);
-
         } catch (error) {
             alert("Fehler beim Erstellen: " + error.message);
         }
