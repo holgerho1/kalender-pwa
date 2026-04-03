@@ -16,27 +16,28 @@
         .date-display h2 { font-size: 0.65rem; margin: 0; color: #999; text-transform: uppercase; }
         .date-value { font-size: 0.9rem; color: #333; }
 
-        .address-preview { 
-            background: #f8f9fa; border: 1px dashed #007bff; padding: 15px; border-radius: 8px; 
-            margin-bottom: 25px; cursor: pointer;
+        /* Sektions-Vorschauen */
+        .section-preview { 
+            background: #f8f9fa; border: 1px dashed #007bff; padding: 12px; border-radius: 8px; 
+            margin-bottom: 15px; cursor: pointer;
         }
-        .address-preview h2 { font-size: 0.7rem; margin: 0 0 5px 0; color: #007bff; text-transform: uppercase; }
-        .address-text { font-family: monospace; font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap; min-height: 1.4em; }
+        .section-preview h2 { font-size: 0.7rem; margin: 0 0 5px 0; color: #007bff; text-transform: uppercase; }
+        .preview-text { font-family: monospace; font-size: 0.85rem; line-height: 1.4; white-space: pre-wrap; color: #444; }
 
         .modal { 
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
             background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; 
         }
         .modal-content { 
-            background: white; padding: 20px; border-radius: 12px; width: 85%; max-width: 350px; 
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            background: white; padding: 20px; border-radius: 12px; width: 85%; max-width: 380px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;
         }
         
         .field-group { display: flex; flex-direction: column; margin-bottom: 12px; }
         label { font-size: 0.75rem; color: #666; margin-bottom: 3px; font-weight: bold; }
         input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
         
-        #formular { display: flex; flex-direction: column; gap: 12px; }
+        #formular { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-save { background: #007bff; color: white; margin-top: 10px; }
         .btn-download { background: #28a745; color: white; margin-top: 25px; font-size: 1.1rem; }
@@ -47,7 +48,7 @@
 <div class="card">
     <div class="header-row">
         <h1>Protokoll ausfüllen</h1>
-        <div class="date-display" onclick="openDateModal()">
+        <div class="date-display" onclick="openModal('dateModal')">
             <h2>Datum</h2>
             <div id="datePreview" class="date-value">--.--.----</div>
         </div>
@@ -55,9 +56,14 @@
 
     <div id="status">Lade Felder...</div>
     
-    <div id="addressPreview" class="address-preview" style="display: none;" onclick="openAddrModal()">
+    <div id="addressPreview" class="section-preview" style="display: none;" onclick="openModal('addrModal')">
         <h2>📍 Adresse</h2>
-        <div id="previewText" class="address-text"></div>
+        <div id="previewTextAddr" class="preview-text"></div>
+    </div>
+
+    <div id="anlagePreview" class="section-preview" style="display: none;" onclick="openModal('anlageModal')">
+        <h2>⚙️ Anlagenbeschreibung</h2>
+        <div id="previewTextAnlage" class="preview-text"></div>
     </div>
 
     <form id="formular"></form>
@@ -68,6 +74,14 @@
     <div class="modal-content">
         <h2 style="margin-top:0; font-size: 1.1rem;">Adresse bearbeiten</h2>
         <div id="addrModalFields"></div>
+        <button class="btn-save" onclick="closeModals()">Fertig</button>
+    </div>
+</div>
+
+<div id="anlageModal" class="modal">
+    <div class="modal-content">
+        <h2 style="margin-top:0; font-size: 1.1rem;">Anlagenbeschreibung</h2>
+        <div id="anlageModalFields"></div>
         <button class="btn-save" onclick="closeModals()">Fertig</button>
     </div>
 </div>
@@ -88,6 +102,10 @@
 
     let originalBuffer = null;
     const gefundeneTags = new Set();
+    
+    const adressTags = ['Adress1', 'Adress2', 'Adress3', 'Adress4'];
+    const anlageTags = ['Hersteller', 'Inhalt', 'Diesel', 'Durch', 'Baujahr', 'Ventil'];
+
     const adressLogik = {
         'Adress1': { label: 'Zusatz (Firma / Herr / Frau)', placeholder: 'Firma...' },
         'Adress2': { label: 'Name / Vorname', placeholder: 'Name...' },
@@ -95,9 +113,7 @@
         'Adress4': { label: 'PLZ / Ort', placeholder: 'Ort...' }
     };
 
-    window.openAddrModal = () => document.getElementById('addrModal').style.display = 'flex';
-    window.openDateModal = () => document.getElementById('dateModal').style.display = 'flex';
-    
+    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
     window.closeModals = () => {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
         updatePreviews();
@@ -110,25 +126,18 @@
     };
 
     async function initialisieren() {
-        const formular = document.getElementById('formular');
-        const addrModalFields = document.getElementById('addrModalFields');
         const dateInput = document.getElementById('dateInput');
-
         const heute = new Date().toISOString().split('T')[0];
-        const savedDate = localStorage.getItem('form_Datum');
-        dateInput.value = savedDate || heute;
+        dateInput.value = localStorage.getItem('form_Datum') || heute;
 
         try {
             const response = await fetch('/Protokoll/Heberschutz/PruefungHeberschutz.docx?t=' + Date.now());
-            if (!response.ok) throw new Error("Datei nicht gefunden.");
-            
             originalBuffer = await response.arrayBuffer();
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { parser: tag => ({ get: s => {
                 if (!['#', '/', '^', '$'].includes(tag[0])) gefundeneTags.add(tag);
                 return s[tag];
             }})});
-            
             try { doc.render({}); } catch (e) {}
 
             document.getElementById('status').style.display = "none";
@@ -137,65 +146,67 @@
                 Array.from(gefundeneTags).sort().forEach(tag => {
                     if (tag === 'Datum') return;
 
-                    const group = document.createElement('div');
-                    group.className = 'field-group';
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.id = `input_${tag}`;
-                    
-                    const saved = localStorage.getItem(`form_${tag}`);
-                    if (saved) input.value = saved;
-
+                    input.value = localStorage.getItem(`form_${tag}`) || "";
                     input.oninput = () => { 
                         localStorage.setItem(`form_${tag}`, input.value); 
                         updatePreviews(); 
                     };
 
+                    const group = document.createElement('div');
+                    group.className = 'field-group';
                     const label = document.createElement('label');
-                    if (adressLogik[tag]) {
-                        label.textContent = adressLogik[tag].label;
-                        group.appendChild(label);
-                        group.appendChild(input);
-                        addrModalFields.appendChild(group);
+                    label.textContent = adressLogik[tag] ? adressLogik[tag].label : tag.replace(/_/g, ' ');
+                    group.appendChild(label);
+                    group.appendChild(input);
+
+                    if (adressTags.includes(tag)) {
+                        document.getElementById('addrModalFields').appendChild(group);
                         document.getElementById('addressPreview').style.display = "block";
+                    } else if (anlageTags.includes(tag)) {
+                        document.getElementById('anlageModalFields').appendChild(group);
+                        document.getElementById('anlagePreview').style.display = "block";
                     } else {
-                        label.textContent = tag.replace(/_/g, ' ');
-                        group.appendChild(label);
-                        group.appendChild(input);
-                        formular.appendChild(group);
+                        document.getElementById('formular').appendChild(group);
                     }
                 });
                 updatePreviews();
                 document.getElementById('downloadBtn').style.display = "block";
             }
-        } catch (error) { 
-            document.getElementById('status').textContent = "❌ " + error.message; 
-        }
+        } catch (error) { document.getElementById('status').textContent = "❌ " + error.message; }
     }
 
     function updatePreviews() {
-        const adr = ['Adress1', 'Adress2', 'Adress3', 'Adress4'].map(id => document.getElementById(`input_${id}`)?.value || "").filter(t => t.trim() !== "").join("\n");
-        document.getElementById('previewText').textContent = adr || "Keine Adresse hinterlegt";
+        // Adresse Preview
+        const adr = adressTags.map(id => document.getElementById(`input_${id}`)?.value || "").filter(t => t.trim() !== "").join("\n");
+        document.getElementById('previewTextAddr').textContent = adr || "Keine Adresse hinterlegt";
         
+        // Anlage Preview
+        const anlage = anlageTags.map(id => {
+            const val = document.getElementById(`input_${id}`)?.value;
+            return val ? `${id}: ${val}` : null;
+        }).filter(t => t).join(" | ");
+        document.getElementById('previewTextAnlage').textContent = anlage || "Keine Anlagendaten";
+
+        // Datum Preview
         const d = new Date(document.getElementById('dateInput').value);
         if (!isNaN(d)) {
-            const tag = String(d.getDate()).padStart(2, '0');
-            const monat = String(d.getMonth() + 1).padStart(2, '0');
-            document.getElementById('datePreview').textContent = `${tag}.${monat}.${d.getFullYear()}`;
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            document.getElementById('datePreview').textContent = `${dd}.${mm}.${d.getFullYear()}`;
         }
     }
 
     document.getElementById('downloadBtn').onclick = () => {
-        if (!originalBuffer) return;
         const data = {};
         gefundeneTags.forEach(tag => {
             if (tag === 'Datum') {
                 const d = new Date(document.getElementById('dateInput').value);
-                if (!isNaN(d)) {
-                    const dd = String(d.getDate()).padStart(2, '0');
-                    const mm = String(d.getMonth() + 1).padStart(2, '0');
-                    data[tag] = `${dd}.${mm}.${d.getFullYear()}`;
-                } else { data[tag] = ""; }
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                data[tag] = `${dd}.${mm}.${d.getFullYear()}`;
             } else {
                 data[tag] = document.getElementById(`input_${tag}`).value || "";
             }
@@ -205,25 +216,15 @@
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
             doc.render(data);
-            
             const out = doc.getZip().generate({ 
                 type: "blob",
                 mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
             });
-
             const url = window.URL.createObjectURL(out);
             const a = document.createElement("a");
-            a.href = url; 
-            a.download = "Protokoll_Heberschutz.docx";
-            document.body.appendChild(a);
+            a.href = url; a.download = "Protokoll_Heberschutz.docx";
             a.click();
-            setTimeout(() => {
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            }, 100);
-        } catch (e) { 
-            alert("Fehler beim Erstellen: " + e.message); 
-        }
+        } catch (e) { alert("Fehler: " + e.message); }
     };
 
     initialisieren();
