@@ -120,7 +120,9 @@
         'Hersteller': { label: 'Behälterhersteller', placeholder: 'z.B. Nau...' },
         'FabNummer': { label: 'Fabrikationsnummer', placeholder: 'Nr...' },
         'Inhalt': { label: 'Inhalt', placeholder: 'Menge...', unit: 'Liter' },
-        'Baujahr': { label: 'Baujahr', placeholder: 'JJJJ' }
+        'Baujahr': { label: 'Baujahr', placeholder: 'JJJJ' },
+        'Durch': { label: 'Durchmesser', placeholder: 'in mm...' },
+        'Ventil': { label: 'Heberschutzventil', placeholder: 'Typ...' }
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -156,7 +158,11 @@
                 const anlageContainer = document.getElementById('anlageModalFields');
                 let rowGroup = null;
 
-                const sortedTags = Array.from(gefundeneTags).sort((a, b) => anlageTags.indexOf(a) - anlageTags.indexOf(b));
+                const sortedTags = Array.from(gefundeneTags).sort((a, b) => {
+                    let idxA = anlageTags.indexOf(a);
+                    let idxB = anlageTags.indexOf(b);
+                    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+                });
 
                 sortedTags.forEach(tag => {
                     if (tag === 'Datum') return;
@@ -194,7 +200,6 @@
                         document.getElementById('addrModalFields').appendChild(group);
                         document.getElementById('addressPreview').style.display = "block";
                     } else if (anlageTags.includes(tag)) {
-                        // Spezial-Layout für Inhalt und Baujahr in einer Zeile
                         if (tag === 'Inhalt') {
                             rowGroup = document.createElement('div');
                             rowGroup.className = 'row-group';
@@ -226,7 +231,7 @@
             const label = fieldConfig[id]?.label || id;
             if (!val) return null;
             return id === 'Inhalt' ? `${label}: ${val} Liter` : `${label}: ${val}`;
-        }).filter(t => t).join(" | ");
+        }).filter(t => t).join("\n"); // Untereinander statt mit Strich
         document.getElementById('previewTextAnlage').textContent = anlage || "Keine Anlagendaten";
 
         const d = new Date(document.getElementById('dateInput').value);
