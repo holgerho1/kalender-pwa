@@ -61,22 +61,22 @@
 
     <div id="status">Lade Felder...</div>
     
-    <div id="addressPreview" class="section-preview" style="display: none;" onclick="openModal('addrModal')">
+    <div id="addressPreview" class="section-preview" onclick="openModal('addrModal')" style="display: none;">
         <h2>📍 Adresse</h2>
         <div id="previewTextAddr" class="preview-text"></div>
     </div>
 
-    <div id="anlagePreview" class="section-preview" style="display: none;" onclick="openModal('anlageModal')">
+    <div id="anlagePreview" class="section-preview" onclick="openModal('anlageModal')" style="display: none;">
         <h2>⚙️ Anlagenbeschreibung</h2>
         <div id="previewTextAnlage" class="preview-text"></div>
     </div>
 
-    <div id="mechanikPreview" class="section-preview" style="display: none;" onclick="openModal('mechanikModal')">
+    <div id="mechanikPreview" class="section-preview" onclick="openModal('mechanikModal')" style="display: none;">
         <h2>🔧 Mechanische Bewertung</h2>
         <div id="previewTextMechanik" class="preview-text"></div>
     </div>
 
-    <div id="messPreview" class="section-preview" style="display: none;" onclick="openModal('messModal')">
+    <div id="messPreview" class="section-preview" onclick="openModal('messModal')" style="display: none;">
         <h2>📏 Messtechnische Bewertung</h2>
         <div id="previewTextMess" class="preview-text"></div>
     </div>
@@ -137,7 +137,7 @@
     const adressTags = ['Adress1', 'Adress2', 'Adress3', 'Adress4'];
     const anlageTags = ['Diesel', 'Hersteller', 'FabNummer', 'Inhalt', 'Baujahr', 'Durch', 'Ventil'];
     const mechanikTags = ['Zustand', 'Körper', 'Dichtung', 'Einstellung'];
-    const messTags = ['MFüll', 'AFüll', 'Höhe', 'Abstand'];
+    const messTags = ['MFüll', 'AFüll', 'Höhe', 'Abstand', 'Mindest'];
 
     const fieldConfig = {
         'Adress1': { label: 'Zusatz (Firma / Herr / Frau)', placeholder: 'Firma...' },
@@ -158,7 +158,8 @@
         'MFüll': { label: 'Maximaler Füllstand', placeholder: 'Wert...', unit: 'cm' },
         'AFüll': { label: 'Aktueller Füllstand', placeholder: 'Wert...', unit: 'cm' },
         'Höhe': { label: 'Höhe EV über Scheitel', placeholder: 'Wert...', unit: 'cm' },
-        'Abstand': { label: 'Abstand Behälter - Fläche', placeholder: 'Wert...', unit: 'cm' }
+        'Abstand': { label: 'Abstand Behälter - Fläche', placeholder: 'Wert...', unit: 'cm' },
+        'Mindest': { label: 'mindestens zu erreichender Unterdruck', placeholder: 'wird berechnet...', unit: 'bar' }
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -215,6 +216,10 @@
                     input.id = `input_${tag}`;
                     input.value = localStorage.getItem(`form_${tag}`) || "";
                     input.placeholder = config?.placeholder || "Wert...";
+                    
+                    // Das Feld Mindest als "readonly" markieren, da es berechnet wird
+                    if(tag === 'Mindest') input.readOnly = true;
+
                     input.oninput = () => { 
                         localStorage.setItem(`form_${tag}`, input.value); 
                         updatePreviews(); 
