@@ -156,7 +156,6 @@
         }
 
         const medium = (document.getElementById('input_Diesel')?.value || "").toLowerCase();
-        // 1 cm H2O = 0.00098 bar. Dichte Diesel ~0.83, Heizöl ~0.84.
         const dichteFaktor = (medium.includes("diesel")) ? 0.00081 : 0.00082; 
 
         try {
@@ -239,7 +238,7 @@
                 });
 
                 document.querySelectorAll('.section-preview').forEach(p => p.style.display = "block");
-                berechneMindestdruck(); // Initial beim Start berechnen
+                berechneMindestdruck();
                 updatePreviews();
                 document.getElementById('downloadBtn').style.display = "block";
             }
@@ -248,10 +247,10 @@
 
     function updatePreviews() {
         const sets = [
-            { id: 'Addr', tags: adressTags },
-            { id: 'Anlage', tags: anlageTags },
-            { id: 'Mechanik', tags: mechanikTags },
-            { id: 'Mess', tags: messTags }
+            { id: 'Addr', tags: adressTags, showLabel: false },
+            { id: 'Anlage', tags: anlageTags, showLabel: true },
+            { id: 'Mechanik', tags: mechanikTags, showLabel: true },
+            { id: 'Mess', tags: messTags, showLabel: true }
         ];
 
         sets.forEach(set => {
@@ -259,8 +258,14 @@
                 const val = document.getElementById(`input_${tag}`)?.value;
                 const conf = fieldConfig[tag];
                 if (!val || val === "Werte fehlen") return null;
-                return conf?.unit ? `${conf.label}: ${val} ${conf.unit}` : `${conf.label}: ${val}`;
+                
+                if (set.showLabel) {
+                    return conf?.unit ? `${conf.label}: ${val} ${conf.unit}` : `${conf.label}: ${val}`;
+                } else {
+                    return val; // Nur der Wert für die Adresse
+                }
             }).filter(t => t).join("\n");
+            
             const el = document.getElementById(`previewText${set.id}`);
             if (el) el.textContent = text || "Keine Daten eingetragen";
         });
