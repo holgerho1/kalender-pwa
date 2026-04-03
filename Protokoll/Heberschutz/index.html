@@ -35,6 +35,7 @@
         .field-group { display: flex; flex-direction: column; margin-bottom: 12px; flex: 1; }
         label { font-size: 0.75rem; color: #666; margin-bottom: 3px; font-weight: bold; }
         input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; -webkit-appearance: none; }
+        input[readonly] { background-color: #f9f9f9; color: #007bff; font-weight: bold; }
         
         .input-with-unit { position: relative; display: flex; align-items: center; }
         .input-with-unit input { padding-right: 45px; }
@@ -104,14 +105,14 @@
         'Adress2': { label: 'Name / Vorname', placeholder: 'Name...' },
         'Adress3': { label: 'Straße / Hausnummer', placeholder: 'Straße...' },
         'Adress4': { label: 'PLZ / Ort', placeholder: 'Ort...' },
-        'Diesel': { label: 'Medium', placeholder: 'z.B. Heizöl...' },
+        'Diesel': { label: 'Medium', placeholder: 'Heizöl / Diesel' },
         'Hersteller': { label: 'Behälterhersteller', placeholder: 'z.B. Nau...' },
         'FabNummer': { label: 'Fabrikationsnummer', placeholder: 'Nr...' },
         'Inhalt': { label: 'Inhalt', placeholder: 'Menge...', unit: 'Liter' },
         'Baujahr': { label: 'Baujahr', placeholder: 'JJJJ' },
         'Durch': { label: 'Durchmesser', placeholder: 'Wert...', unit: 'cm' },
         'Ventil': { label: 'Heberschutzventil', placeholder: 'Typ...' },
-        'Zustand': { label: 'Allgemeinzustand', placeholder: 'Bewertung...' },
+        'Zustand': { label: 'Allgemeinzustand', placeholder: 'Zustand...' },
         'Körper': { label: 'Ventilkörper', placeholder: 'Zustand...' },
         'Dichtung': { label: 'Dichtungen', placeholder: 'Zustand...' },
         'Einstellung': { label: 'Einstellung', placeholder: 'Wert...' },
@@ -119,7 +120,7 @@
         'AFüll': { label: 'Aktueller Füllstand', placeholder: 'Wert...', unit: 'cm' },
         'Höhe': { label: 'Höhe EV über Scheitel', placeholder: 'Wert...', unit: 'cm' },
         'Abstand': { label: 'Abstand Behälter - Fläche', placeholder: 'Wert...', unit: 'cm' },
-        'Mindest': { label: 'mind. Unterdruck', placeholder: 'Berechnet...', unit: 'bar' }
+        'Mindest': { label: 'mind. Unterdruck', placeholder: 'Wird berechnet...', unit: 'bar' }
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -135,25 +136,36 @@
     };
 
     function berechneMindestdruck() {
-        const durch = parseFloat(document.getElementById('input_Durch')?.value) || 0;
-        const hoehe = parseFloat(document.getElementById('input_Höhe')?.value) || 0;
-        const mFuell = parseFloat(document.getElementById('input_MFüll')?.value) || 0;
-        const abstand = parseFloat(document.getElementById('input_Abstand')?.value) || 0;
-        const aFuell = parseFloat(document.getElementById('input_AFüll')?.value) || 0;
-        
-        const medium = (document.getElementById('input_Diesel')?.value || "").toLowerCase();
-        // Faktor für Dichte (Heizöl ca. 0.84, Diesel ca. 0.83). 
-        // 1 cm Wassersäule = 0.00098 bar. Mit Dichte 0.84 -> ca. 0.000824
-        const dichteFaktor = medium.includes("diesel") ? 0.00081 : 0.00082; 
+        const getVal = (id) => {
+            const v = document.getElementById(`input_${id}`)?.value.replace(',', '.');
+            return isNaN(parseFloat(v)) ? null : parseFloat(v);
+        };
 
-        const ergebnis = (durch + hoehe + mFuell + abstand - aFuell) * dichteFaktor;
+        const durch = getVal('Durch');
+        const hoehe = getVal('Höhe');
+        const mFuell = getVal('MFüll');
+        const abstand = getVal('Abstand');
+        const aFuell = getVal('AFüll');
         const mindestFeld = document.getElementById('input_Mindest');
-        
-        if (mindestFeld) {
+
+        if (!mindestFeld) return;
+
+        if (durch === null || hoehe === null || mFuell === null || abstand === null || aFuell === null) {
+            mindestFeld.value = "Werte fehlen";
+            return;
+        }
+
+        const medium = (document.getElementById('input_Diesel')?.value || "").toLowerCase();
+        // 1 cm H2O = 0.00098 bar. Dichte Diesel ~0.83, Heizöl ~0.84.
+        const dichteFaktor = (medium.includes("diesel")) ? 0.00081 : 0.00082; 
+
+        try {
+            const ergebnis = (durch + hoehe + mFuell + abstand - aFuell) * dichteFaktor;
             const wert = ergebnis > 0 ? ergebnis.toFixed(3) : "0.000";
             mindestFeld.value = wert;
             localStorage.setItem('form_Mindest', wert);
-            updatePreviews(); // Wichtig: Preview sofort aktualisieren
+        } catch (e) {
+            mindestFeld.value = "Fehler";
         }
     }
 
@@ -205,9 +217,8 @@
                         localStorage.setItem(`form_${tag}`, input.value); 
                         if (['Durch', 'Höhe', 'MFüll', 'Abstand', 'AFüll', 'Diesel'].includes(tag)) {
                             berechneMindestdruck();
-                        } else {
-                            updatePreviews(); 
                         }
+                        updatePreviews(); 
                     };
 
                     inputWrapper.appendChild(input);
@@ -228,6 +239,7 @@
                 });
 
                 document.querySelectorAll('.section-preview').forEach(p => p.style.display = "block");
+                berechneMindestdruck(); // Initial beim Start berechnen
                 updatePreviews();
                 document.getElementById('downloadBtn').style.display = "block";
             }
@@ -246,7 +258,8 @@
             const text = set.tags.map(tag => {
                 const val = document.getElementById(`input_${tag}`)?.value;
                 const conf = fieldConfig[tag];
-                return val ? (conf?.unit ? `${conf.label}: ${val} ${conf.unit}` : `${conf.label}: ${val}`) : null;
+                if (!val || val === "Werte fehlen") return null;
+                return conf?.unit ? `${conf.label}: ${val} ${conf.unit}` : `${conf.label}: ${val}`;
             }).filter(t => t).join("\n");
             const el = document.getElementById(`previewText${set.id}`);
             if (el) el.textContent = text || "Keine Daten eingetragen";
