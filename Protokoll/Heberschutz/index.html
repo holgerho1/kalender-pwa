@@ -76,6 +76,11 @@
         <div id="previewTextMechanik" class="preview-text"></div>
     </div>
 
+    <div id="messPreview" class="section-preview" style="display: none;" onclick="openModal('messModal')">
+        <h2>📏 Messtechnische Bewertung</h2>
+        <div id="previewTextMess" class="preview-text"></div>
+    </div>
+
     <form id="formular"></form>
     <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
 </div>
@@ -104,6 +109,14 @@
     </div>
 </div>
 
+<div id="messModal" class="modal">
+    <div class="modal-content">
+        <h2 style="margin-top:0; font-size: 1.1rem;">Messtechnische Bewertung</h2>
+        <div id="messModalFields"></div>
+        <button class="btn-save" onclick="closeModals()">Fertig</button>
+    </div>
+</div>
+
 <div id="dateModal" class="modal">
     <div class="modal-content">
         <h2 style="margin-top:0; font-size: 1.1rem;">Datum ändern</h2>
@@ -124,6 +137,7 @@
     const adressTags = ['Adress1', 'Adress2', 'Adress3', 'Adress4'];
     const anlageTags = ['Diesel', 'Hersteller', 'FabNummer', 'Inhalt', 'Baujahr', 'Durch', 'Ventil'];
     const mechanikTags = ['Zustand', 'Körper', 'Dichtung', 'Einstellung'];
+    const messTags = ['MFüll', 'AFüll', 'Höhe', 'Abstand'];
 
     const fieldConfig = {
         'Adress1': { label: 'Zusatz (Firma / Herr / Frau)', placeholder: 'Firma...' },
@@ -137,11 +151,15 @@
         'Baujahr': { label: 'Baujahr', placeholder: 'JJJJ' },
         'Durch': { label: 'Durchmesser', placeholder: 'Wert...', unit: 'cm' },
         'Ventil': { label: 'Heberschutzventil', placeholder: 'Typ...' },
-        // Mechanik
         'Zustand': { label: 'Allgemeinzustand', placeholder: 'Bewertung...' },
         'Körper': { label: 'Ventilkörper', placeholder: 'Zustand...' },
         'Dichtung': { label: 'Dichtungen', placeholder: 'Zustand...' },
-        'Einstellung': { label: 'Einstellung', placeholder: 'Wert...' }
+        'Einstellung': { label: 'Einstellung', placeholder: 'Wert...' },
+        // Messtechnik
+        'MFüll': { label: 'Maximaler Füllstand', placeholder: 'in cm...' },
+        'AFüll': { label: 'Aktueller Füllstand', placeholder: 'in cm...' },
+        'Höhe': { label: 'Höhe EV über Scheitel', placeholder: 'in cm...' },
+        'Abstand': { label: 'Abstand Behälterboden - Fläche', placeholder: 'in cm...' }
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -176,9 +194,10 @@
             if (gefundeneTags.size > 0) {
                 const anlageContainer = document.getElementById('anlageModalFields');
                 const mechanikContainer = document.getElementById('mechanikModalFields');
+                const messContainer = document.getElementById('messModalFields');
                 let rowGroupAnlage = null;
 
-                const order = [...adressTags, ...anlageTags, ...mechanikTags];
+                const order = [...adressTags, ...anlageTags, ...mechanikTags, ...messTags];
                 const sortedTags = Array.from(gefundeneTags).sort((a, b) => {
                     let idxA = order.indexOf(a);
                     let idxB = order.indexOf(b);
@@ -236,6 +255,9 @@
                     } else if (mechanikTags.includes(tag)) {
                         mechanikContainer.appendChild(group);
                         document.getElementById('mechanikPreview').style.display = "block";
+                    } else if (messTags.includes(tag)) {
+                        messContainer.appendChild(group);
+                        document.getElementById('messPreview').style.display = "block";
                     } else {
                         document.getElementById('formular').appendChild(group);
                     }
@@ -265,6 +287,14 @@
             return `${config.label}: ${val}`;
         }).filter(t => t).join("\n");
         document.getElementById('mechanikPreview').querySelector('.preview-text').textContent = mechanik || "Keine Bewertung";
+
+        const mess = messTags.map(id => {
+            const val = document.getElementById(`input_${id}`)?.value;
+            const config = fieldConfig[id];
+            if (!val) return null;
+            return `${config.label}: ${val}`;
+        }).filter(t => t).join("\n");
+        document.getElementById('messPreview').querySelector('.preview-text').textContent = mess || "Keine Messdaten";
 
         const d = new Date(document.getElementById('dateInput').value);
         if (!isNaN(d)) {
