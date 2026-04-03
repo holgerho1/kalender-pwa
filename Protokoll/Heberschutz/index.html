@@ -7,45 +7,56 @@
     <style>
         body { font-family: sans-serif; padding: 15px; background: #f0f2f5; color: #333; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        h1 { font-size: 1.2rem; color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
         
+        .header-row { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        h1 { font-size: 1.1rem; color: #007bff; margin: 0; }
+        
+        /* Datum-Anzeige oben rechts */
+        .date-display { text-align: right; cursor: pointer; }
+        .date-display h2 { font-size: 0.65rem; margin: 0; color: #999; text-transform: uppercase; }
+        .date-value { font-size: 0.9rem; font-weight: bold; color: #333; text-decoration: underline dotted #007bff; }
+
         .address-preview { 
             background: #f8f9fa; border: 1px dashed #007bff; padding: 15px; border-radius: 8px; 
-            margin-bottom: 25px; cursor: pointer; transition: background 0.2s;
+            margin-bottom: 25px; cursor: pointer;
         }
-        .address-preview:hover { background: #eef6ff; }
         .address-preview h2 { font-size: 0.7rem; margin: 0 0 5px 0; color: #007bff; text-transform: uppercase; }
-        .address-text { font-family: monospace; font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap; min-height: 1.4em; }
-        .placeholder-text { color: #999; font-style: italic; }
+        .address-text { font-family: monospace; font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap; }
 
         .modal { 
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
             background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; 
         }
         .modal-content { 
-            background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; 
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3); animation: slideIn 0.3s;
+            background: white; padding: 20px; border-radius: 12px; width: 85%; max-width: 350px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
         }
-        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
         .field-group { display: flex; flex-direction: column; margin-bottom: 12px; }
         label { font-size: 0.75rem; color: #666; margin-bottom: 3px; font-weight: bold; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
         
         #formular { display: flex; flex-direction: column; gap: 12px; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-save { background: #007bff; color: white; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-save { background: #007bff; color: white; margin-top: 10px; }
         .btn-download { background: #28a745; color: white; margin-top: 25px; font-size: 1.1rem; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>Protokoll ausfüllen</h1>
+    <div class="header-row">
+        <h1>Protokoll ausfüllen</h1>
+        <div class="date-display" onclick="openDateModal()">
+            <h2>Datum</h2>
+            <div id="datePreview" class="date-value">--.--.----</div>
+        </div>
+    </div>
+
     <div id="status">Lade Felder...</div>
     
-    <div id="addressPreview" class="address-preview" style="display: none;" onclick="openModal()">
-        <h2>📍 Adresse (Tippen zum Ändern)</h2>
+    <div id="addressPreview" class="address-preview" style="display: none;" onclick="openAddrModal()">
+        <h2>📍 Adresse</h2>
         <div id="previewText" class="address-text"></div>
     </div>
 
@@ -53,11 +64,22 @@
     <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
 </div>
 
-<div id="addressModal" class="modal">
+<div id="addrModal" class="modal">
     <div class="modal-content">
         <h2 style="margin-top:0; font-size: 1.1rem;">Adresse bearbeiten</h2>
-        <div id="modalFields"></div>
-        <button class="btn-save" onclick="closeModal()">Fertig</button>
+        <div id="addrModalFields"></div>
+        <button class="btn-save" onclick="closeModals()">Fertig</button>
+    </div>
+</div>
+
+<div id="dateModal" class="modal">
+    <div class="modal-content">
+        <h2 style="margin-top:0; font-size: 1.1rem;">Datum ändern</h2>
+        <div class="field-group">
+            <label>Datum auswählen</label>
+            <input type="date" id="dateInput">
+        </div>
+        <button class="btn-save" onclick="closeModals()">Übernehmen</button>
     </div>
 </div>
 
@@ -74,58 +96,55 @@
         'Adress4': { label: 'PLZ / Ort', placeholder: 'Ort...' }
     };
 
-    window.openModal = () => document.getElementById('addressModal').style.display = 'flex';
-    window.closeModal = () => {
-        document.getElementById('addressModal').style.display = 'none';
-        updatePreview();
+    window.openAddrModal = () => document.getElementById('addrModal').style.display = 'flex';
+    window.openDateModal = () => document.getElementById('dateModal').style.display = 'flex';
+    window.closeModals = () => {
+        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+        updatePreviews();
     };
 
     async function initialisieren() {
-        const status = document.getElementById('status');
         const formular = document.getElementById('formular');
-        const modalFields = document.getElementById('modalFields');
-        const preview = document.getElementById('addressPreview');
+        const addrModalFields = document.getElementById('addrModalFields');
+        const dateInput = document.getElementById('dateInput');
+
+        // Standarddatum auf Heute setzen
+        const heute = new Date().toISOString().split('T')[0];
+        dateInput.value = heute;
 
         try {
             const response = await fetch('/Protokoll/Heberschutz/PruefungHeberschutz.docx?t=' + Date.now());
-            if (!response.ok) throw new Error("Dokument nicht gefunden.");
-            
             originalBuffer = await response.arrayBuffer();
             const zip = new PizZip(originalBuffer);
-            const doc = new Docxtemplater(zip, { parser: (tag) => ({ get: (scope) => {
+            const doc = new Docxtemplater(zip, { parser: tag => ({ get: s => {
                 if (!['#', '/', '^', '$'].includes(tag[0])) gefundeneTags.add(tag);
-                return scope[tag];
+                return s[tag];
             }})});
-
             try { doc.render({}); } catch (e) {}
-            status.style.display = "none";
+
+            document.getElementById('status').style.display = "none";
             
             if (gefundeneTags.size > 0) {
                 Array.from(gefundeneTags).sort().forEach(tag => {
+                    if (tag === 'Datum') return; // Datum wird separat behandelt
+
                     const group = document.createElement('div');
                     group.className = 'field-group';
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.id = `input_${tag}`;
                     
-                    // Laden aus LocalStorage
-                    const savedValue = localStorage.getItem(`form_${tag}`);
-                    if (savedValue) input.value = savedValue;
-
-                    // Speichern bei Änderung
-                    input.oninput = () => {
-                        localStorage.setItem(`form_${tag}`, input.value);
-                        updatePreview();
-                    };
+                    const saved = localStorage.getItem(`form_${tag}`);
+                    if (saved) input.value = saved;
+                    input.oninput = () => { localStorage.setItem(`form_${tag}`, input.value); updatePreviews(); };
 
                     const label = document.createElement('label');
                     if (adressLogik[tag]) {
                         label.textContent = adressLogik[tag].label;
-                        input.placeholder = adressLogik[tag].placeholder;
                         group.appendChild(label);
                         group.appendChild(input);
-                        modalFields.appendChild(group);
-                        preview.style.display = "block";
+                        addrModalFields.appendChild(group);
+                        document.getElementById('addressPreview').style.display = "block";
                     } else {
                         label.textContent = tag.replace(/_/g, ' ');
                         group.appendChild(label);
@@ -133,29 +152,35 @@
                         formular.appendChild(group);
                     }
                 });
-                updatePreview();
+                updatePreviews();
                 document.getElementById('downloadBtn').style.display = "block";
             }
-        } catch (error) {
-            status.textContent = "❌ " + error.message;
-            status.className = "error";
+        } catch (error) { document.getElementById('status').textContent = "❌ " + error.message; }
+    }
+
+    function updatePreviews() {
+        // Adresse
+        const adr = ['Adress1', 'Adress2', 'Adress3', 'Adress4'].map(id => document.getElementById(`input_${id}`)?.value || "").filter(t => t.trim() !== "").join("\n");
+        document.getElementById('previewText').textContent = adr || "Keine Adresse hinterlegt";
+        
+        // Datum
+        const d = new Date(document.getElementById('dateInput').value);
+        if (!isNaN(d)) {
+            const formatted = d.toLocaleDateString('de-DE');
+            document.getElementById('datePreview').textContent = formatted;
         }
     }
 
-    function updatePreview() {
-        const adr1 = document.getElementById('input_Adress1')?.value || "";
-        const adr2 = document.getElementById('input_Adress2')?.value || "";
-        const adr3 = document.getElementById('input_Adress3')?.value || "";
-        const adr4 = document.getElementById('input_Adress4')?.value || "";
-        
-        const previewText = [adr1, adr2, adr3, adr4].filter(t => t.trim() !== "").join("\n");
-        document.getElementById('previewText').innerHTML = previewText || '<span class="placeholder-text">Keine Adresse hinterlegt (hier tippen)</span>';
-    }
-
     document.getElementById('downloadBtn').onclick = () => {
-        if (!originalBuffer) return;
         const data = {};
-        gefundeneTags.forEach(tag => data[tag] = document.getElementById(`input_${tag}`).value || "");
+        gefundeneTags.forEach(tag => {
+            if (tag === 'Datum') {
+                const d = new Date(document.getElementById('dateInput').value);
+                data[tag] = !isNaN(d) ? d.toLocaleDateString('de-DE') : "";
+            } else {
+                data[tag] = document.getElementById(`input_${tag}`).value || "";
+            }
+        });
         
         try {
             const zip = new PizZip(originalBuffer);
@@ -164,8 +189,7 @@
             const out = doc.getZip().generate({ type: "blob" });
             const url = window.URL.createObjectURL(out);
             const a = document.createElement("a");
-            a.href = url;
-            a.download = "Protokoll_Heberschutz.docx";
+            a.href = url; a.download = "Protokoll_Heberschutz.docx";
             a.click();
         } catch (e) { alert("Fehler: " + e.message); }
     };
