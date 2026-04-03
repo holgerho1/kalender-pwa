@@ -34,7 +34,7 @@
         
         .field-group { display: flex; flex-direction: column; margin-bottom: 12px; }
         label { font-size: 0.75rem; color: #666; margin-bottom: 3px; font-weight: bold; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
         
         #formular { display: flex; flex-direction: column; gap: 12px; }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -97,15 +97,14 @@
 
     window.openAddrModal = () => document.getElementById('addrModal').style.display = 'flex';
     window.openDateModal = () => document.getElementById('dateModal').style.display = 'flex';
-    
     window.closeModals = () => {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
         updatePreviews();
     };
 
     window.dateChanged = () => {
+        localStorage.setItem('form_Datum', document.getElementById('dateInput').value);
         updatePreviews();
-        // Kurze Verzögerung für besseres Feedback auf dem Handy
         setTimeout(window.closeModals, 150);
     };
 
@@ -114,9 +113,13 @@
         const addrModalFields = document.getElementById('addrModalFields');
         const dateInput = document.getElementById('dateInput');
 
-        // Standarddatum auf Heute setzen
+        // Logik für das Datum: Erst LocalStorage, wenn leer (oder neuer Tag), dann Heute
         const heute = new Date().toISOString().split('T')[0];
-        dateInput.value = heute;
+        const savedDate = localStorage.getItem('form_Datum');
+        // Falls du immer das aktuelle Datum willst beim NEU-Öffnen, aktiviere die nächste Zeile:
+        // dateInput.value = heute; 
+        // Falls du das gespeicherte Datum willst (dein aktueller Wunsch):
+        dateInput.value = savedDate || heute;
 
         try {
             const response = await fetch('/Protokoll/Heberschutz/PruefungHeberschutz.docx?t=' + Date.now());
@@ -142,7 +145,11 @@
                     
                     const saved = localStorage.getItem(`form_${tag}`);
                     if (saved) input.value = saved;
-                    input.oninput = () => { localStorage.setItem(`form_${tag}`, input.value); updatePreviews(); };
+
+                    input.oninput = () => { 
+                        localStorage.setItem(`form_${tag}`, input.value); 
+                        updatePreviews(); 
+                    };
 
                     const label = document.createElement('label');
                     if (adressLogik[tag]) {
@@ -165,18 +172,14 @@
     }
 
     function updatePreviews() {
-        // Adresse
         const adr = ['Adress1', 'Adress2', 'Adress3', 'Adress4'].map(id => document.getElementById(`input_${id}`)?.value || "").filter(t => t.trim() !== "").join("\n");
         document.getElementById('previewText').textContent = adr || "Keine Adresse hinterlegt";
         
-        // Datum
         const d = new Date(document.getElementById('dateInput').value);
         if (!isNaN(d)) {
-            // Formatiert als TT.MM.JJJJ
             const tag = String(d.getDate()).padStart(2, '0');
             const monat = String(d.getMonth() + 1).padStart(2, '0');
-            const jahr = d.getFullYear();
-            document.getElementById('datePreview').textContent = `${tag}.${monat}.${jahr}`;
+            document.getElementById('datePreview').textContent = `${tag}.${monat}.${d.getFullYear()}`;
         }
     }
 
@@ -185,11 +188,9 @@
         gefundeneTags.forEach(tag => {
             if (tag === 'Datum') {
                 const d = new Date(document.getElementById('dateInput').value);
-                if (!isNaN(d)) {
-                    const dd = String(d.getDate()).padStart(2, '0');
-                    const mm = String(d.getMonth() + 1).padStart(2, '0');
-                    data[tag] = `${dd}.${mm}.${d.getFullYear()}`;
-                } else { data[tag] = ""; }
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                data[tag] = `${dd}.${mm}.${d.getFullYear()}`;
             } else {
                 data[tag] = document.getElementById(`input_${tag}`).value || "";
             }
