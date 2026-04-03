@@ -121,7 +121,7 @@
         'FabNummer': { label: 'Fabrikationsnummer', placeholder: 'Nr...' },
         'Inhalt': { label: 'Inhalt', placeholder: 'Menge...', unit: 'Liter' },
         'Baujahr': { label: 'Baujahr', placeholder: 'JJJJ' },
-        'Durch': { label: 'Durchmesser', placeholder: 'in mm...' },
+        'Durch': { label: 'Durchmesser', placeholder: 'Wert...', unit: 'cm' },
         'Ventil': { label: 'Heberschutzventil', placeholder: 'Typ...' }
     };
 
@@ -228,10 +228,11 @@
         
         const anlage = anlageTags.map(id => {
             const val = document.getElementById(`input_${id}`)?.value;
-            const label = fieldConfig[id]?.label || id;
+            const config = fieldConfig[id];
+            const label = config?.label || id;
             if (!val) return null;
-            return id === 'Inhalt' ? `${label}: ${val} Liter` : `${label}: ${val}`;
-        }).filter(t => t).join("\n"); // Untereinander statt mit Strich
+            return config?.unit ? `${label}: ${val} ${config.unit}` : `${label}: ${val}`;
+        }).filter(t => t).join("\n");
         document.getElementById('previewTextAnlage').textContent = anlage || "Keine Anlagendaten";
 
         const d = new Date(document.getElementById('dateInput').value);
