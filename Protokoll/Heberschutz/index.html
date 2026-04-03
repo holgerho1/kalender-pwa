@@ -52,7 +52,7 @@
 <div id="anlageModal" class="modal"><div class="modal-content"><h2>Anlage</h2><div id="anlageModalFields"></div><button class="btn-save" onclick="closeModals()">Fertig</button></div></div>
 <div id="mechanikModal" class="modal"><div class="modal-content"><h2>Mechanik</h2><div id="mechanikModalFields"></div><button class="btn-save" onclick="closeModals()">Fertig</button></div></div>
 <div id="messModal" class="modal"><div class="modal-content"><h2>Messtechnik</h2><div id="messModalFields"></div><button class="btn-save" onclick="closeModals()">Fertig</button></div></div>
-<div id="extraModal" class="modal"><div class="modal-content"><h2>Sonstige Felder</h2><div id="extraModalFields"></div><button class="btn-save" onclick="closeModals()">Fertig</button></div></div>
+<div id="extraModal" class="modal"><div class="modal-content"><h2>Weitere Felder</h2><div id="extraModalFields"></div><button class="btn-save" onclick="closeModals()">Fertig</button></div></div>
 <div id="dateModal" class="modal"><div class="modal-content"><h2>Datum</h2><input type="date" id="dateInput" onchange="dateChanged()"></div></div>
 
 <script type="module">
@@ -107,17 +107,33 @@
                 const conf = fieldConfig[tag];
                 const group = document.createElement('div');
                 group.className = 'field-group';
-                group.innerHTML = `<label>${conf?.label || tag}</label><div class="${conf?.unit ? 'input-with-unit' : ''}">
-                    <input id="input_${tag}" value="${localStorage.getItem('form_'+tag) || ''}" ${tag==='Mindest'?'readonly':''}>
-                    ${conf?.unit ? `<span class="unit-label">${conf.unit}</span>` : ''}
-                </div>`;
                 
-                const input = group.querySelector('input');
+                const label = document.createElement('label');
+                label.textContent = conf?.label || tag;
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = conf?.unit ? 'input-with-unit' : '';
+                
+                const input = document.createElement('input');
+                input.id = `input_${tag}`;
+                // Sicherer Zugriff auf localStorage ohne HTML-String-Injection
+                input.value = localStorage.getItem('form_' + tag) || '';
+                if (tag === 'Mindest') input.readOnly = true;
+
                 input.oninput = () => { 
                     localStorage.setItem('form_'+tag, input.value); 
                     if (['Durch', 'Höhe', 'MFüll', 'Abstand', 'AFüll', 'Diesel'].includes(tag)) berechneMindestdruck();
                     updatePreviews(); 
                 };
+
+                wrapper.appendChild(input);
+                if (conf?.unit) {
+                    const u = document.createElement('span'); u.className = 'unit-label'; u.textContent = conf.unit;
+                    wrapper.appendChild(u);
+                }
+                
+                group.appendChild(label);
+                group.appendChild(wrapper);
 
                 if (adressTags.includes(tag)) document.getElementById(conts.addr).appendChild(group);
                 else if (anlageTags.includes(tag)) document.getElementById(conts.anlage).appendChild(group);
@@ -132,7 +148,8 @@
             ['addressPreview', 'anlagePreview', 'mechanikPreview', 'messPreview'].forEach(id => document.getElementById(id).style.display = 'block');
             document.getElementById('dateInput').value = localStorage.getItem('form_Datum') || new Date().toISOString().split('T')[0];
             document.getElementById('downloadBtn').style.display = 'block';
-            berechneMindestdruck(); updatePreviews();
+            berechneMindestdruck(); 
+            updatePreviews();
         } catch (e) { document.getElementById('status').textContent = "Fehler beim Laden."; }
     }
 
@@ -140,7 +157,9 @@
         const p = (tags, lbl) => tags.map(t => {
             const v = document.getElementById('input_'+t)?.value;
             if(!v || v === "Werte fehlen") return null;
-            return lbl ? `${fieldConfig[t]?.label || t}: ${v} ${fieldConfig[t]?.unit || ''}` : v;
+            const label = fieldConfig[t]?.label || t;
+            const unit = fieldConfig[t]?.unit || '';
+            return lbl ? `${label}: ${v} ${unit}`.trim() : v;
         }).filter(x => x).join('\n');
 
         document.getElementById('previewTextAddr').textContent = p(adressTags, false) || "Keine Daten";
@@ -169,7 +188,7 @@
             doc.render(data);
             const out = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
             const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = "PruefungHeberschutz.docx"; a.click();
-        } catch (e) { alert("Fehler"); }
+        } catch (e) { alert("Fehler beim Generieren des Dokuments."); }
     };
     initialisieren();
 </script>
