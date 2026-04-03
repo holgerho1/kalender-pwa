@@ -32,10 +32,16 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;
         }
         
-        .field-group { display: flex; flex-direction: column; margin-bottom: 12px; }
-        label { font-size: 0.75rem; color: #666; margin-bottom: 3px; font-weight: bold; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
+        .field-group { display: flex; flex-direction: column; margin-bottom: 12px; flex: 1; }
+        .row-group { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 12px; }
         
+        label { font-size: 0.75rem; color: #666; margin-bottom: 3px; font-weight: bold; }
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; -webkit-appearance: none; }
+        
+        .input-with-unit { position: relative; display: flex; align-items: center; }
+        .input-with-unit input { padding-right: 45px; }
+        .unit-label { position: absolute; right: 10px; color: #888; font-size: 0.9rem; pointer-events: none; }
+
         #formular { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-save { background: #007bff; color: white; margin-top: 10px; }
@@ -103,16 +109,18 @@
     const gefundeneTags = new Set();
     
     const adressTags = ['Adress1', 'Adress2', 'Adress3', 'Adress4'];
-    const anlageTags = ['Diesel', 'Hersteller', 'FabNummer', 'Inhalt', 'Durch', 'Baujahr', 'Ventil'];
+    const anlageTags = ['Diesel', 'Hersteller', 'FabNummer', 'Inhalt', 'Baujahr', 'Durch', 'Ventil'];
 
-    // Konfiguration der Anzeigenamen (Labels) für die Platzhalter
     const fieldConfig = {
         'Adress1': { label: 'Zusatz (Firma / Herr / Frau)', placeholder: 'Firma...' },
         'Adress2': { label: 'Name / Vorname', placeholder: 'Name...' },
         'Adress3': { label: 'Straße / Hausnummer', placeholder: 'Straße...' },
         'Adress4': { label: 'PLZ / Ort', placeholder: 'Ort...' },
-        'Diesel': { label: 'Medium', placeholder: 'z.B. Heizöl, Diesel...' },
-        'Hersteller': { label: 'Behälterhersteller', placeholder: 'z.B. Nau, Schütz...' }
+        'Diesel': { label: 'Medium', placeholder: 'z.B. Heizöl...' },
+        'Hersteller': { label: 'Behälterhersteller', placeholder: 'z.B. Nau...' },
+        'FabNummer': { label: 'Fabrikationsnummer', placeholder: 'Nr...' },
+        'Inhalt': { label: 'Inhalt', placeholder: 'Menge...', unit: 'Liter' },
+        'Baujahr': { label: 'Baujahr', placeholder: 'JJJJ' }
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -145,40 +153,59 @@
             document.getElementById('status').style.display = "none";
             
             if (gefundeneTags.size > 0) {
-                const order = [...adressTags, ...anlageTags];
-                const sortedTags = Array.from(gefundeneTags).sort((a, b) => {
-                    let idxA = order.indexOf(a);
-                    let idxB = order.indexOf(b);
-                    if (idxA === -1) idxA = 999;
-                    if (idxB === -1) idxB = 999;
-                    return idxA - idxB;
-                });
+                const anlageContainer = document.getElementById('anlageModalFields');
+                let rowGroup = null;
+
+                const sortedTags = Array.from(gefundeneTags).sort((a, b) => anlageTags.indexOf(a) - anlageTags.indexOf(b));
 
                 sortedTags.forEach(tag => {
                     if (tag === 'Datum') return;
+
+                    const config = fieldConfig[tag];
+                    const inputWrapper = document.createElement('div');
+                    inputWrapper.className = config?.unit ? 'input-with-unit' : '';
 
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.id = `input_${tag}`;
                     input.value = localStorage.getItem(`form_${tag}`) || "";
-                    input.placeholder = fieldConfig[tag]?.placeholder || "Wert eingeben...";
+                    input.placeholder = config?.placeholder || "Wert...";
                     input.oninput = () => { 
                         localStorage.setItem(`form_${tag}`, input.value); 
                         updatePreviews(); 
                     };
 
+                    inputWrapper.appendChild(input);
+                    if (config?.unit) {
+                        const unit = document.createElement('span');
+                        unit.className = 'unit-label';
+                        unit.textContent = config.unit;
+                        inputWrapper.appendChild(unit);
+                    }
+
                     const group = document.createElement('div');
                     group.className = 'field-group';
                     const label = document.createElement('label');
-                    label.textContent = fieldConfig[tag] ? fieldConfig[tag].label : tag.replace(/_/g, ' ');
+                    label.textContent = config?.label || tag.replace(/_/g, ' ');
                     group.appendChild(label);
-                    group.appendChild(input);
+                    group.appendChild(inputWrapper);
 
                     if (adressTags.includes(tag)) {
                         document.getElementById('addrModalFields').appendChild(group);
                         document.getElementById('addressPreview').style.display = "block";
                     } else if (anlageTags.includes(tag)) {
-                        document.getElementById('anlageModalFields').appendChild(group);
+                        // Spezial-Layout für Inhalt und Baujahr in einer Zeile
+                        if (tag === 'Inhalt') {
+                            rowGroup = document.createElement('div');
+                            rowGroup.className = 'row-group';
+                            rowGroup.appendChild(group);
+                            anlageContainer.appendChild(rowGroup);
+                        } else if (tag === 'Baujahr' && rowGroup) {
+                            rowGroup.appendChild(group);
+                        } else {
+                            anlageContainer.appendChild(group);
+                            rowGroup = null; 
+                        }
                         document.getElementById('anlagePreview').style.display = "block";
                     } else {
                         document.getElementById('formular').appendChild(group);
@@ -197,7 +224,8 @@
         const anlage = anlageTags.map(id => {
             const val = document.getElementById(`input_${id}`)?.value;
             const label = fieldConfig[id]?.label || id;
-            return val ? `${label}: ${val}` : null;
+            if (!val) return null;
+            return id === 'Inhalt' ? `${label}: ${val} Liter` : `${label}: ${val}`;
         }).filter(t => t).join(" | ");
         document.getElementById('previewTextAnlage').textContent = anlage || "Keine Anlagendaten";
 
