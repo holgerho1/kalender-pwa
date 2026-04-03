@@ -262,7 +262,7 @@
                 if (set.showLabel) {
                     return conf?.unit ? `${conf.label}: ${val} ${conf.unit}` : `${conf.label}: ${val}`;
                 } else {
-                    return val; // Nur der Wert für die Adresse
+                    return val;
                 }
             }).filter(t => t).join("\n");
             
@@ -289,11 +289,19 @@
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
             doc.render(data);
-            const out = doc.getZip().generate({ type: "blob" });
+            
+            // MIME-Type explizit auf .docx setzen
+            const out = doc.getZip().generate({ 
+                type: "blob",
+                mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            });
+            
             const a = document.createElement("a");
             a.href = URL.createObjectURL(out);
             a.download = "PruefungHeberschutz.docx";
+            document.body.appendChild(a); // Notwendig für manche Mobilbrowser
             a.click();
+            document.body.removeChild(a);
         } catch (e) { alert("Fehler: " + e.message); }
     };
 
