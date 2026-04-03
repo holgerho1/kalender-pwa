@@ -103,13 +103,16 @@
     const gefundeneTags = new Set();
     
     const adressTags = ['Adress1', 'Adress2', 'Adress3', 'Adress4'];
-    const anlageTags = ['Hersteller', 'FabNummer', 'Inhalt', 'Diesel', 'Durch', 'Baujahr', 'Ventil'];
+    const anlageTags = ['Diesel', 'Hersteller', 'FabNummer', 'Inhalt', 'Durch', 'Baujahr', 'Ventil'];
 
-    const adressLogik = {
+    // Konfiguration der Anzeigenamen (Labels) für die Platzhalter
+    const fieldConfig = {
         'Adress1': { label: 'Zusatz (Firma / Herr / Frau)', placeholder: 'Firma...' },
         'Adress2': { label: 'Name / Vorname', placeholder: 'Name...' },
         'Adress3': { label: 'Straße / Hausnummer', placeholder: 'Straße...' },
-        'Adress4': { label: 'PLZ / Ort', placeholder: 'Ort...' }
+        'Adress4': { label: 'PLZ / Ort', placeholder: 'Ort...' },
+        'Diesel': { label: 'Medium', placeholder: 'z.B. Heizöl, Diesel...' },
+        'Hersteller': { label: 'Behälterhersteller', placeholder: 'z.B. Nau, Schütz...' }
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -142,9 +145,7 @@
             document.getElementById('status').style.display = "none";
             
             if (gefundeneTags.size > 0) {
-                // Wir definieren die Reihenfolge für das Anlagen-Modal
                 const order = [...adressTags, ...anlageTags];
-                
                 const sortedTags = Array.from(gefundeneTags).sort((a, b) => {
                     let idxA = order.indexOf(a);
                     let idxB = order.indexOf(b);
@@ -160,6 +161,7 @@
                     input.type = 'text';
                     input.id = `input_${tag}`;
                     input.value = localStorage.getItem(`form_${tag}`) || "";
+                    input.placeholder = fieldConfig[tag]?.placeholder || "Wert eingeben...";
                     input.oninput = () => { 
                         localStorage.setItem(`form_${tag}`, input.value); 
                         updatePreviews(); 
@@ -168,7 +170,7 @@
                     const group = document.createElement('div');
                     group.className = 'field-group';
                     const label = document.createElement('label');
-                    label.textContent = adressLogik[tag] ? adressLogik[tag].label : tag.replace(/_/g, ' ');
+                    label.textContent = fieldConfig[tag] ? fieldConfig[tag].label : tag.replace(/_/g, ' ');
                     group.appendChild(label);
                     group.appendChild(input);
 
@@ -194,7 +196,8 @@
         
         const anlage = anlageTags.map(id => {
             const val = document.getElementById(`input_${id}`)?.value;
-            return val ? `${id}: ${val}` : null;
+            const label = fieldConfig[id]?.label || id;
+            return val ? `${label}: ${val}` : null;
         }).filter(t => t).join(" | ");
         document.getElementById('previewTextAnlage').textContent = anlage || "Keine Anlagendaten";
 
