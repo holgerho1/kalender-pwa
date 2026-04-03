@@ -7,40 +7,23 @@
     <style>
         body { font-family: sans-serif; padding: 15px; background: #f0f2f5; color: #333; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        
         .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
         h1 { font-size: 1.1rem; color: #007bff; margin: 0; }
-        
-        .date-display { text-align: right; cursor: pointer; padding: 5px; border-radius: 5px; }
-        .date-display:active { background: #f0f0f0; }
+        .date-display { text-align: right; cursor: pointer; padding: 5px; }
         .date-display h2 { font-size: 0.65rem; margin: 0; color: #999; text-transform: uppercase; }
         .date-value { font-size: 0.9rem; color: #333; }
-
-        .section-preview { 
-            background: #f8f9fa; border: 1px dashed #007bff; padding: 12px; border-radius: 8px; 
-            margin-bottom: 15px; cursor: pointer;
-        }
+        .section-preview { background: #f8f9fa; border: 1px dashed #007bff; padding: 12px; border-radius: 8px; margin-bottom: 15px; cursor: pointer; }
         .section-preview h2 { font-size: 0.7rem; margin: 0 0 5px 0; color: #007bff; text-transform: uppercase; }
         .preview-text { font-family: monospace; font-size: 0.85rem; line-height: 1.4; white-space: pre-wrap; color: #444; }
-
-        .modal { 
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
-            background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; 
-        }
-        .modal-content { 
-            background: white; padding: 20px; border-radius: 12px; width: 85%; max-width: 380px; 
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;
-        }
-        
-        .field-group { display: flex; flex-direction: column; margin-bottom: 12px; flex: 1; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 85%; max-width: 380px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+        .field-group { display: flex; flex-direction: column; margin-bottom: 12px; }
         label { font-size: 0.75rem; color: #666; margin-bottom: 3px; font-weight: bold; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; -webkit-appearance: none; }
-        input[readonly] { background-color: #f9f9f9; color: #007bff; font-weight: bold; }
-        
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; }
+        input[readonly] { background-color: #f9f9f9; color: #007bff; }
         .input-with-unit { position: relative; display: flex; align-items: center; }
         .input-with-unit input { padding-right: 45px; }
         .unit-label { position: absolute; right: 10px; color: #888; font-size: 0.9rem; pointer-events: none; }
-
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-save { background: #007bff; color: white; margin-top: 10px; }
         .btn-download { background: #28a745; color: white; margin-top: 25px; font-size: 1.1rem; }
@@ -56,34 +39,12 @@
             <div id="datePreview" class="date-value">--.--.----</div>
         </div>
     </div>
-
     <div id="status">Lade Felder...</div>
-    
-    <div id="addressPreview" class="section-preview" onclick="openModal('addrModal')" style="display: none;">
-        <h2>📍 Adresse</h2>
-        <div id="previewTextAddr" class="preview-text"></div>
-    </div>
-
-    <div id="anlagePreview" class="section-preview" onclick="openModal('anlageModal')" style="display: none;">
-        <h2>⚙️ Anlagenbeschreibung</h2>
-        <div id="previewTextAnlage" class="preview-text"></div>
-    </div>
-
-    <div id="mechanikPreview" class="section-preview" onclick="openModal('mechanikModal')" style="display: none;">
-        <h2>🔧 Mechanische Bewertung</h2>
-        <div id="previewTextMechanik" class="preview-text"></div>
-    </div>
-
-    <div id="messPreview" class="section-preview" onclick="openModal('messModal')" style="display: none;">
-        <h2>📏 Messtechnische Bewertung</h2>
-        <div id="previewTextMess" class="preview-text"></div>
-    </div>
-
-    <div id="extraPreview" class="section-preview" onclick="openModal('extraModal')" style="display: none;">
-        <h2>📝 Sonstige Felder</h2>
-        <div id="previewTextExtra" class="preview-text"></div>
-    </div>
-
+    <div id="addressPreview" class="section-preview" onclick="openModal('addrModal')" style="display: none;"><h2>📍 Adresse</h2><div id="previewTextAddr" class="preview-text"></div></div>
+    <div id="anlagePreview" class="section-preview" onclick="openModal('anlageModal')" style="display: none;"><h2>⚙️ Anlage</h2><div id="previewTextAnlage" class="preview-text"></div></div>
+    <div id="mechanikPreview" class="section-preview" onclick="openModal('mechanikModal')" style="display: none;"><h2>🔧 Mechanik</h2><div id="previewTextMechanik" class="preview-text"></div></div>
+    <div id="messPreview" class="section-preview" onclick="openModal('messModal')" style="display: none;"><h2>📏 Messtechnik</h2><div id="previewTextMess" class="preview-text"></div></div>
+    <div id="extraPreview" class="section-preview" onclick="openModal('extraModal')" style="display: none;"><h2>📝 Sonstiges</h2><div id="previewTextExtra" class="preview-text"></div></div>
     <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
 </div>
 
@@ -92,7 +53,7 @@
 <div id="mechanikModal" class="modal"><div class="modal-content"><h2>Mechanik</h2><div id="mechanikModalFields"></div><button class="btn-save" onclick="closeModals()">Fertig</button></div></div>
 <div id="messModal" class="modal"><div class="modal-content"><h2>Messtechnik</h2><div id="messModalFields"></div><button class="btn-save" onclick="closeModals()">Fertig</button></div></div>
 <div id="extraModal" class="modal"><div class="modal-content"><h2>Sonstige Felder</h2><div id="extraModalFields"></div><button class="btn-save" onclick="closeModals()">Fertig</button></div></div>
-<div id="dateModal" class="modal"><div class="modal-content"><h2>Datum</h2><div class="field-group"><label>Datum</label><input type="date" id="dateInput" onchange="dateChanged()"></div></div></div>
+<div id="dateModal" class="modal"><div class="modal-content"><h2>Datum</h2><input type="date" id="dateInput" onchange="dateChanged()"></div></div>
 
 <script type="module">
     import PizZip from 'https://esm.sh/pizzip@3.1.4';
@@ -107,144 +68,89 @@
     const messTags = ['MFüll', 'AFüll', 'Höhe', 'Abstand', 'Mindest'];
 
     const fieldConfig = {
-        'Adress1': { label: 'Zusatz', placeholder: 'Firma...' },
-        'Adress2': { label: 'Name', placeholder: 'Name...' },
-        'Adress3': { label: 'Straße', placeholder: 'Straße...' },
-        'Adress4': { label: 'Ort', placeholder: 'Ort...' },
-        'Diesel': { label: 'Medium', placeholder: 'Heizöl / Diesel' },
-        'Inhalt': { label: 'Inhalt', unit: 'Liter' },
-        'Durch': { label: 'Durchmesser', unit: 'cm' },
-        'MFüll': { label: 'Max. Füllstand', unit: 'cm' },
-        'AFüll': { label: 'Akt. Füllstand', unit: 'cm' },
-        'Höhe': { label: 'Höhe EV', unit: 'cm' },
-        'Abstand': { label: 'Abstand', unit: 'cm' },
-        'Mindest': { label: 'mind. Unterdruck', unit: 'bar' }
+        'Adress1': { label: 'Zusatz' }, 'Adress2': { label: 'Name' }, 'Adress3': { label: 'Straße' }, 'Adress4': { label: 'Ort' },
+        'Diesel': { label: 'Medium' }, 'Hersteller': { label: 'Behälterhersteller' }, 'FabNummer': { label: 'Fabrikationsnummer' }, 
+        'Inhalt': { label: 'Inhalt', unit: 'Liter' }, 'Baujahr': { label: 'Baujahr' }, 'Durch': { label: 'Durchmesser', unit: 'cm' }, 'Ventil': { label: 'Heberschutzventil' },
+        'Zustand': { label: 'Allgemeinzustand' }, 'Körper': { label: 'Ventilkörper' }, 'Dichtung': { label: 'Dichtung' }, 'Einstellung': { label: 'Einstellung' },
+        'MFüll': { label: 'Max. Füllstand', unit: 'cm' }, 'AFüll': { label: 'Akt. Füllstand', unit: 'cm' }, 'Höhe': { label: 'Höhe EV', unit: 'cm' }, 
+        'Abstand': { label: 'Abstand', unit: 'cm' }, 'Mindest': { label: 'mind. Unterdruck', unit: 'bar' }
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
-    window.closeModals = () => {
-        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-        updatePreviews();
-    };
-
-    window.dateChanged = () => {
-        localStorage.setItem('form_Datum', document.getElementById('dateInput').value);
-        updatePreviews();
-        setTimeout(window.closeModals, 150);
-    };
+    window.closeModals = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); updatePreviews(); };
+    window.dateChanged = () => { localStorage.setItem('form_Datum', document.getElementById('dateInput').value); updatePreviews(); setTimeout(window.closeModals, 150); };
 
     function berechneMindestdruck() {
-        const getVal = (id) => {
-            const v = document.getElementById(`input_${id}`)?.value.replace(',', '.');
-            return isNaN(parseFloat(v)) ? null : parseFloat(v);
-        };
-        const durch = getVal('Durch'), hoehe = getVal('Höhe'), mFuell = getVal('MFüll'), abstand = getVal('Abstand'), aFuell = getVal('AFüll');
-        const mindestFeld = document.getElementById('input_Mindest');
-        if (!mindestFeld) return;
-
-        if (durch === null || hoehe === null || mFuell === null || abstand === null || aFuell === null) {
-            mindestFeld.value = "Werte fehlen";
-            return;
-        }
-
-        const medium = (document.getElementById('input_Diesel')?.value || "").toLowerCase();
-        const dichteFaktor = (medium.includes("diesel")) ? 0.00081 : 0.00082; 
-        const ergebnis = (durch + hoehe + mFuell + abstand - aFuell) * dichteFaktor;
-        const wert = ergebnis > 0 ? ergebnis.toFixed(3) : "0.000";
-        mindestFeld.value = wert;
-        localStorage.setItem('form_Mindest', wert);
+        const getV = (id) => { const v = document.getElementById(`input_${id}`)?.value.replace(',', '.'); return isNaN(parseFloat(v)) ? null : parseFloat(v); };
+        const d = getV('Durch'), h = getV('Höhe'), mf = getV('MFüll'), ab = getV('Abstand'), af = getV('AFüll');
+        const f = document.getElementById('input_Mindest');
+        if (!f) return;
+        if (d === null || h === null || mf === null || ab === null || af === null) { f.value = "Werte fehlen"; return; }
+        const fak = (document.getElementById('input_Diesel')?.value || "").toLowerCase().includes("diesel") ? 0.00081 : 0.00082; 
+        f.value = Math.max(0, (d + h + mf + ab - af) * fak).toFixed(3);
+        localStorage.setItem('form_Mindest', f.value);
     }
 
     async function initialisieren() {
         try {
-            const response = await fetch('/Protokoll/Heberschutz/PruefungHeberschutz.docx?t=' + Date.now());
-            originalBuffer = await response.arrayBuffer();
+            const resp = await fetch('/Protokoll/Heberschutz/PruefungHeberschutz.docx?t=' + Date.now());
+            originalBuffer = await resp.arrayBuffer();
             const zip = new PizZip(originalBuffer);
-            const doc = new Docxtemplater(zip, { parser: tag => ({ get: s => {
-                if (!['#', '/', '^', '$'].includes(tag[0])) gefundeneTags.add(tag);
-                return s[tag];
-            }})});
+            const doc = new Docxtemplater(zip, { parser: tag => ({ get: s => { if (!['#', '/', '^', '$'].includes(tag[0])) gefundeneTags.add(tag); return s[tag]; }})});
             doc.render({});
 
             document.getElementById('status').style.display = "none";
-            const containers = {
-                addr: document.getElementById('addrModalFields'),
-                anlage: document.getElementById('anlageModalFields'),
-                mechanik: document.getElementById('mechanikModalFields'),
-                mess: document.getElementById('messModalFields'),
-                extra: document.getElementById('extraModalFields')
-            };
+            const conts = { addr: 'addrModalFields', anlage: 'anlageModalFields', mech: 'mechanikModalFields', mess: 'messModalFields', extra: 'extraModalFields' };
 
-            Array.from(gefundeneTags).forEach(tag => {
+            gefundeneTags.forEach(tag => {
                 if (tag === 'Datum') return;
-                const config = fieldConfig[tag];
+                const conf = fieldConfig[tag];
                 const group = document.createElement('div');
                 group.className = 'field-group';
-                const label = document.createElement('label');
-                label.textContent = config?.label || tag;
+                group.innerHTML = `<label>${conf?.label || tag}</label><div class="${conf?.unit ? 'input-with-unit' : ''}">
+                    <input id="input_${tag}" value="${localStorage.getItem('form_'+tag) || ''}" ${tag==='Mindest'?'readonly':''}>
+                    ${conf?.unit ? `<span class="unit-label">${conf.unit}</span>` : ''}
+                </div>`;
                 
-                const inputWrapper = document.createElement('div');
-                inputWrapper.className = config?.unit ? 'input-with-unit' : '';
-
-                const input = document.createElement('input');
-                input.id = `input_${tag}`;
-                input.value = localStorage.getItem(`form_${tag}`) || "";
-                if (tag === 'Mindest') input.readOnly = true;
-
+                const input = group.querySelector('input');
                 input.oninput = () => { 
-                    localStorage.setItem(`form_${tag}`, input.value); 
+                    localStorage.setItem('form_'+tag, input.value); 
                     if (['Durch', 'Höhe', 'MFüll', 'Abstand', 'AFüll', 'Diesel'].includes(tag)) berechneMindestdruck();
                     updatePreviews(); 
                 };
 
-                inputWrapper.appendChild(input);
-                if (config?.unit) {
-                    const unit = document.createElement('span');
-                    unit.className = 'unit-label';
-                    unit.textContent = config.unit;
-                    inputWrapper.appendChild(unit);
-                }
-
-                group.appendChild(label);
-                group.appendChild(inputWrapper);
-
-                if (adressTags.includes(tag)) containers.addr.appendChild(group);
-                else if (anlageTags.includes(tag)) containers.anlage.appendChild(group);
-                else if (mechanikTags.includes(tag)) containers.mechanik.appendChild(group);
-                else if (messTags.includes(tag)) containers.mess.appendChild(group);
-                else {
-                    containers.extra.appendChild(group);
-                    document.getElementById('extraPreview').style.display = "block";
+                if (adressTags.includes(tag)) document.getElementById(conts.addr).appendChild(group);
+                else if (anlageTags.includes(tag)) document.getElementById(conts.anlage).appendChild(group);
+                else if (mechanikTags.includes(tag)) document.getElementById(conts.mech).appendChild(group);
+                else if (messTags.includes(tag)) document.getElementById(conts.mess).appendChild(group);
+                else { 
+                    document.getElementById(conts.extra).appendChild(group); 
+                    document.getElementById('extraPreview').style.display = 'block';
                 }
             });
 
-            document.querySelectorAll('.section-preview').forEach(p => { if(p.id !== 'extraPreview') p.style.display = "block"; });
+            ['addressPreview', 'anlagePreview', 'mechanikPreview', 'messPreview'].forEach(id => document.getElementById(id).style.display = 'block');
             document.getElementById('dateInput').value = localStorage.getItem('form_Datum') || new Date().toISOString().split('T')[0];
-            berechneMindestdruck();
-            updatePreviews();
-            document.getElementById('downloadBtn').style.display = "block";
-        } catch (error) { document.getElementById('status').textContent = "Fehler beim Laden"; }
+            document.getElementById('downloadBtn').style.display = 'block';
+            berechneMindestdruck(); updatePreviews();
+        } catch (e) { document.getElementById('status').textContent = "Fehler beim Laden."; }
     }
 
     function updatePreviews() {
-        const sets = [
-            { id: 'Addr', tags: adressTags, showLabel: false },
-            { id: 'Anlage', tags: anlageTags, showLabel: true },
-            { id: 'Mechanik', tags: mechanikTags, showLabel: true },
-            { id: 'Mess', tags: messTags, showLabel: true },
-            { id: 'Extra', tags: Array.from(gefundeneTags).filter(t => !adressTags.includes(t) && !anlageTags.includes(t) && !mechanikTags.includes(t) && !messTags.includes(t)), showLabel: true }
-        ];
+        const p = (tags, lbl) => tags.map(t => {
+            const v = document.getElementById('input_'+t)?.value;
+            if(!v || v === "Werte fehlen") return null;
+            return lbl ? `${fieldConfig[t]?.label || t}: ${v} ${fieldConfig[t]?.unit || ''}` : v;
+        }).filter(x => x).join('\n');
 
-        sets.forEach(set => {
-            const text = set.tags.map(tag => {
-                const val = document.getElementById(`input_${tag}`)?.value;
-                const conf = fieldConfig[tag];
-                if (!val || val === "Werte fehlen") return null;
-                return set.showLabel ? (conf?.unit ? `${conf?.label || tag}: ${val} ${conf.unit}` : `${conf?.label || tag}: ${val}`) : val;
-            }).filter(t => t).join("\n");
-            const el = document.getElementById(`previewText${set.id}`);
-            if (el) el.textContent = text || "Keine Daten";
-        });
+        document.getElementById('previewTextAddr').textContent = p(adressTags, false) || "Keine Daten";
+        document.getElementById('previewTextAnlage').textContent = p(anlageTags, true) || "Keine Daten";
+        document.getElementById('previewTextMechanik').textContent = p(mechanikTags, true) || "Keine Daten";
+        document.getElementById('previewTextMess').textContent = p(messTags, true) || "Keine Daten";
+        
+        const extraTags = Array.from(gefundeneTags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, 'Datum'].includes(t));
+        document.getElementById('previewTextExtra').textContent = p(extraTags, true) || "Keine Daten";
+
         const d = new Date(document.getElementById('dateInput').value);
         if (!isNaN(d)) document.getElementById('datePreview').textContent = d.toLocaleDateString('de-DE');
     }
@@ -255,22 +161,16 @@
             if (tag === 'Datum') {
                 const d = new Date(document.getElementById('dateInput').value);
                 data[tag] = d.toLocaleDateString('de-DE');
-            } else {
-                data[tag] = document.getElementById(`input_${tag}`)?.value || "";
-            }
+            } else data[tag] = document.getElementById('input_'+tag)?.value || "";
         });
         try {
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
             doc.render(data);
             const out = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(out);
-            a.download = "PruefungHeberschutz.docx";
-            a.click();
+            const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = "PruefungHeberschutz.docx"; a.click();
         } catch (e) { alert("Fehler"); }
     };
-
     initialisieren();
 </script>
 </body>
