@@ -8,17 +8,24 @@
         body { font-family: sans-serif; padding: 15px; background: #f0f2f5; color: #333; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
         h1 { font-size: 1.2rem; color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
-        #formular { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        
+        /* Adress-Sektion Styling */
+        .address-section { background: #f8f9fa; border: 1px solid #e1e4e8; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .address-section h2 { font-size: 0.9rem; margin: 0 0 5px 0; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        #formular { display: flex; flex-direction: column; gap: 15px; }
         .field-group { display: flex; flex-direction: column; }
         label { font-size: 0.85rem; color: #666; margin-bottom: 5px; font-weight: bold; }
         input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
         input:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,0.1); }
+        
         #status { font-size: 0.9rem; color: #0056b3; background: #e7f3ff; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
         .error { background: #fff0f0 !important; color: #d32f2f !important; border: 1px solid #f8b4b4; }
+        
         button { 
-            margin-top: 20px; width: 100%; padding: 15px; background: #28a745; color: white; 
-            border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; 
-            cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            margin-top: 25px; width: 100%; padding: 15px; background: #28a745; color: white; 
+            border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; 
+            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
         }
         button:active { background: #218838; transform: scale(0.98); }
     </style>
@@ -27,9 +34,16 @@
 
 <div class="card">
     <h1>Protokoll ausfüllen</h1>
-    <div id="status">Lade Felder aus Dokument...</div>
+    <div id="status">Lade Felder...</div>
+    
+    <div id="addressContainer" class="address-section" style="display: none;">
+        <h2>📍 Adresse</h2>
+        <div id="addressFields"></div>
+    </div>
+
     <form id="formular"></form>
-    <button id="downloadBtn" style="display: none;">Protokoll erstellen & herunterladen</button>
+    
+    <button id="downloadBtn" style="display: none;">Fertiges Protokoll speichern</button>
 </div>
 
 <script type="module">
@@ -38,11 +52,14 @@
 
     let originalBuffer = null;
     const gefundeneTags = new Set();
+    const adressTags = ['Adress1', 'Adress2', 'Adress3', 'Adress4'];
     const dateiPfad = '/Protokoll/Heberschutz/PruefungHeberschutz.docx';
 
     async function initialisieren() {
         const status = document.getElementById('status');
         const formular = document.getElementById('formular');
+        const addressFields = document.getElementById('addressFields');
+        const addressContainer = document.getElementById('addressContainer');
         const btn = document.getElementById('downloadBtn');
 
         try {
@@ -52,7 +69,6 @@
             originalBuffer = await response.arrayBuffer();
             const zip = new PizZip(originalBuffer);
             
-            // Wir nutzen den Parser nur zum Scannen der Tags
             const doc = new Docxtemplater(zip, {
                 parser: (tag) => ({
                     get: (scope) => {
@@ -72,7 +88,10 @@
                 status.style.display = "block";
                 status.textContent = "Keine Marken im Dokument gefunden.";
             } else {
-                Array.from(gefundeneTags).sort().forEach(tag => {
+                // Felder sortieren und aufteilen
+                const tagsArray = Array.from(gefundeneTags).sort();
+                
+                tagsArray.forEach(tag => {
                     const group = document.createElement('div');
                     group.className = 'field-group';
                     const label = document.createElement('label');
@@ -82,7 +101,14 @@
                     input.id = `input_${tag}`;
                     group.appendChild(label);
                     group.appendChild(input);
-                    formular.appendChild(group);
+
+                    // Wenn es ein Adress-Tag ist, oben einfügen, sonst unten ins Formular
+                    if (adressTags.includes(tag)) {
+                        addressFields.appendChild(group);
+                        addressContainer.style.display = "flex";
+                    } else {
+                        formular.appendChild(group);
+                    }
                 });
                 btn.style.display = "block";
             }
@@ -102,8 +128,6 @@
 
         try {
             const zip = new PizZip(originalBuffer);
-            
-            // WICHTIG: Hier nutzen wir Docxtemplater (groß geschrieben), so wie es oben importiert wurde
             const doc = new Docxtemplater(zip, {
                 paragraphLoop: true,
                 linebreaks: true
@@ -119,7 +143,7 @@
             const url = window.URL.createObjectURL(out);
             const a = document.createElement("a");
             a.href = url;
-            a.download = "Fertiges_Protokoll.docx";
+            a.download = "Protokoll_Heberschutz.docx";
             document.body.appendChild(a);
             a.click();
             setTimeout(() => {
@@ -129,7 +153,6 @@
 
         } catch (error) {
             alert("Fehler beim Erstellen: " + error.message);
-            console.error(error);
         }
     }
 
