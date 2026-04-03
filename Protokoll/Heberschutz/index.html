@@ -9,17 +9,15 @@
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
         h1 { font-size: 1.2rem; color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
         
-        /* Adress-Vorschau (Klickbar) */
         .address-preview { 
             background: #f8f9fa; border: 1px dashed #007bff; padding: 15px; border-radius: 8px; 
             margin-bottom: 25px; cursor: pointer; transition: background 0.2s;
         }
         .address-preview:hover { background: #eef6ff; }
         .address-preview h2 { font-size: 0.7rem; margin: 0 0 5px 0; color: #007bff; text-transform: uppercase; }
-        .address-text { font-family: monospace; font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap; }
+        .address-text { font-family: monospace; font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap; min-height: 1.4em; }
         .placeholder-text { color: #999; font-style: italic; }
 
-        /* Popup / Modal Styling */
         .modal { 
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
             background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; 
@@ -32,7 +30,7 @@
         
         .field-group { display: flex; flex-direction: column; margin-bottom: 12px; }
         label { font-size: 0.75rem; color: #666; margin-bottom: 3px; font-weight: bold; }
-        input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
         
         #formular { display: flex; flex-direction: column; gap: 12px; }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
@@ -47,7 +45,7 @@
     <div id="status">Lade Felder...</div>
     
     <div id="addressPreview" class="address-preview" style="display: none;" onclick="openModal()">
-        <h2>📍 Empfänger (Tippen zum Ändern)</h2>
+        <h2>📍 Adresse (Tippen zum Ändern)</h2>
         <div id="previewText" class="address-text"></div>
     </div>
 
@@ -76,7 +74,6 @@
         'Adress4': { label: 'PLZ / Ort', placeholder: 'Ort...' }
     };
 
-    // Funktionen für das Modal (global machen für onclick)
     window.openModal = () => document.getElementById('addressModal').style.display = 'flex';
     window.closeModal = () => {
         document.getElementById('addressModal').style.display = 'none';
@@ -110,7 +107,16 @@
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.id = `input_${tag}`;
-                    input.oninput = updatePreview; // Live-Update bei Tippen
+                    
+                    // Laden aus LocalStorage
+                    const savedValue = localStorage.getItem(`form_${tag}`);
+                    if (savedValue) input.value = savedValue;
+
+                    // Speichern bei Änderung
+                    input.oninput = () => {
+                        localStorage.setItem(`form_${tag}`, input.value);
+                        updatePreview();
+                    };
 
                     const label = document.createElement('label');
                     if (adressLogik[tag]) {
