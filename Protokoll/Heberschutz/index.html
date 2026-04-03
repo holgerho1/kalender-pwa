@@ -8,13 +8,13 @@
         body { font-family: sans-serif; padding: 15px; background: #f0f2f5; color: #333; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
         
-        .header-row { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
         h1 { font-size: 1.1rem; color: #007bff; margin: 0; }
         
-        /* Datum-Anzeige oben rechts */
-        .date-display { text-align: right; cursor: pointer; }
+        .date-display { text-align: right; cursor: pointer; padding: 5px; border-radius: 5px; }
+        .date-display:active { background: #f0f0f0; }
         .date-display h2 { font-size: 0.65rem; margin: 0; color: #999; text-transform: uppercase; }
-        .date-value { font-size: 0.9rem; font-weight: bold; color: #333; text-decoration: underline dotted #007bff; }
+        .date-value { font-size: 0.9rem; color: #333; }
 
         .address-preview { 
             background: #f8f9fa; border: 1px dashed #007bff; padding: 15px; border-radius: 8px; 
@@ -77,9 +77,8 @@
         <h2 style="margin-top:0; font-size: 1.1rem;">Datum ändern</h2>
         <div class="field-group">
             <label>Datum auswählen</label>
-            <input type="date" id="dateInput">
+            <input type="date" id="dateInput" onchange="dateChanged()">
         </div>
-        <button class="btn-save" onclick="closeModals()">Übernehmen</button>
     </div>
 </div>
 
@@ -98,9 +97,16 @@
 
     window.openAddrModal = () => document.getElementById('addrModal').style.display = 'flex';
     window.openDateModal = () => document.getElementById('dateModal').style.display = 'flex';
+    
     window.closeModals = () => {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
         updatePreviews();
+    };
+
+    window.dateChanged = () => {
+        updatePreviews();
+        // Kurze Verzögerung für besseres Feedback auf dem Handy
+        setTimeout(window.closeModals, 150);
     };
 
     async function initialisieren() {
@@ -126,7 +132,7 @@
             
             if (gefundeneTags.size > 0) {
                 Array.from(gefundeneTags).sort().forEach(tag => {
-                    if (tag === 'Datum') return; // Datum wird separat behandelt
+                    if (tag === 'Datum') return;
 
                     const group = document.createElement('div');
                     group.className = 'field-group';
@@ -166,8 +172,11 @@
         // Datum
         const d = new Date(document.getElementById('dateInput').value);
         if (!isNaN(d)) {
-            const formatted = d.toLocaleDateString('de-DE');
-            document.getElementById('datePreview').textContent = formatted;
+            // Formatiert als TT.MM.JJJJ
+            const tag = String(d.getDate()).padStart(2, '0');
+            const monat = String(d.getMonth() + 1).padStart(2, '0');
+            const jahr = d.getFullYear();
+            document.getElementById('datePreview').textContent = `${tag}.${monat}.${jahr}`;
         }
     }
 
@@ -176,7 +185,11 @@
         gefundeneTags.forEach(tag => {
             if (tag === 'Datum') {
                 const d = new Date(document.getElementById('dateInput').value);
-                data[tag] = !isNaN(d) ? d.toLocaleDateString('de-DE') : "";
+                if (!isNaN(d)) {
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    data[tag] = `${dd}.${mm}.${d.getFullYear()}`;
+                } else { data[tag] = ""; }
             } else {
                 data[tag] = document.getElementById(`input_${tag}`).value || "";
             }
