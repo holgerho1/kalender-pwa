@@ -21,7 +21,7 @@
             margin-bottom: 25px; cursor: pointer;
         }
         .address-preview h2 { font-size: 0.7rem; margin: 0 0 5px 0; color: #007bff; text-transform: uppercase; }
-        .address-text { font-family: monospace; font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap; }
+        .address-text { font-family: monospace; font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap; min-height: 1.4em; }
 
         .modal { 
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
@@ -97,6 +97,7 @@
 
     window.openAddrModal = () => document.getElementById('addrModal').style.display = 'flex';
     window.openDateModal = () => document.getElementById('dateModal').style.display = 'flex';
+    
     window.closeModals = () => {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
         updatePreviews();
@@ -113,22 +114,21 @@
         const addrModalFields = document.getElementById('addrModalFields');
         const dateInput = document.getElementById('dateInput');
 
-        // Logik für das Datum: Erst LocalStorage, wenn leer (oder neuer Tag), dann Heute
         const heute = new Date().toISOString().split('T')[0];
         const savedDate = localStorage.getItem('form_Datum');
-        // Falls du immer das aktuelle Datum willst beim NEU-Öffnen, aktiviere die nächste Zeile:
-        // dateInput.value = heute; 
-        // Falls du das gespeicherte Datum willst (dein aktueller Wunsch):
         dateInput.value = savedDate || heute;
 
         try {
             const response = await fetch('/Protokoll/Heberschutz/PruefungHeberschutz.docx?t=' + Date.now());
+            if (!response.ok) throw new Error("Datei nicht gefunden.");
+            
             originalBuffer = await response.arrayBuffer();
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { parser: tag => ({ get: s => {
                 if (!['#', '/', '^', '$'].includes(tag[0])) gefundeneTags.add(tag);
                 return s[tag];
             }})});
+            
             try { doc.render({}); } catch (e) {}
 
             document.getElementById('status').style.display = "none";
@@ -168,7 +168,9 @@
                 updatePreviews();
                 document.getElementById('downloadBtn').style.display = "block";
             }
-        } catch (error) { document.getElementById('status').textContent = "❌ " + error.message; }
+        } catch (error) { 
+            document.getElementById('status').textContent = "❌ " + error.message; 
+        }
     }
 
     function updatePreviews() {
@@ -184,13 +186,16 @@
     }
 
     document.getElementById('downloadBtn').onclick = () => {
+        if (!originalBuffer) return;
         const data = {};
         gefundeneTags.forEach(tag => {
             if (tag === 'Datum') {
                 const d = new Date(document.getElementById('dateInput').value);
-                const dd = String(d.getDate()).padStart(2, '0');
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                data[tag] = `${dd}.${mm}.${d.getFullYear()}`;
+                if (!isNaN(d)) {
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    data[tag] = `${dd}.${mm}.${d.getFullYear()}`;
+                } else { data[tag] = ""; }
             } else {
                 data[tag] = document.getElementById(`input_${tag}`).value || "";
             }
@@ -200,12 +205,25 @@
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
             doc.render(data);
-            const out = doc.getZip().generate({ type: "blob" });
+            
+            const out = doc.getZip().generate({ 
+                type: "blob",
+                mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+            });
+
             const url = window.URL.createObjectURL(out);
             const a = document.createElement("a");
-            a.href = url; a.download = "Protokoll_Heberschutz.docx";
+            a.href = url; 
+            a.download = "Protokoll_Heberschutz.docx";
+            document.body.appendChild(a);
             a.click();
-        } catch (e) { alert("Fehler: " + e.message); }
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+        } catch (e) { 
+            alert("Fehler beim Erstellen: " + e.message); 
+        }
     };
 
     initialisieren();
