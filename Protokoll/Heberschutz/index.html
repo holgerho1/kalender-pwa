@@ -4,47 +4,276 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protokoll-Editor</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: sans-serif; padding: 15px; background: #f0f2f5; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        h1 { font-size: 1.1rem; color: #007bff; margin: 0; cursor: pointer; user-select: none; }
+        .date-display { text-align: right; cursor: pointer; padding: 5px; }
+        .date-value { font-size: 0.9rem; color: #333; }
+        .section-preview { background: #f8f9fa; border: 1px dashed #007bff; padding: 12px; border-radius: 8px; margin-bottom: 15px; cursor: pointer; }
+        .section-preview h2 { font-size: 0.7rem; margin: 0 0 5px 0; color: #007bff; text-transform: uppercase; }
+        .preview-text { font-family: monospace; font-size: 0.85rem; line-height: 1.4; white-space: pre-wrap; color: #444; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 85%; max-width: 380px; max-height: 90vh; overflow-y: auto; }
+        .field-group { display: flex; flex-direction: column; margin-bottom: 12px; }
+        label { font-size: 0.75rem; color: #666; margin-bottom: 3px; font-weight: bold; }
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; }
+        input[readonly] { background-color: #f9f9f9; color: #007bff; font-weight: bold; }
+        .input-with-unit { position: relative; display: flex; align-items: center; }
+        .unit-label { position: absolute; right: 10px; color: #888; font-size: 0.9rem; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-save { background: #007bff; color: white; margin-top: 10px; }
+        .btn-download { background: #28a745; color: white; margin-top: 25px; font-size: 1.1rem; }
+        .admin-note { font-size: 0.7rem; color: #888; margin-bottom: 10px; text-align: center; }
+    </style>
 </head>
 <body>
-    <div class="card">
-        <div class="header-row">
-            <h1 ondblclick="openModal('adminModal')">Protokoll-Editor</h1>
-            <div class="date-display" onclick="openModal('dateModal')">
-                <div id="datePreview" class="date-value">--.--.----</div>
-            </div>
-        </div>
 
-        <div id="status">Dokument wird geladen...</div>
+<div class="card">
+    <div class="header-row">
+        <h1 ondblclick="openModal('adminModal')">Protokoll-Editor</h1>
+        <div class="date-display" onclick="openModal('dateModal')">
+            <div id="datePreview" class="date-value">--.--.----</div>
+        </div>
+    </div>
+    <div id="status">Dokument wird geladen...</div>
+    
+    <div id="addressPreview" class="section-preview" onclick="openModal('addrModal')" style="display: none;">
+        <h2>📍 Adresse</h2><div id="previewTextAddr" class="preview-text"></div>
+    </div>
+    <div id="anlagePreview" class="section-preview" onclick="openModal('anlageModal')" style="display: none;">
+        <h2>⚙️ Anlage</h2><div id="previewTextAnlage" class="preview-text"></div>
+    </div>
+    <div id="mechanikPreview" class="section-preview" onclick="openModal('mechanikModal')" style="display: none;">
+        <h2>🔧 mechanische Bewertung</h2><div id="previewTextMechanik" class="preview-text"></div>
+    </div>
+    <div id="messPreview" class="section-preview" onclick="openModal('messModal')" style="display: none;">
+        <h2>📏 messtechnische Bewertung</h2><div id="previewTextMess" class="preview-text"></div>
+    </div>
+    <div id="resultPreview" class="section-preview" onclick="openModal('resultModal')" style="display: none;">
+        <h2>✅ Ergebnis</h2><div id="previewTextResult" class="preview-text"></div>
+    </div>
+    <div id="extraPreview" class="section-preview" onclick="openModal('extraModal')" style="display: none;">
+        <h2>➕ Zusätzliches</h2><div id="previewTextExtra" class="preview-text"></div>
+    </div>
+
+    <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
+</div>
+
+<div id="addrModal" class="modal"><div class="modal-content"><h2>Adresse</h2><div id="fAddr"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+<div id="anlageModal" class="modal"><div class="modal-content"><h2>Anlage</h2><div id="fAnlage"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+<div id="mechanikModal" class="modal"><div class="modal-content"><h2>mechanische Bewertung</h2><div id="fMech"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+<div id="messModal" class="modal"><div class="modal-content"><h2>messtechnische Bewertung</h2><div id="fMess"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+<div id="resultModal" class="modal"><div class="modal-content"><h2>Ergebnis</h2><div id="fResult"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+<div id="extraModal" class="modal"><div class="modal-content"><h2>Zusätzliche Platzhalter</h2><div id="fExtra"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+<div id="dateModal" class="modal"><div class="modal-content"><h2>Datum</h2><input type="date" id="dateIn" onchange="dateCh()"></div></div>
+
+<div id="adminModal" class="modal">
+    <div class="modal-content">
+        <h2>GitHub Update</h2>
+        <p class="admin-note">Vorlage (.docx) auf GitHub aktualisieren</p>
+        <div class="field-group">
+            <label>Datei auswählen</label>
+            <input type="file" id="fIn" accept=".docx">
+        </div>
+        <div class="field-group">
+            <label>GitHub Token</label>
+            <input type="password" id="ghTok" placeholder="Token eingeben">
+        </div>
+        <button id="upBtn" class="btn-save" style="background: #28a745;">Upload starten</button>
+        <button class="btn-save" style="background: #6c757d; margin-top: 10px;" onclick="closeM()">Abbrechen</button>
+    </div>
+</div>
+
+<script type="module">
+    import PizZip from 'https://esm.sh/pizzip@3.1.4';
+    import Docxtemplater from 'https://esm.sh/docxtemplater@3.45.0';
+
+    const USER = 'holgerho1'; 
+    const REPO = 'kalender-pwa';
+    const PATH = 'Protokoll/Heberschutz/PruefungHeberschutz.docx';
+    
+    let originalBuffer = null;
+    const tags = new Set();
+    
+    const adressTags = ['Adress1', 'Adress2', 'Adress3', 'Adress4'];
+    const anlageTags = ['Diesel', 'Hersteller', 'FabNummer', 'Inhalt', 'Baujahr', 'Durch', 'Ventil'];
+    const mechanikTags = ['Zustand', 'Körper', 'Dichtung', 'Einstellung'];
+    const messTags = ['MFüll', 'AFüll', 'Höhe', 'Abstand', 'Mindest'];
+    const resultTags = ['Gemessen', 'Ergebnis'];
+
+    const fieldConfig = {
+        'Adress1': { label: 'Zusatz' }, 'Adress2': { label: 'Name' }, 'Adress3': { label: 'Straße' }, 'Adress4': { label: 'PLZ/Ort' },
+        'Diesel': { label: 'Medium' }, 'Ventil': { label: 'Heberschutzventil' },
+        'Zustand': { label: 'Allgemeinzustand' }, 'Körper': { label: 'Ventilkörper' },
+        'Inhalt': { unit: 'Liter' }, 'Durch': { label: 'Durchmesser', unit: 'cm' },
+        'MFüll': { label: 'Max. Füllstand', unit: 'cm' }, 'AFüll': { label: 'Akt. Füllstand', unit: 'cm' }, 
+        'Höhe': { label: 'Höhe EV über Scheitel', unit: 'cm' }, 'Abstand': { label: 'Abstand Behälter - Fläche', unit: 'cm' }, 
+        'Mindest': { label: 'mind. Unterdruck', unit: 'mbar' },
+        'Gemessen': { label: 'gemessener Unterdruck', unit: 'mbar' },
+        'Ergebnis': { label: 'Ergebnis' }
+    };
+
+    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+    window.closeM = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); update(); };
+    window.dateCh = () => { localStorage.setItem('form_Datum', document.getElementById('dateIn').value); update(); setTimeout(window.closeM, 150); };
+
+    function createField(t, container) {
+        const conf = fieldConfig[t];
+        const g = document.createElement('div');
+        g.className = 'field-group';
+        const storedValue = localStorage.getItem('form_'+t) || '';
+        g.innerHTML = `<label>${conf?.label || t}</label>
+        <div class="${conf?.unit ? 'input-with-unit' : ''}">
+            <input id="i_${t}" ${t==='Mindest'?'readonly':''}>
+            ${conf?.unit ? `<span class="unit-label">${conf.unit}</span>` : ''}
+        </div>`;
+        const i = g.querySelector('input');
+        i.value = storedValue;
+        i.oninput = () => { 
+            localStorage.setItem('form_'+t, i.value); 
+            if (['Durch', 'Höhe', 'MFüll', 'Abstand', 'AFüll', 'Diesel'].includes(t)) berechne();
+            if (t === 'Mindest') document.querySelectorAll('#i_Mindest').forEach(el => el.value = i.value);
+            update(); 
+        };
+        container.appendChild(g);
+    }
+
+    function berechne() {
+        const getV = (id) => { 
+            const el = document.getElementById(`i_` + id);
+            if(!el) return null;
+            const v = el.value.replace(',', '.'); 
+            return isNaN(parseFloat(v)) ? null : parseFloat(v); 
+        };
+        const d = getV('Durch'), h = getV('Höhe'), mf = getV('MFüll'), ab = getV('Abstand'), af = getV('AFüll');
+        const fields = document.querySelectorAll('#i_Mindest');
+        if (fields.length === 0) return;
+        let result = "Werte fehlen";
+        if (d !== null && h !== null && mf !== null && ab !== null && af !== null) {
+            const fak = (document.getElementById('i_Diesel')?.value || "").toLowerCase().includes("diesel") ? 0.00083 : 0.00084; 
+            result = Math.max(0, (d + h + mf + ab - af) * fak * 1000).toFixed(1);
+        }
+        fields.forEach(f => f.value = result);
+        localStorage.setItem('form_Mindest', result);
+    }
+
+    async function init() {
+        try {
+            const resp = await fetch('/' + PATH + '?t=' + Date.now());
+            if (!resp.ok) throw new Error("Datei nicht gefunden.");
+            originalBuffer = await resp.arrayBuffer();
+            const zip = new PizZip(originalBuffer);
+            const doc = new Docxtemplater(zip, { parser: t => ({ get: s => { if (!['#', '/', '^', '$'].includes(t[0])) tags.add(t); return s[t]; }})});
+            doc.render({});
+            document.getElementById('status').style.display = "none";
+            let hasExtra = false;
+            tags.forEach(t => {
+                if (t === 'Datum') return;
+                if (adressTags.includes(t)) createField(t, document.getElementById('fAddr'));
+                else if (anlageTags.includes(t)) createField(t, document.getElementById('fAnlage'));
+                else if (mechanikTags.includes(t)) createField(t, document.getElementById('fMech'));
+                else if (messTags.includes(t)) createField(t, document.getElementById('fMess'));
+                else if (resultTags.includes(t)) createField(t, document.getElementById('fResult'));
+                else { createField(t, document.getElementById('fExtra')); hasExtra = true; }
+            });
+            if (tags.has('Mindest')) {
+                const resContainer = document.getElementById('fResult');
+                const g = document.createElement('div');
+                g.className = 'field-group';
+                g.style.opacity = "0.7";
+                g.innerHTML = `<label>mind. Unterdruck (Referenz)</label><div class="input-with-unit"><input id="i_Mindest" readonly><span class="unit-label">mbar</span></div>`;
+                const i = g.querySelector('input');
+                i.value = localStorage.getItem('form_Mindest') || '';
+                resContainer.prepend(g);
+            }
+            document.querySelectorAll('.section-preview').forEach(p => p.style.display = 'block');
+            if(!hasExtra) document.getElementById('extraPreview').style.display = 'none';
+            const savedDate = localStorage.getItem('form_Datum');
+            document.getElementById('dateIn').value = savedDate || new Date().toISOString().split('T')[0];
+            document.getElementById('downloadBtn').style.display = 'block';
+            berechne(); update();
+        } catch (e) { document.getElementById('status').textContent = "Fehler: " + e.message; }
+    }
+
+    function update() {
+        const p = (t_list, showLabel) => t_list.map(t => {
+            const v = document.getElementById('i_'+t)?.value;
+            if (!v || v === "Werte fehlen") return null;
+            const unit = fieldConfig[t]?.unit ? ` ${fieldConfig[t].unit}` : '';
+            return showLabel ? `${fieldConfig[t]?.label || t}: ${v}${unit}` : v;
+        }).filter(x => x).join('\n');
+        document.getElementById('previewTextAddr').textContent = p(adressTags, false) || "---";
+        document.getElementById('previewTextAnlage').textContent = p(anlageTags, true) || "---";
+        document.getElementById('previewTextMechanik').textContent = p(mechanikTags, true) || "---";
+        document.getElementById('previewTextMess').textContent = p(messTags, true) || "---";
+        const resPreview = [...(tags.has('Mindest') ? ['Mindest'] : []), ...resultTags];
+        document.getElementById('previewTextResult').textContent = p(resPreview, true) || "---";
+        const extra = Array.from(tags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, ...resultTags, 'Datum'].includes(t));
+        document.getElementById('previewTextExtra').textContent = p(extra, true) || "---";
+        const d = new Date(document.getElementById('dateIn').value);
+        if (!isNaN(d)) document.getElementById('datePreview').textContent = d.toLocaleDateString('de-DE');
+    }
+
+    document.getElementById('upBtn').onclick = async () => {
+        const file = document.getElementById('fIn').files[0];
+        const tok = document.getElementById('ghTok').value;
+        if (!file || !tok) return alert("Daten unvollständig!");
+        const reader = new FileReader();
+        reader.onload = async () => {
+            const b64 = reader.result.split(',')[1];
+            try {
+                const getR = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${PATH}`, { headers: { 'Authorization': `token ${tok}` } });
+                const getD = await getR.json();
+                const putR = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${PATH}`, {
+                    method: 'PUT', headers: { 'Authorization': `token ${tok}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: "Update", content: b64, sha: getD.sha })
+                });
+                if (putR.ok) { alert("Erfolgreich!"); location.reload(); } else alert("Fehler!");
+            } catch (e) { alert("Fehler!"); }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    function cleanString(str, maxLen) {
+        if (!str) return "";
+        const map = { 'ä':'ae', 'ö':'oe', 'ü':'ue', 'Ä':'Ae', 'Ö':'Oe', 'Ü':'Ue', 'ß':'ss' };
+        let s = str.replace(/[äöüÄÖÜß]/g, m => map[m]);
+        return s.replace(/[^a-z0-9]/gi, '').substring(0, maxLen);
+    }
+
+    document.getElementById('downloadBtn').onclick = () => {
+        const data = {};
+        tags.forEach(t => {
+            const input = document.getElementById('i_'+t);
+            data[t] = (t === 'Datum') ? new Date(document.getElementById('dateIn').value).toLocaleDateString('de-DE') : (input ? input.value : "");
+        });
+        const zip = new PizZip(originalBuffer);
+        const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+        doc.render(data);
+        const out = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
         
-        <div id="addrPrev" class="section-preview" onclick="openModal('addrModal')"><h2>📍 Adresse</h2><div id="ptAddr" class="preview-text"></div></div>
-        <div id="anlagePrev" class="section-preview" onclick="openModal('anlageModal')"><h2>⚙️ Anlage</h2><div id="ptAnlage" class="preview-text"></div></div>
-        <div id="mechPrev" class="section-preview" onclick="openModal('mechModal')"><h2>🔧 mechanische Bewertung</h2><div id="ptMech" class="preview-text"></div></div>
-        <div id="messPrev" class="section-preview" onclick="openModal('messModal')"><h2>📏 messtechnische Bewertung</h2><div id="ptMess" class="preview-text"></div></div>
-        <div id="resPrev" class="section-preview" onclick="openModal('resModal')"><h2>✅ Ergebnis</h2><div id="ptRes" class="preview-text"></div></div>
-        <div id="extraPrev" class="section-preview" onclick="openModal('extraModal')"><h2>➕ Zusätzliches</h2><div id="ptExtra" class="preview-text"></div></div>
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(-2);
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
 
-        <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
-    </div>
+        const nameRaw = document.getElementById('i_Adress2')?.value || "Unbekannt";
+        const ortRaw = document.getElementById('i_Adress4')?.value || "KeinOrt";
 
-    <div id="addrModal" class="modal"><div class="modal-content"><h2>Adresse</h2><div id="fAddr"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-    <div id="anlageModal" class="modal"><div class="modal-content"><h2>Anlage</h2><div id="fAnlage"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-    <div id="mechModal" class="modal"><div class="modal-content"><h2>mechanische Bewertung</h2><div id="fMech"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-    <div id="messModal" class="modal"><div class="modal-content"><h2>messtechnische Bewertung</h2><div id="fMess"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-    <div id="resModal" class="modal"><div class="modal-content"><h2>Ergebnis</h2><div id="fRes"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-    <div id="extraModal" class="modal"><div class="modal-content"><h2>Zusätzliches</h2><div id="fExtra"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-    <div id="dateModal" class="modal"><div class="modal-content"><h2>Datum</h2><input type="date" id="dateIn" onchange="dateCh()"></div></div>
+        const nameClean = cleanString(nameRaw, 10);
+        const ortClean = cleanString(ortRaw, 10);
 
-    <div id="adminModal" class="modal">
-        <div class="modal-content">
-            <h2>GitHub Update</h2>
-            <div class="field-group"><label>Datei (.docx)</label><input type="file" id="fIn" accept=".docx"></div>
-            <div class="field-group"><label>GitHub Token</label><input type="password" id="ghTok"></div>
-            <button id="upBtn" class="btn-save" style="background: #28a745;">Upload starten</button>
-            <button class="btn-save" style="background: #6c757d; margin-top: 10px;" onclick="closeM()">Abbrechen</button>
-        </div>
-    </div>
+        const fileName = `${yy}${mm}${dd}${hh}${min}${ss}Heberschutz${nameClean}${ortClean}.docx`;
+        
+        const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = fileName; a.click();
+    };
 
-    <script type="module" src="script.js"></script>
+    init();
+</script>
 </body>
 </html>
