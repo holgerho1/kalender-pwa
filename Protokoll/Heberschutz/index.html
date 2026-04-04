@@ -53,7 +53,7 @@
         <h2>📏 Messtechnik</h2><div id="previewTextMess" class="preview-text"></div>
     </div>
     <div id="extraPreview" class="section-preview" onclick="openModal('extraModal')" style="display: none;">
-        <h2>📊 Auswertung</h2><div id="previewTextExtra" class="preview-text"></div>
+        <h2>📝 Zusätzlich</h2><div id="previewTextExtra" class="preview-text"></div>
     </div>
 
     <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
@@ -72,7 +72,7 @@
 <div id="anlageModal" class="modal"><div class="modal-content"><h2>Anlage</h2><div id="fAnlage"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="mechanikModal" class="modal"><div class="modal-content"><h2>Mechanik</h2><div id="fMech"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="messModal" class="modal"><div class="modal-content"><h2>Messtechnik</h2><div id="fMess"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-<div id="extraModal" class="modal"><div class="modal-content"><h2>Auswertung</h2><div id="fExtra"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+<div id="extraModal" class="modal"><div class="modal-content"><h2>Zusätzlich</h2><div id="fExtra"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="dateModal" class="modal"><div class="modal-content"><h2>Datum</h2><input type="date" id="dateIn" onchange="dateCh()"></div></div>
 
 <script type="module">
@@ -89,14 +89,16 @@
     const adressTags = ['Adress1', 'Adress2', 'Adress3', 'Adress4'];
     const anlageTags = ['Diesel', 'Hersteller', 'FabNummer', 'Inhalt', 'Baujahr', 'Durch', 'Ventil'];
     const mechanikTags = ['Zustand', 'Körper', 'Dichtung', 'Einstellung'];
-    const messTags = ['MFüll', 'AFüll', 'Höhe', 'Abstand'];
+    const messTags = ['MFüll', 'AFüll', 'Höhe', 'Abstand', 'Mindest', 'Gemessen'];
 
     const fieldConfig = {
         'Adress1': { label: 'Zusatz' }, 'Adress2': { label: 'Name' }, 'Adress3': { label: 'Straße' }, 'Adress4': { label: 'PLZ/Ort' },
         'Inhalt': { unit: 'Liter' }, 'Durch': { label: 'Durchmesser', unit: 'cm' },
         'MFüll': { label: 'Max. Füllstand', unit: 'cm' }, 'AFüll': { label: 'Akt. Füllstand', unit: 'cm' }, 
         'Höhe': { label: 'Höhe EV', unit: 'cm' }, 'Abstand': { unit: 'cm' }, 
-        'Mindest': { label: 'mind. Unterdruck', unit: 'mbar' }
+        'Mindest': { label: 'mind. Unterdruck', unit: 'mbar' },
+        'Gemessen': { label: 'gemessener Unterdruck', unit: 'mbar' },
+        'Ergebnis': { label: 'Ergebnis' }
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
