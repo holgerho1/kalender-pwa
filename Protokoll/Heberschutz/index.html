@@ -72,7 +72,7 @@
 <div id="anlageModal" class="modal"><div class="modal-content"><h2>Anlage</h2><div id="fAnlage"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="mechanikModal" class="modal"><div class="modal-content"><h2>Mechanik</h2><div id="fMech"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="messModal" class="modal"><div class="modal-content"><h2>Messtechnik</h2><div id="fMess"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-<div id="extraModal" class="modal"><div class="modal-content"><h2>Ergebnis & Sonstiges</h2><div id="fExtra"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+<div id="extraModal" class="modal"><div class="modal-content"><h2>Ergebnis</h2><div id="fExtra"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="dateModal" class="modal"><div class="modal-content"><h2>Datum</h2><input type="date" id="dateIn" onchange="dateCh()"></div></div>
 
 <script type="module">
@@ -90,7 +90,6 @@
     const anlageTags = ['Diesel', 'Hersteller', 'FabNummer', 'Inhalt', 'Baujahr', 'Durch', 'Ventil'];
     const mechanikTags = ['Zustand', 'Körper', 'Dichtung', 'Einstellung'];
     const messTags = ['MFüll', 'AFüll', 'Höhe', 'Abstand', 'Mindest'];
-    const resultTags = ['Gemessen', 'Ergebnis'];
 
     const fieldConfig = {
         'Adress1': { label: 'Zusatz' }, 'Adress2': { label: 'Name' }, 'Adress3': { label: 'Straße' }, 'Adress4': { label: 'PLZ/Ort' },
@@ -106,15 +105,40 @@
     window.closeM = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); update(); };
     window.dateCh = () => { localStorage.setItem('form_Datum', document.getElementById('dateIn').value); update(); setTimeout(window.closeM, 150); };
 
+    function createField(t, container) {
+        const conf = fieldConfig[t];
+        const g = document.createElement('div');
+        g.className = 'field-group';
+        g.innerHTML = `<label>${conf?.label || t}</label>
+        <div class="${conf?.unit ? 'input-with-unit' : ''}">
+            <input id="i_${t}" value="${localStorage.getItem('form_'+t) || ''}" ${t==='Mindest'?'readonly':''}>
+            ${conf?.unit ? `<span class="unit-label">${conf.unit}</span>` : ''}
+        </div>`;
+        const i = g.querySelector('input');
+        i.oninput = () => { 
+            localStorage.setItem('form_'+t, i.value); 
+            if (['Durch', 'Höhe', 'MFüll', 'Abstand', 'AFüll', 'Diesel'].includes(t)) berechne();
+            // Wenn Mindest geändert wird (durch Berechnung), synchronisiere alle Instanzen von i_Mindest
+            if (t === 'Mindest') document.querySelectorAll('#i_Mindest').forEach(el => el.value = i.value);
+            update(); 
+        };
+        container.appendChild(g);
+    }
+
     function berechne() {
-        const getV = (id) => { const v = document.getElementById(`i_${id}`)?.value.replace(',', '.'); return isNaN(parseFloat(v)) ? null : parseFloat(v); };
+        const getV = (id) => { const v = document.getElementById(`i_` + id)?.value.replace(',', '.'); return isNaN(parseFloat(v)) ? null : parseFloat(v); };
         const d = getV('Durch'), h = getV('Höhe'), mf = getV('MFüll'), ab = getV('Abstand'), af = getV('AFüll');
-        const f = document.getElementById('i_Mindest');
-        if (!f) return;
-        if (d === null || h === null || mf === null || ab === null || af === null) { f.value = "Werte fehlen"; return; }
-        const fak = (document.getElementById('i_Diesel')?.value || "").toLowerCase().includes("diesel") ? 0.00081 : 0.00082; 
-        f.value = Math.max(0, (d + h + mf + ab - af) * fak * 1000).toFixed(1);
-        localStorage.setItem('form_Mindest', f.value);
+        const fields = document.querySelectorAll('#i_Mindest');
+        if (fields.length === 0) return;
+        
+        let result = "Werte fehlen";
+        if (d !== null && h !== null && mf !== null && ab !== null && af !== null) {
+            const fak = (document.getElementById('i_Diesel')?.value || "").toLowerCase().includes("diesel") ? 0.00081 : 0.00082; 
+            result = Math.max(0, (d + h + mf + ab - af) * fak * 1000).toFixed(1);
+        }
+        
+        fields.forEach(f => f.value = result);
+        localStorage.setItem('form_Mindest', result);
     }
 
     async function init() {
@@ -127,28 +151,27 @@
             doc.render({});
 
             document.getElementById('status').style.display = "none";
+            
+            // Felder einsortieren
             tags.forEach(t => {
                 if (t === 'Datum') return;
-                const conf = fieldConfig[t];
-                const g = document.createElement('div');
-                g.className = 'field-group';
-                g.innerHTML = `<label>${conf?.label || t}</label>
-                <div class="${conf?.unit ? 'input-with-unit' : ''}">
-                    <input id="i_${t}" value="${localStorage.getItem('form_'+t) || ''}" ${t==='Mindest'?'readonly':''}>
-                    ${conf?.unit ? `<span class="unit-label">${conf.unit}</span>` : ''}
-                </div>`;
-                const i = g.querySelector('input');
-                i.oninput = () => { 
-                    localStorage.setItem('form_'+t, i.value); 
-                    if (['Durch', 'Höhe', 'MFüll', 'Abstand', 'AFüll', 'Diesel'].includes(t)) berechne();
-                    update(); 
-                };
-                if (adressTags.includes(t)) document.getElementById('fAddr').appendChild(g);
-                else if (anlageTags.includes(t)) document.getElementById('fAnlage').appendChild(g);
-                else if (mechanikTags.includes(t)) document.getElementById('fMech').appendChild(g);
-                else if (messTags.includes(t)) document.getElementById('fMess').appendChild(g);
-                else document.getElementById('fExtra').appendChild(g);
+                if (adressTags.includes(t)) createField(t, document.getElementById('fAddr'));
+                else if (anlageTags.includes(t)) createField(t, document.getElementById('fAnlage'));
+                else if (mechanikTags.includes(t)) createField(t, document.getElementById('fMech'));
+                else if (messTags.includes(t)) createField(t, document.getElementById('fMess'));
+                else createField(t, document.getElementById('fExtra'));
             });
+
+            // Mindestunterdruck im Ergebnis-Modal wiederholen
+            if (tags.has('Mindest')) {
+                const extraContainer = document.getElementById('fExtra');
+                const separator = document.createElement('hr');
+                separator.style.margin = "15px 0";
+                separator.style.border = "0; border-top: 1px solid #eee";
+                extraContainer.prepend(separator);
+                createField('Mindest', extraContainer);
+                extraContainer.querySelector('.field-group').style.opacity = "0.7"; // Optische Markierung als Referenzwert
+            }
 
             document.querySelectorAll('.section-preview').forEach(p => p.style.display = 'block');
             document.getElementById('dateIn').value = localStorage.getItem('form_Datum') || new Date().toISOString().split('T')[0];
@@ -170,10 +193,10 @@
         document.getElementById('previewTextMechanik').textContent = p(mechanikTags, true) || "---";
         document.getElementById('previewTextMess').textContent = p(messTags, true) || "---";
         
-        // Sektion Ergebnis: Zeigt Mindestunterdruck (Wiederholung), Gemessen und Ergebnis + Sonstige
         const extra = Array.from(tags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, 'Datum'].includes(t));
-        const combinedResults = [...messTags.filter(t => t === 'Mindest'), ...extra];
-        document.getElementById('previewTextExtra').textContent = p(combinedResults, true) || "---";
+        // In der Ergebnis-Vorschau Mindestunterdruck als ersten Wert anzeigen
+        const resultPreview = [...(tags.has('Mindest') ? ['Mindest'] : []), ...extra];
+        document.getElementById('previewTextExtra').textContent = p(resultPreview, true) || "---";
         
         const d = new Date(document.getElementById('dateIn').value);
         if (!isNaN(d)) document.getElementById('datePreview').textContent = d.toLocaleDateString('de-DE');
@@ -201,7 +224,10 @@
 
     document.getElementById('downloadBtn').onclick = () => {
         const data = {};
-        tags.forEach(t => data[t] = (t === 'Datum') ? new Date(document.getElementById('dateIn').value).toLocaleDateString('de-DE') : (document.getElementById('i_'+t)?.value || ""));
+        tags.forEach(t => {
+            const input = document.getElementById('i_'+t);
+            data[t] = (t === 'Datum') ? new Date(document.getElementById('dateIn').value).toLocaleDateString('de-DE') : (input ? input.value : "");
+        });
         const zip = new PizZip(originalBuffer);
         const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
         doc.render(data);
