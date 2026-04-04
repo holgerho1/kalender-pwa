@@ -20,6 +20,8 @@
         label { font-size: 0.75rem; color: #666; margin-bottom: 3px; font-weight: bold; }
         input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; }
         input[readonly] { background-color: #f9f9f9; color: #007bff; font-weight: bold; }
+        .input-with-unit { position: relative; display: flex; align-items: center; }
+        .unit-label { position: absolute; right: 10px; color: #888; font-size: 0.9rem; }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-save { background: #007bff; color: white; margin-top: 10px; }
         .btn-download { background: #28a745; color: white; margin-top: 25px; font-size: 1.1rem; }
@@ -89,9 +91,17 @@
     const mechanikTags = ['Zustand', 'Körper', 'Dichtung', 'Einstellung'];
     const messTags = ['MFüll', 'AFüll', 'Höhe', 'Abstand'];
 
+    const fieldConfig = {
+        'Adress1': { label: 'Zusatz' }, 'Adress2': { label: 'Name' }, 'Adress3': { label: 'Straße' }, 'Adress4': { label: 'PLZ/Ort' },
+        'Inhalt': { unit: 'Liter' }, 'Durch': { label: 'Durchmesser', unit: 'cm' },
+        'MFüll': { label: 'Max. Füllstand', unit: 'cm' }, 'AFüll': { label: 'Akt. Füllstand', unit: 'cm' }, 
+        'Höhe': { label: 'Höhe EV', unit: 'cm' }, 'Abstand': { unit: 'cm' }, 
+        'Mindest': { label: 'mind. Unterdruck', unit: 'mbar' }
+    };
+
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
     window.closeM = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); update(); };
-    window.dateCh = () => { localStorage.setItem('f_Datum', document.getElementById('dateIn').value); update(); setTimeout(window.closeM, 150); };
+    window.dateCh = () => { localStorage.setItem('form_Datum', document.getElementById('dateIn').value); update(); setTimeout(window.closeM, 150); };
 
     function berechne() {
         const getV = (id) => { const v = document.getElementById(`i_${id}`)?.value.replace(',', '.'); return isNaN(parseFloat(v)) ? null : parseFloat(v); };
@@ -101,13 +111,13 @@
         if (d === null || h === null || mf === null || ab === null || af === null) { f.value = "Werte fehlen"; return; }
         const fak = (document.getElementById('i_Diesel')?.value || "").toLowerCase().includes("diesel") ? 0.00081 : 0.00082; 
         f.value = Math.max(0, (d + h + mf + ab - af) * fak * 1000).toFixed(1);
-        localStorage.setItem('f_Mindest', f.value);
+        localStorage.setItem('form_Mindest', f.value);
     }
 
     async function init() {
         try {
             const resp = await fetch('/' + PATH + '?t=' + Date.now());
-            if (!resp.ok) throw new Error("Datei nicht im Repository gefunden.");
+            if (!resp.ok) throw new Error("Datei nicht gefunden.");
             originalBuffer = await resp.arrayBuffer();
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { parser: t => ({ get: s => { if (!['#', '/', '^', '$'].includes(t[0])) tags.add(t); return s[t]; }})});
@@ -116,12 +126,17 @@
             document.getElementById('status').style.display = "none";
             tags.forEach(t => {
                 if (t === 'Datum') return;
+                const conf = fieldConfig[t];
                 const g = document.createElement('div');
                 g.className = 'field-group';
-                g.innerHTML = `<label>${t}</label><input id="i_${t}" value="${localStorage.getItem('f_'+t) || ''}" ${t==='Mindest'?'readonly':''}>`;
+                g.innerHTML = `<label>${conf?.label || t}</label>
+                <div class="${conf?.unit ? 'input-with-unit' : ''}">
+                    <input id="i_${t}" value="${localStorage.getItem('form_'+t) || ''}" ${t==='Mindest'?'readonly':''}>
+                    ${conf?.unit ? `<span class="unit-label">${conf.unit}</span>` : ''}
+                </div>`;
                 const i = g.querySelector('input');
                 i.oninput = () => { 
-                    localStorage.setItem('f_'+t, i.value); 
+                    localStorage.setItem('form_'+t, i.value); 
                     if (['Durch', 'Höhe', 'MFüll', 'Abstand', 'AFüll', 'Diesel'].includes(t)) berechne();
                     update(); 
                 };
@@ -133,7 +148,7 @@
             });
 
             document.querySelectorAll('.section-preview').forEach(p => p.style.display = 'block');
-            document.getElementById('dateIn').value = localStorage.getItem('f_Datum') || new Date().toISOString().split('T')[0];
+            document.getElementById('dateIn').value = localStorage.getItem('form_Datum') || new Date().toISOString().split('T')[0];
             document.getElementById('downloadBtn').style.display = 'block';
             document.getElementById('adminArea').style.display = 'block';
             berechne(); update();
@@ -141,13 +156,19 @@
     }
 
     function update() {
-        const p = (t_list) => t_list.map(t => document.getElementById('i_'+t)?.value).filter(x => x).join('\n');
-        document.getElementById('previewTextAddr').textContent = p(adressTags) || "---";
-        document.getElementById('previewTextAnlage').textContent = p(anlageTags) || "---";
-        document.getElementById('previewTextMechanik').textContent = p(mechanikTags) || "---";
-        document.getElementById('previewTextMess').textContent = p(messTags) || "---";
+        const p = (t_list, showLabel) => t_list.map(t => {
+            const v = document.getElementById('i_'+t)?.value;
+            if (!v || v === "Werte fehlen") return null;
+            return showLabel ? `${fieldConfig[t]?.label || t}: ${v}` : v;
+        }).filter(x => x).join('\n');
+
+        document.getElementById('previewTextAddr').textContent = p(adressTags, false) || "---";
+        document.getElementById('previewTextAnlage').textContent = p(anlageTags, true) || "---";
+        document.getElementById('previewTextMechanik').textContent = p(mechanikTags, true) || "---";
+        document.getElementById('previewTextMess').textContent = p(messTags, true) || "---";
         const extra = Array.from(tags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, 'Datum'].includes(t));
-        document.getElementById('previewTextExtra').textContent = p(extra) || "---";
+        document.getElementById('previewTextExtra').textContent = p(extra, true) || "---";
+        
         const d = new Date(document.getElementById('dateIn').value);
         if (!isNaN(d)) document.getElementById('datePreview').textContent = d.toLocaleDateString('de-DE');
     }
@@ -155,20 +176,20 @@
     document.getElementById('upBtn').onclick = async () => {
         const file = document.getElementById('fIn').files[0];
         const tok = document.getElementById('ghTok').value;
-        if (!file || !tok) return alert("Datei und Token erforderlich!");
+        if (!file || !tok) return alert("Daten unvollständig!");
+        localStorage.setItem('gh_token', tok);
         const reader = new FileReader();
         reader.onload = async () => {
-            const content = reader.result.split(',')[1];
+            const b64 = reader.result.split(',')[1];
             try {
                 const getR = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${PATH}`, { headers: { 'Authorization': `token ${tok}` } });
-                if(!getR.ok) throw new Error("Fehler beim Abrufen der SHA oder Token ungültig.");
                 const getD = await getR.json();
                 const putR = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${PATH}`, {
                     method: 'PUT', headers: { 'Authorization': `token ${tok}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: "Update Struktur", content: content, sha: getD.sha })
+                    body: JSON.stringify({ message: "Update", content: b64, sha: getD.sha })
                 });
-                if (putR.ok) { alert("Upload erfolgreich!"); location.reload(); } else { alert("Upload fehlgeschlagen."); }
-            } catch (e) { alert(e.message); }
+                if (putR.ok) { alert("Erfolgreich!"); location.reload(); } else alert("Upload-Fehler!");
+            } catch (e) { alert("Verbindungsfehler!"); }
         };
         reader.readAsDataURL(file);
     };
@@ -176,13 +197,11 @@
     document.getElementById('downloadBtn').onclick = () => {
         const data = {};
         tags.forEach(t => data[t] = (t === 'Datum') ? new Date(document.getElementById('dateIn').value).toLocaleDateString('de-DE') : (document.getElementById('i_'+t)?.value || ""));
-        try {
-            const zip = new PizZip(originalBuffer);
-            const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-            doc.render(data);
-            const out = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-            const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = "Protokoll.docx"; a.click();
-        } catch (e) { alert("Fehler beim Erstellen der Word-Datei."); }
+        const zip = new PizZip(originalBuffer);
+        const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+        doc.render(data);
+        const out = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = "Protokoll.docx"; a.click();
     };
 
     init();
