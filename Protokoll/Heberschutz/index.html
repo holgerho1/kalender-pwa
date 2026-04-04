@@ -168,6 +168,7 @@
         document.getElementById('previewTextAnlage').textContent = p(anlageTags, true) || "---";
         document.getElementById('previewTextMechanik').textContent = p(mechanikTags, true) || "---";
         document.getElementById('previewTextMess').textContent = p(messTags, true) || "---";
+        
         const extra = Array.from(tags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, 'Datum'].includes(t));
         document.getElementById('previewTextExtra').textContent = p(extra, true) || "---";
         
@@ -179,7 +180,6 @@
         const file = document.getElementById('fIn').files[0];
         const tok = document.getElementById('ghTok').value;
         if (!file || !tok) return alert("Daten unvollständig!");
-        localStorage.setItem('gh_token', tok);
         const reader = new FileReader();
         reader.onload = async () => {
             const b64 = reader.result.split(',')[1];
@@ -190,8 +190,8 @@
                     method: 'PUT', headers: { 'Authorization': `token ${tok}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: "Update", content: b64, sha: getD.sha })
                 });
-                if (putR.ok) { alert("Erfolgreich!"); location.reload(); } else alert("Upload-Fehler!");
-            } catch (e) { alert("Verbindungsfehler!"); }
+                if (putR.ok) { alert("Erfolgreich!"); location.reload(); } else alert("Fehler!");
+            } catch (e) { alert("Fehler!"); }
         };
         reader.readAsDataURL(file);
     };
