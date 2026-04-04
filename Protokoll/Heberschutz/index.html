@@ -7,57 +7,44 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="card">
+        <div class="header-row">
+            <h1 ondblclick="openModal('adminModal')">Protokoll-Editor</h1>
+            <div class="date-display" onclick="openModal('dateModal')">
+                <div id="datePreview" class="date-value">--.--.----</div>
+            </div>
+        </div>
 
-<div class="card">
-    <div class="header-row">
-        <h1 ondblclick="openModal('adminModal')">Protokoll-Editor</h1>
-        <div class="date-display" onclick="openModal('dateModal')">
-            <div id="datePreview" class="date-value">--.--.----</div>
+        <div id="status">Dokument wird geladen...</div>
+        
+        <div id="addrPrev" class="section-preview" onclick="openModal('addrModal')"><h2>📍 Adresse</h2><div id="ptAddr" class="preview-text"></div></div>
+        <div id="anlagePrev" class="section-preview" onclick="openModal('anlageModal')"><h2>⚙️ Anlage</h2><div id="ptAnlage" class="preview-text"></div></div>
+        <div id="mechPrev" class="section-preview" onclick="openModal('mechModal')"><h2>🔧 mechanische Bewertung</h2><div id="ptMech" class="preview-text"></div></div>
+        <div id="messPrev" class="section-preview" onclick="openModal('messModal')"><h2>📏 messtechnische Bewertung</h2><div id="ptMess" class="preview-text"></div></div>
+        <div id="resPrev" class="section-preview" onclick="openModal('resModal')"><h2>✅ Ergebnis</h2><div id="ptRes" class="preview-text"></div></div>
+        <div id="extraPrev" class="section-preview" onclick="openModal('extraModal')"><h2>➕ Zusätzliches</h2><div id="ptExtra" class="preview-text"></div></div>
+
+        <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
+    </div>
+
+    <div id="addrModal" class="modal"><div class="modal-content"><h2>Adresse</h2><div id="fAddr"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+    <div id="anlageModal" class="modal"><div class="modal-content"><h2>Anlage</h2><div id="fAnlage"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+    <div id="mechModal" class="modal"><div class="modal-content"><h2>mechanische Bewertung</h2><div id="fMech"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+    <div id="messModal" class="modal"><div class="modal-content"><h2>messtechnische Bewertung</h2><div id="fMess"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+    <div id="resModal" class="modal"><div class="modal-content"><h2>Ergebnis</h2><div id="fRes"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+    <div id="extraModal" class="modal"><div class="modal-content"><h2>Zusätzliches</h2><div id="fExtra"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+    <div id="dateModal" class="modal"><div class="modal-content"><h2>Datum</h2><input type="date" id="dateIn" onchange="dateCh()"></div></div>
+
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <h2>GitHub Update</h2>
+            <div class="field-group"><label>Datei (.docx)</label><input type="file" id="fIn" accept=".docx"></div>
+            <div class="field-group"><label>GitHub Token</label><input type="password" id="ghTok"></div>
+            <button id="upBtn" class="btn-save" style="background: #28a745;">Upload starten</button>
+            <button class="btn-save" style="background: #6c757d; margin-top: 10px;" onclick="closeM()">Abbrechen</button>
         </div>
     </div>
 
-    <div id="status">Dokument wird geladen...</div>
-    
-    <div id="addressPreview" class="section-preview" onclick="openModal('addrModal')">
-        <h2>📍 Adresse</h2><div id="previewTextAddr" class="preview-text"></div>
-    </div>
-    <div id="anlagePreview" class="section-preview" onclick="openModal('anlageModal')">
-        <h2>⚙️ Anlage</h2><div id="previewTextAnlage" class="preview-text"></div>
-    </div>
-    <div id="mechanikPreview" class="section-preview" onclick="openModal('mechanikModal')">
-        <h2>🔧 mechanische Bewertung</h2><div id="previewTextMechanik" class="preview-text"></div>
-    </div>
-    <div id="messPreview" class="section-preview" onclick="openModal('messModal')">
-        <h2>📏 messtechnische Bewertung</h2><div id="previewTextMess" class="preview-text"></div>
-    </div>
-    <div id="resultPreview" class="section-preview" onclick="openModal('resultModal')">
-        <h2>✅ Ergebnis</h2><div id="previewTextResult" class="preview-text"></div>
-    </div>
-    <div id="extraPreview" class="section-preview" onclick="openModal('extraModal')">
-        <h2>➕ Zusätzliches</h2><div id="previewTextExtra" class="preview-text"></div>
-    </div>
-
-    <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
-</div>
-
-<div id="addrModal" class="modal"><div class="modal-content"><h2>Adresse</h2><div id="fAddr"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-<div id="anlageModal" class="modal"><div class="modal-content"><h2>Anlage</h2><div id="fAnlage"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-<div id="mechanikModal" class="modal"><div class="modal-content"><h2>mechanische Bewertung</h2><div id="fMech"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-<div id="messModal" class="modal"><div class="modal-content"><h2>messtechnische Bewertung</h2><div id="fMess"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-<div id="resultModal" class="modal"><div class="modal-content"><h2>Ergebnis</h2><div id="fResult"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-<div id="extraModal" class="modal"><div class="modal-content"><h2>Zusätzliches</h2><div id="fExtra"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-<div id="dateModal" class="modal"><div class="modal-content"><h2>Datum</h2><input type="date" id="dateIn" onchange="dateCh()"></div></div>
-
-<div id="adminModal" class="modal">
-    <div class="modal-content">
-        <h2>GitHub Update</h2>
-        <div class="field-group"><label>Datei (.docx)</label><input type="file" id="fIn" accept=".docx"></div>
-        <div class="field-group"><label>GitHub Token</label><input type="password" id="ghTok"></div>
-        <button id="upBtn" class="btn-save" style="background: #28a745;">Upload starten</button>
-        <button class="btn-save" style="background: #6c757d; margin-top: 10px;" onclick="closeM()">Abbrechen</button>
-    </div>
-</div>
-
-<script type="module" src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
