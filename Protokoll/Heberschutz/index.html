@@ -236,6 +236,13 @@
         reader.readAsDataURL(file);
     };
 
+    function cleanString(str, maxLen) {
+        if (!str) return "";
+        const map = { 'ä':'ae', 'ö':'oe', 'ü':'ue', 'Ä':'Ae', 'Ö':'Oe', 'Ü':'Ue', 'ß':'ss' };
+        let s = str.replace(/[äöüÄÖÜß]/g, m => map[m]);
+        return s.replace(/[^a-z0-9]/gi, '').substring(0, maxLen);
+    }
+
     document.getElementById('downloadBtn').onclick = () => {
         const data = {};
         tags.forEach(t => {
@@ -255,11 +262,13 @@
         const min = String(now.getMinutes()).padStart(2, '0');
         const ss = String(now.getSeconds()).padStart(2, '0');
 
-        const name = document.getElementById('i_Adress2')?.value.trim().replace(/[^a-z0-9]/gi, '') || "Unbekannt";
-        const ort = document.getElementById('i_Adress4')?.value.trim().replace(/[^a-z0-9]/gi, '') || "KeinOrt";
+        const nameRaw = document.getElementById('i_Adress2')?.value || "Unbekannt";
+        const ortRaw = document.getElementById('i_Adress4')?.value || "KeinOrt";
 
-        // Muster: YYMMTagHHMMSSHeberschutzNameOrt.docx
-        const fileName = `${yy}${mm}${dd}${hh}${min}${ss}Heberschutz${name}${ort}.docx`;
+        const nameClean = cleanString(nameRaw, 10);
+        const ortClean = cleanString(ortRaw, 10);
+
+        const fileName = `${yy}${mm}${dd}${hh}${min}${ss}Heberschutz${nameClean}${ortClean}.docx`;
         
         const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = fileName; a.click();
     };
