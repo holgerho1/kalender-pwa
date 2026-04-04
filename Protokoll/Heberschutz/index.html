@@ -8,7 +8,7 @@
         body { font-family: sans-serif; padding: 15px; background: #f0f2f5; color: #333; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
         .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
-        h1 { font-size: 1.1rem; color: #007bff; margin: 0; }
+        h1 { font-size: 1.1rem; color: #007bff; margin: 0; cursor: pointer; user-select: none; }
         .date-display { text-align: right; cursor: pointer; padding: 5px; }
         .date-value { font-size: 0.9rem; color: #333; }
         .section-preview { background: #f8f9fa; border: 1px dashed #007bff; padding: 12px; border-radius: 8px; margin-bottom: 15px; cursor: pointer; }
@@ -26,14 +26,13 @@
         .btn-save { background: #007bff; color: white; margin-top: 10px; }
         .btn-download { background: #28a745; color: white; margin-top: 25px; font-size: 1.1rem; }
         .upload-section { margin-top: 30px; padding-top: 15px; border-top: 2px solid #eee; }
-        .btn-github { background: #6c757d; color: white; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <div class="header-row">
-        <h1>Protokoll-Editor</h1>
+        <h1 ondblclick="toggleAdmin()">Protokoll-Editor</h1>
         <div class="date-display" onclick="openModal('dateModal')">
             <div id="datePreview" class="date-value">--.--.----</div>
         </div>
@@ -61,13 +60,11 @@
 
     <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
 
-    <div class="upload-section" id="adminArea" style="display: none;">
-        <button onclick="document.getElementById('upFields').style.display='block'" class="btn-github">Struktur aktualisieren (GitHub)</button>
-        <div id="upFields" style="display:none; margin-top:10px;">
-            <input type="file" id="fIn" accept=".docx" style="margin-bottom:10px;">
-            <input type="password" id="ghTok" placeholder="GitHub Token" style="margin-bottom:10px;">
-            <button id="upBtn" class="btn-save" style="background: #28a745;">Upload starten</button>
-        </div>
+    <div class="upload-section" id="upFields" style="display:none;">
+        <label>Struktur aktualisieren (GitHub)</label>
+        <input type="file" id="fIn" accept=".docx" style="margin-bottom:10px;">
+        <input type="password" id="ghTok" placeholder="GitHub Token" style="margin-bottom:10px;">
+        <button id="upBtn" class="btn-save" style="background: #28a745;">Upload starten</button>
     </div>
 </div>
 
@@ -104,6 +101,11 @@
         'Mindest': { label: 'mind. Unterdruck', unit: 'mbar' },
         'Gemessen': { label: 'gemessener Unterdruck', unit: 'mbar' },
         'Ergebnis': { label: 'Ergebnis' }
+    };
+
+    window.toggleAdmin = () => {
+        const area = document.getElementById('upFields');
+        area.style.display = area.style.display === 'none' ? 'block' : 'none';
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -170,7 +172,6 @@
                 }
             });
 
-            // Mindestunterdruck im Ergebnis-Modal wiederholen
             if (tags.has('Mindest')) {
                 const resContainer = document.getElementById('fResult');
                 const g = document.createElement('div');
@@ -189,7 +190,6 @@
             
             document.getElementById('dateIn').value = localStorage.getItem('form_Datum') || new Date().toISOString().split('T')[0];
             document.getElementById('downloadBtn').style.display = 'block';
-            document.getElementById('adminArea').style.display = 'block';
             berechne(); update();
         } catch (e) { document.getElementById('status').textContent = "Fehler: " + e.message; }
     }
@@ -206,11 +206,9 @@
         document.getElementById('previewTextMechanik').textContent = p(mechanikTags, true) || "---";
         document.getElementById('previewTextMess').textContent = p(messTags, true) || "---";
         
-        // Ergebnis-Vorschau: Mindestunterdruck + Ergebnis-Tags
         const resPreview = [...(tags.has('Mindest') ? ['Mindest'] : []), ...resultTags];
         document.getElementById('previewTextResult').textContent = p(resPreview, true) || "---";
 
-        // Zusätzliches-Vorschau: Alle anderen
         const extra = Array.from(tags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, ...resultTags, 'Datum'].includes(t));
         document.getElementById('previewTextExtra').textContent = p(extra, true) || "---";
         
