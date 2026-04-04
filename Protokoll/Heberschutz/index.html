@@ -123,18 +123,14 @@
         const conf = fieldConfig[t];
         const g = document.createElement('div');
         g.className = 'field-group';
-        
         const storedValue = localStorage.getItem('form_'+t) || '';
-        
         g.innerHTML = `<label>${conf?.label || t}</label>
         <div class="${conf?.unit ? 'input-with-unit' : ''}">
             <input id="i_${t}" ${t==='Mindest'?'readonly':''}>
             ${conf?.unit ? `<span class="unit-label">${conf.unit}</span>` : ''}
         </div>`;
-        
         const i = g.querySelector('input');
         i.value = storedValue;
-        
         i.oninput = () => { 
             localStorage.setItem('form_'+t, i.value); 
             if (['Durch', 'Höhe', 'MFüll', 'Abstand', 'AFüll', 'Diesel'].includes(t)) berechne();
@@ -154,14 +150,11 @@
         const d = getV('Durch'), h = getV('Höhe'), mf = getV('MFüll'), ab = getV('Abstand'), af = getV('AFüll');
         const fields = document.querySelectorAll('#i_Mindest');
         if (fields.length === 0) return;
-        
         let result = "Werte fehlen";
         if (d !== null && h !== null && mf !== null && ab !== null && af !== null) {
-            // Angepasste Faktoren: Diesel 0.00083, Standard 0.00084
             const fak = (document.getElementById('i_Diesel')?.value || "").toLowerCase().includes("diesel") ? 0.00083 : 0.00084; 
             result = Math.max(0, (d + h + mf + ab - af) * fak * 1000).toFixed(1);
         }
-        
         fields.forEach(f => f.value = result);
         localStorage.setItem('form_Mindest', result);
     }
@@ -174,9 +167,7 @@
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { parser: t => ({ get: s => { if (!['#', '/', '^', '$'].includes(t[0])) tags.add(t); return s[t]; }})});
             doc.render({});
-
             document.getElementById('status').style.display = "none";
-            
             let hasExtra = false;
             tags.forEach(t => {
                 if (t === 'Datum') return;
@@ -185,33 +176,22 @@
                 else if (mechanikTags.includes(t)) createField(t, document.getElementById('fMech'));
                 else if (messTags.includes(t)) createField(t, document.getElementById('fMess'));
                 else if (resultTags.includes(t)) createField(t, document.getElementById('fResult'));
-                else {
-                    createField(t, document.getElementById('fExtra'));
-                    hasExtra = true;
-                }
+                else { createField(t, document.getElementById('fExtra')); hasExtra = true; }
             });
-
             if (tags.has('Mindest')) {
                 const resContainer = document.getElementById('fResult');
                 const g = document.createElement('div');
                 g.className = 'field-group';
                 g.style.opacity = "0.7";
-                g.innerHTML = `<label>mind. Unterdruck (Referenz)</label>
-                <div class="input-with-unit">
-                    <input id="i_Mindest" readonly>
-                    <span class="unit-label">mbar</span>
-                </div>`;
+                g.innerHTML = `<label>mind. Unterdruck (Referenz)</label><div class="input-with-unit"><input id="i_Mindest" readonly><span class="unit-label">mbar</span></div>`;
                 const i = g.querySelector('input');
                 i.value = localStorage.getItem('form_Mindest') || '';
                 resContainer.prepend(g);
             }
-
             document.querySelectorAll('.section-preview').forEach(p => p.style.display = 'block');
             if(!hasExtra) document.getElementById('extraPreview').style.display = 'none';
-            
             const savedDate = localStorage.getItem('form_Datum');
             document.getElementById('dateIn').value = savedDate || new Date().toISOString().split('T')[0];
-            
             document.getElementById('downloadBtn').style.display = 'block';
             berechne(); update();
         } catch (e) { document.getElementById('status').textContent = "Fehler: " + e.message; }
@@ -224,18 +204,14 @@
             const unit = fieldConfig[t]?.unit ? ` ${fieldConfig[t].unit}` : '';
             return showLabel ? `${fieldConfig[t]?.label || t}: ${v}${unit}` : v;
         }).filter(x => x).join('\n');
-
         document.getElementById('previewTextAddr').textContent = p(adressTags, false) || "---";
         document.getElementById('previewTextAnlage').textContent = p(anlageTags, true) || "---";
         document.getElementById('previewTextMechanik').textContent = p(mechanikTags, true) || "---";
         document.getElementById('previewTextMess').textContent = p(messTags, true) || "---";
-        
         const resPreview = [...(tags.has('Mindest') ? ['Mindest'] : []), ...resultTags];
         document.getElementById('previewTextResult').textContent = p(resPreview, true) || "---";
-
         const extra = Array.from(tags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, ...resultTags, 'Datum'].includes(t));
         document.getElementById('previewTextExtra').textContent = p(extra, true) || "---";
-        
         const d = new Date(document.getElementById('dateIn').value);
         if (!isNaN(d)) document.getElementById('datePreview').textContent = d.toLocaleDateString('de-DE');
     }
@@ -270,7 +246,22 @@
         const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
         doc.render(data);
         const out = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-        const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = "Protokoll.docx"; a.click();
+        
+        // Zeitstempel und Namen generieren (Zweistellig, ohne Unterstriche)
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(-2);
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+
+        const name = document.getElementById('i_Adress2')?.value.trim().replace(/[^a-z0-9]/gi, '') || "Unbekannt";
+        const ort = document.getElementById('i_Adress4')?.value.trim().replace(/[^a-z0-9]/gi, '') || "KeinOrt";
+
+        const fileName = `${yy}${mm}${dd}${hh}${min}${ss}${name}${ort}.docx`;
+        
+        const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = fileName; a.click();
     };
 
     init();
