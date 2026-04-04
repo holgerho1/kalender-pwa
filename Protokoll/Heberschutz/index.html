@@ -148,6 +148,7 @@
     async function initialisieren() {
         try {
             const resp = await fetch('/' + docPath + '?t=' + Date.now());
+            if (!resp.ok) throw new Error("Datei nicht im Pfad gefunden.");
             originalBuffer = await resp.arrayBuffer();
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { parser: tag => ({ get: s => { if (!['#', '/', '^', '$'].includes(tag[0])) gefundeneTags.add(tag); return s[tag]; }})});
@@ -161,13 +162,10 @@
                 const conf = fieldConfig[tag];
                 const group = document.createElement('div');
                 group.className = 'field-group';
-                
                 const label = document.createElement('label');
                 label.textContent = conf?.label || tag;
-                
                 const wrap = document.createElement('div');
                 wrap.className = conf?.unit ? 'input-with-unit' : '';
-                
                 const input = document.createElement('input');
                 input.id = `input_${tag}`;
                 input.value = localStorage.getItem('form_'+tag) || '';
@@ -185,7 +183,7 @@
 
                 if (adressTags.includes(tag)) document.getElementById(conts.addr).appendChild(group);
                 else if (anlageTags.includes(tag)) document.getElementById(conts.anlage).appendChild(group);
-                else if (mechanikTags.includes(tag)) document.getElementById(conts.mech).appendChild(group);
+                else if (mechanikTags.includes(tag)) document.getElementById(conts.mechanik).appendChild(group);
                 else if (messTags.includes(tag)) document.getElementById(conts.mess).appendChild(group);
                 else document.getElementById(conts.extra).appendChild(group);
             });
@@ -195,7 +193,7 @@
             document.getElementById('downloadBtn').style.display = 'block';
             document.getElementById('adminArea').style.display = 'block';
             berechneMindestdruck(); updatePreviews();
-        } catch (e) { document.getElementById('status').textContent = "Fehler beim Laden."; }
+        } catch (e) { document.getElementById('status').textContent = "Fehler: " + e.message; }
     }
 
     function updatePreviews() {
@@ -226,19 +224,42 @@
         const fileInput = document.getElementById('fileInput');
         const token = document.getElementById('ghToken').value;
         if (!fileInput.files[0] || !token) return alert("Bitte Datei wählen und Token eingeben.");
+        
         localStorage.setItem('gh_token', token);
         const reader = new FileReader();
         reader.onload = async () => {
             const b64 = reader.result.split(',')[1];
             try {
-                const getResp = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${docPath}`, { headers: { 'Authorization': `token ${token}` } });
-                const getData = await getResp.json();
-                const putResp = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${docPath}`, {
-                    method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: "Struktur-Update via WebApp", content: b64, sha: getData.sha })
+                // 1. SHA holen
+                const getResp = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${docPath}`, {
+                    headers: { 'Authorization': `token ${token}` }
                 });
-                if (putResp.ok) { alert("Erfolgreich! Seite wird neu geladen."); location.reload(); } else alert("Fehler beim Upload.");
-            } catch (e) { alert("Verbindungsfehler."); }
+                
+                if (!getResp.ok) {
+                    const err = await getResp.json();
+                    return alert("Fehler beim Abrufen der Datei-ID: " + (err.message || getResp.statusText));
+                }
+                const getData = await getResp.json();
+                
+                // 2. Upload
+                const putResp = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${docPath}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: "Struktur-Update via WebApp",
+                        content: b64,
+                        sha: getData.sha
+                    })
+                });
+
+                if (putResp.ok) { 
+                    alert("Erfolgreich hochgeladen! Seite wird neu geladen."); 
+                    location.reload(); 
+                } else {
+                    const err = await putResp.json();
+                    alert("Upload-Fehler von GitHub: " + (err.message || "Unbekannter Fehler"));
+                }
+            } catch (e) { alert("Verbindungsfehler: " + e.message); }
         };
         reader.readAsDataURL(fileInput.files[0]);
     };
@@ -258,7 +279,7 @@
                 mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
             });
             const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = "Protokoll.docx"; a.click();
-        } catch (e) { alert("Fehler!"); }
+        } catch (e) { alert("Fehler beim Erstellen der Word-Datei."); }
     };
 
     initialisieren();
