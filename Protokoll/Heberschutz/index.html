@@ -46,10 +46,10 @@
         <h2>⚙️ Anlage</h2><div id="previewTextAnlage" class="preview-text"></div>
     </div>
     <div id="mechanikPreview" class="section-preview" onclick="openModal('mechanikModal')" style="display: none;">
-        <h2>🔧 Mechanik</h2><div id="previewTextMechanik" class="preview-text"></div>
+        <h2>🔧 mechanische Bewertung</h2><div id="previewTextMechanik" class="preview-text"></div>
     </div>
     <div id="messPreview" class="section-preview" onclick="openModal('messModal')" style="display: none;">
-        <h2>📏 Messtechnik</h2><div id="previewTextMess" class="preview-text"></div>
+        <h2>📏 messtechnische Bewertung</h2><div id="previewTextMess" class="preview-text"></div>
     </div>
     <div id="resultPreview" class="section-preview" onclick="openModal('resultModal')" style="display: none;">
         <h2>✅ Ergebnis</h2><div id="previewTextResult" class="preview-text"></div>
@@ -63,8 +63,8 @@
 
 <div id="addrModal" class="modal"><div class="modal-content"><h2>Adresse</h2><div id="fAddr"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="anlageModal" class="modal"><div class="modal-content"><h2>Anlage</h2><div id="fAnlage"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-<div id="mechanikModal" class="modal"><div class="modal-content"><h2>Mechanik</h2><div id="fMech"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-<div id="messModal" class="modal"><div class="modal-content"><h2>Messtechnik</h2><div id="fMess"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+<div id="mechanikModal" class="modal"><div class="modal-content"><h2>mechanische Bewertung</h2><div id="fMech"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+<div id="messModal" class="modal"><div class="modal-content"><h2>messtechnische Bewertung</h2><div id="fMess"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="resultModal" class="modal"><div class="modal-content"><h2>Ergebnis</h2><div id="fResult"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="extraModal" class="modal"><div class="modal-content"><h2>Zusätzliche Platzhalter</h2><div id="fExtra"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="dateModal" class="modal"><div class="modal-content"><h2>Datum</h2><input type="date" id="dateIn" onchange="dateCh()"></div></div>
@@ -105,9 +105,11 @@
 
     const fieldConfig = {
         'Adress1': { label: 'Zusatz' }, 'Adress2': { label: 'Name' }, 'Adress3': { label: 'Straße' }, 'Adress4': { label: 'PLZ/Ort' },
+        'Diesel': { label: 'Medium' }, 'Ventil': { label: 'Heberschutzventil' },
+        'Zustand': { label: 'Allgemeinzustand' }, 'Körper': { label: 'Ventilkörper' },
         'Inhalt': { unit: 'Liter' }, 'Durch': { label: 'Durchmesser', unit: 'cm' },
         'MFüll': { label: 'Max. Füllstand', unit: 'cm' }, 'AFüll': { label: 'Akt. Füllstand', unit: 'cm' }, 
-        'Höhe': { label: 'Höhe EV', unit: 'cm' }, 'Abstand': { unit: 'cm' }, 
+        'Höhe': { label: 'Höhe EV über Scheitel', unit: 'cm' }, 'Abstand': { label: 'Abstand Behälter - Fläche', unit: 'cm' }, 
         'Mindest': { label: 'mind. Unterdruck', unit: 'mbar' },
         'Gemessen': { label: 'gemessener Unterdruck', unit: 'mbar' },
         'Ergebnis': { label: 'Ergebnis' }
@@ -122,7 +124,6 @@
         const g = document.createElement('div');
         g.className = 'field-group';
         
-        // Wert sicher aus dem localStorage laden
         const storedValue = localStorage.getItem('form_'+t) || '';
         
         g.innerHTML = `<label>${conf?.label || t}</label>
@@ -132,7 +133,7 @@
         </div>`;
         
         const i = g.querySelector('input');
-        i.value = storedValue; // Direkte Zuweisung verhindert HTML-Attribut-Probleme
+        i.value = storedValue;
         
         i.oninput = () => { 
             localStorage.setItem('form_'+t, i.value); 
@@ -207,7 +208,9 @@
             document.querySelectorAll('.section-preview').forEach(p => p.style.display = 'block');
             if(!hasExtra) document.getElementById('extraPreview').style.display = 'none';
             
-            document.getElementById('dateIn').value = localStorage.getItem('form_Datum') || new Date().toISOString().split('T')[0];
+            const savedDate = localStorage.getItem('form_Datum');
+            document.getElementById('dateIn').value = savedDate || new Date().toISOString().split('T')[0];
+            
             document.getElementById('downloadBtn').style.display = 'block';
             berechne(); update();
         } catch (e) { document.getElementById('status').textContent = "Fehler: " + e.message; }
