@@ -111,7 +111,6 @@
     const anlageTags = ['Diesel', 'Hersteller', 'FabNummer', 'Inhalt', 'Baujahr', 'Durch', 'Ventil'];
     const mechanikTags = ['Zustand', 'Körper', 'Dichtung', 'Einstellung'];
     const messTags = ['MFüll', 'AFüll', 'Höhe', 'Abstand'];
-    const auswertungTags = ['Mindest', 'Gemessen'];
 
     const fieldConfig = {
         'Adress1': { label: 'Zusatz (Firma / Herr / Frau)' }, 'Adress2': { label: 'Name / Vorname' }, 'Adress3': { label: 'Straße / Hausnummer' }, 'Adress4': { label: 'PLZ / Ort' },
@@ -162,13 +161,10 @@
                 const conf = fieldConfig[tag];
                 const group = document.createElement('div');
                 group.className = 'field-group';
-                
                 const label = document.createElement('label');
                 label.textContent = conf?.label || tag;
-                
                 const wrap = document.createElement('div');
                 wrap.className = conf?.unit ? 'input-with-unit' : '';
-                
                 const input = document.createElement('input');
                 input.id = `input_${tag}`;
                 input.value = localStorage.getItem('form_'+tag) || '';
@@ -186,7 +182,7 @@
 
                 if (adressTags.includes(tag)) document.getElementById(conts.addr).appendChild(group);
                 else if (anlageTags.includes(tag)) document.getElementById(conts.anlage).appendChild(group);
-                else if (mechanikTags.includes(tag)) document.getElementById(conts.mech).appendChild(group);
+                else if (mechanikTags.includes(tag)) document.getElementById(conts.mechanik).appendChild(group);
                 else if (messTags.includes(tag)) document.getElementById(conts.mess).appendChild(group);
                 else {
                     document.getElementById(conts.extra).appendChild(group);
@@ -213,17 +209,15 @@
         document.getElementById('previewTextAnlage').textContent = p(anlageTags, true) || "Keine Daten";
         document.getElementById('previewTextMechanik').textContent = p(mechanikTags, true) || "Keine Daten";
         document.getElementById('previewTextMess').textContent = p(messTags, true) || "Keine Daten";
-        
-        const extraAndAuswertung = Array.from(gefundeneTags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, 'Datum'].includes(t));
-        document.getElementById('previewTextExtra').textContent = p(extraAndAuswertung, true) || "Keine Daten";
-
+        const extraTags = Array.from(gefundeneTags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, 'Datum'].includes(t));
+        document.getElementById('previewTextExtra').textContent = p(extraTags, true) || "Keine Daten";
         const d = new Date(document.getElementById('dateInput').value);
         if (!isNaN(d)) document.getElementById('datePreview').textContent = d.toLocaleDateString('de-DE');
     }
 
     document.getElementById('githubDownloadBtn').onclick = () => {
         const a = document.createElement("a");
-        a.href = URL.createObjectURL(new Blob([originalBuffer]));
+        a.href = URL.createObjectURL(new Blob([originalBuffer], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }));
         a.download = "PruefungHeberschutz_Struktur.docx"; a.click();
     };
 
@@ -268,7 +262,10 @@
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
             doc.render(data);
-            const out = doc.getZip().generate({ type: "blob" });
+            const out = doc.getZip().generate({ 
+                type: "blob", 
+                mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+            });
             const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = "Protokoll.docx"; a.click();
         } catch (e) { alert("Fehler!"); }
     };
