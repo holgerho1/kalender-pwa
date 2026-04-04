@@ -121,12 +121,19 @@
         const conf = fieldConfig[t];
         const g = document.createElement('div');
         g.className = 'field-group';
+        
+        // Wert sicher aus dem localStorage laden
+        const storedValue = localStorage.getItem('form_'+t) || '';
+        
         g.innerHTML = `<label>${conf?.label || t}</label>
         <div class="${conf?.unit ? 'input-with-unit' : ''}">
-            <input id="i_${t}" value="${localStorage.getItem('form_'+t) || ''}" ${t==='Mindest'?'readonly':''}>
+            <input id="i_${t}" ${t==='Mindest'?'readonly':''}>
             ${conf?.unit ? `<span class="unit-label">${conf.unit}</span>` : ''}
         </div>`;
+        
         const i = g.querySelector('input');
+        i.value = storedValue; // Direkte Zuweisung verhindert HTML-Attribut-Probleme
+        
         i.oninput = () => { 
             localStorage.setItem('form_'+t, i.value); 
             if (['Durch', 'Höhe', 'MFüll', 'Abstand', 'AFüll', 'Diesel'].includes(t)) berechne();
@@ -137,7 +144,12 @@
     }
 
     function berechne() {
-        const getV = (id) => { const v = document.getElementById(`i_` + id)?.value.replace(',', '.'); return isNaN(parseFloat(v)) ? null : parseFloat(v); };
+        const getV = (id) => { 
+            const el = document.getElementById(`i_` + id);
+            if(!el) return null;
+            const v = el.value.replace(',', '.'); 
+            return isNaN(parseFloat(v)) ? null : parseFloat(v); 
+        };
         const d = getV('Durch'), h = getV('Höhe'), mf = getV('MFüll'), ab = getV('Abstand'), af = getV('AFüll');
         const fields = document.querySelectorAll('#i_Mindest');
         if (fields.length === 0) return;
@@ -184,9 +196,11 @@
                 g.style.opacity = "0.7";
                 g.innerHTML = `<label>mind. Unterdruck (Referenz)</label>
                 <div class="input-with-unit">
-                    <input id="i_Mindest" value="${localStorage.getItem('form_Mindest') || ''}" readonly>
+                    <input id="i_Mindest" readonly>
                     <span class="unit-label">mbar</span>
                 </div>`;
+                const i = g.querySelector('input');
+                i.value = localStorage.getItem('form_Mindest') || '';
                 resContainer.prepend(g);
             }
 
