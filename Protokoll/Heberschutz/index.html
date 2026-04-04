@@ -52,8 +52,11 @@
     <div id="messPreview" class="section-preview" onclick="openModal('messModal')" style="display: none;">
         <h2>📏 Messtechnik</h2><div id="previewTextMess" class="preview-text"></div>
     </div>
+    <div id="resultPreview" class="section-preview" onclick="openModal('resultModal')" style="display: none;">
+        <h2>✅ Ergebnis</h2><div id="previewTextResult" class="preview-text"></div>
+    </div>
     <div id="extraPreview" class="section-preview" onclick="openModal('extraModal')" style="display: none;">
-        <h2>✅ Ergebnis</h2><div id="previewTextExtra" class="preview-text"></div>
+        <h2>➕ Zusätzliches</h2><div id="previewTextExtra" class="preview-text"></div>
     </div>
 
     <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
@@ -72,7 +75,8 @@
 <div id="anlageModal" class="modal"><div class="modal-content"><h2>Anlage</h2><div id="fAnlage"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="mechanikModal" class="modal"><div class="modal-content"><h2>Mechanik</h2><div id="fMech"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="messModal" class="modal"><div class="modal-content"><h2>Messtechnik</h2><div id="fMess"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
-<div id="extraModal" class="modal"><div class="modal-content"><h2>Ergebnis</h2><div id="fExtra"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+<div id="resultModal" class="modal"><div class="modal-content"><h2>Ergebnis</h2><div id="fResult"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
+<div id="extraModal" class="modal"><div class="modal-content"><h2>Zusätzliche Platzhalter</h2><div id="fExtra"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="dateModal" class="modal"><div class="modal-content"><h2>Datum</h2><input type="date" id="dateIn" onchange="dateCh()"></div></div>
 
 <script type="module">
@@ -90,6 +94,7 @@
     const anlageTags = ['Diesel', 'Hersteller', 'FabNummer', 'Inhalt', 'Baujahr', 'Durch', 'Ventil'];
     const mechanikTags = ['Zustand', 'Körper', 'Dichtung', 'Einstellung'];
     const messTags = ['MFüll', 'AFüll', 'Höhe', 'Abstand', 'Mindest'];
+    const resultTags = ['Gemessen', 'Ergebnis'];
 
     const fieldConfig = {
         'Adress1': { label: 'Zusatz' }, 'Adress2': { label: 'Name' }, 'Adress3': { label: 'Straße' }, 'Adress4': { label: 'PLZ/Ort' },
@@ -118,7 +123,6 @@
         i.oninput = () => { 
             localStorage.setItem('form_'+t, i.value); 
             if (['Durch', 'Höhe', 'MFüll', 'Abstand', 'AFüll', 'Diesel'].includes(t)) berechne();
-            // Wenn Mindest geändert wird (durch Berechnung), synchronisiere alle Instanzen von i_Mindest
             if (t === 'Mindest') document.querySelectorAll('#i_Mindest').forEach(el => el.value = i.value);
             update(); 
         };
@@ -152,28 +156,37 @@
 
             document.getElementById('status').style.display = "none";
             
-            // Felder einsortieren
+            let hasExtra = false;
             tags.forEach(t => {
                 if (t === 'Datum') return;
                 if (adressTags.includes(t)) createField(t, document.getElementById('fAddr'));
                 else if (anlageTags.includes(t)) createField(t, document.getElementById('fAnlage'));
                 else if (mechanikTags.includes(t)) createField(t, document.getElementById('fMech'));
                 else if (messTags.includes(t)) createField(t, document.getElementById('fMess'));
-                else createField(t, document.getElementById('fExtra'));
+                else if (resultTags.includes(t)) createField(t, document.getElementById('fResult'));
+                else {
+                    createField(t, document.getElementById('fExtra'));
+                    hasExtra = true;
+                }
             });
 
             // Mindestunterdruck im Ergebnis-Modal wiederholen
             if (tags.has('Mindest')) {
-                const extraContainer = document.getElementById('fExtra');
-                const separator = document.createElement('hr');
-                separator.style.margin = "15px 0";
-                separator.style.border = "0; border-top: 1px solid #eee";
-                extraContainer.prepend(separator);
-                createField('Mindest', extraContainer);
-                extraContainer.querySelector('.field-group').style.opacity = "0.7"; // Optische Markierung als Referenzwert
+                const resContainer = document.getElementById('fResult');
+                const g = document.createElement('div');
+                g.className = 'field-group';
+                g.style.opacity = "0.7";
+                g.innerHTML = `<label>mind. Unterdruck (Referenz)</label>
+                <div class="input-with-unit">
+                    <input id="i_Mindest" value="${localStorage.getItem('form_Mindest') || ''}" readonly>
+                    <span class="unit-label">mbar</span>
+                </div>`;
+                resContainer.prepend(g);
             }
 
             document.querySelectorAll('.section-preview').forEach(p => p.style.display = 'block');
+            if(!hasExtra) document.getElementById('extraPreview').style.display = 'none';
+            
             document.getElementById('dateIn').value = localStorage.getItem('form_Datum') || new Date().toISOString().split('T')[0];
             document.getElementById('downloadBtn').style.display = 'block';
             document.getElementById('adminArea').style.display = 'block';
@@ -193,10 +206,13 @@
         document.getElementById('previewTextMechanik').textContent = p(mechanikTags, true) || "---";
         document.getElementById('previewTextMess').textContent = p(messTags, true) || "---";
         
-        const extra = Array.from(tags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, 'Datum'].includes(t));
-        // In der Ergebnis-Vorschau Mindestunterdruck als ersten Wert anzeigen
-        const resultPreview = [...(tags.has('Mindest') ? ['Mindest'] : []), ...extra];
-        document.getElementById('previewTextExtra').textContent = p(resultPreview, true) || "---";
+        // Ergebnis-Vorschau: Mindestunterdruck + Ergebnis-Tags
+        const resPreview = [...(tags.has('Mindest') ? ['Mindest'] : []), ...resultTags];
+        document.getElementById('previewTextResult').textContent = p(resPreview, true) || "---";
+
+        // Zusätzliches-Vorschau: Alle anderen
+        const extra = Array.from(tags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, ...resultTags, 'Datum'].includes(t));
+        document.getElementById('previewTextExtra').textContent = p(extra, true) || "---";
         
         const d = new Date(document.getElementById('dateIn').value);
         if (!isNaN(d)) document.getElementById('datePreview').textContent = d.toLocaleDateString('de-DE');
