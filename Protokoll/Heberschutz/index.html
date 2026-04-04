@@ -25,14 +25,14 @@
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-save { background: #007bff; color: white; margin-top: 10px; }
         .btn-download { background: #28a745; color: white; margin-top: 25px; font-size: 1.1rem; }
-        .upload-section { margin-top: 30px; padding-top: 15px; border-top: 2px solid #eee; }
+        .admin-note { font-size: 0.7rem; color: #888; margin-bottom: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <div class="header-row">
-        <h1 ondblclick="toggleAdmin()">Protokoll-Editor</h1>
+        <h1 ondblclick="openModal('adminModal')">Protokoll-Editor</h1>
         <div class="date-display" onclick="openModal('dateModal')">
             <div id="datePreview" class="date-value">--.--.----</div>
         </div>
@@ -59,13 +59,6 @@
     </div>
 
     <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
-
-    <div class="upload-section" id="upFields" style="display:none;">
-        <label>Struktur aktualisieren (GitHub)</label>
-        <input type="file" id="fIn" accept=".docx" style="margin-bottom:10px;">
-        <input type="password" id="ghTok" placeholder="GitHub Token" style="margin-bottom:10px;">
-        <button id="upBtn" class="btn-save" style="background: #28a745;">Upload starten</button>
-    </div>
 </div>
 
 <div id="addrModal" class="modal"><div class="modal-content"><h2>Adresse</h2><div id="fAddr"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
@@ -75,6 +68,23 @@
 <div id="resultModal" class="modal"><div class="modal-content"><h2>Ergebnis</h2><div id="fResult"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="extraModal" class="modal"><div class="modal-content"><h2>Zusätzliche Platzhalter</h2><div id="fExtra"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
 <div id="dateModal" class="modal"><div class="modal-content"><h2>Datum</h2><input type="date" id="dateIn" onchange="dateCh()"></div></div>
+
+<div id="adminModal" class="modal">
+    <div class="modal-content">
+        <h2>GitHub Update</h2>
+        <p class="admin-note">Vorlage (.docx) auf GitHub aktualisieren</p>
+        <div class="field-group">
+            <label>Datei auswählen</label>
+            <input type="file" id="fIn" accept=".docx">
+        </div>
+        <div class="field-group">
+            <label>GitHub Token</label>
+            <input type="password" id="ghTok" placeholder="Token eingeben">
+        </div>
+        <button id="upBtn" class="btn-save" style="background: #28a745;">Upload starten</button>
+        <button class="btn-save" style="background: #6c757d; margin-top: 10px;" onclick="closeM()">Abbrechen</button>
+    </div>
+</div>
 
 <script type="module">
     import PizZip from 'https://esm.sh/pizzip@3.1.4';
@@ -101,11 +111,6 @@
         'Mindest': { label: 'mind. Unterdruck', unit: 'mbar' },
         'Gemessen': { label: 'gemessener Unterdruck', unit: 'mbar' },
         'Ergebnis': { label: 'Ergebnis' }
-    };
-
-    window.toggleAdmin = () => {
-        const area = document.getElementById('upFields');
-        area.style.display = area.style.display === 'none' ? 'block' : 'none';
     };
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
