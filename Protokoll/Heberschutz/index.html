@@ -10,25 +10,29 @@
         .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
         h1 { font-size: 1.1rem; color: #007bff; margin: 0; }
         .date-display { text-align: right; cursor: pointer; padding: 5px; border-radius: 5px; }
-        .date-display:active { background: #f0f0f0; }
-        .date-display h2 { font-size: 0.65rem; margin: 0; color: #999; text-transform: uppercase; }
         .date-value { font-size: 0.9rem; color: #333; }
         .section-preview { background: #f8f9fa; border: 1px dashed #007bff; padding: 12px; border-radius: 8px; margin-bottom: 15px; cursor: pointer; }
         .section-preview h2 { font-size: 0.7rem; margin: 0 0 5px 0; color: #007bff; text-transform: uppercase; }
         .preview-text { font-family: monospace; font-size: 0.85rem; line-height: 1.4; white-space: pre-wrap; color: #444; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 85%; max-width: 380px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
-        .field-group { display: flex; flex-direction: column; margin-bottom: 12px; flex: 1; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 85%; max-width: 380px; max-height: 90vh; overflow-y: auto; }
+        .field-group { display: flex; flex-direction: column; margin-bottom: 12px; }
         label { font-size: 0.75rem; color: #666; margin-bottom: 3px; font-weight: bold; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; -webkit-appearance: none; }
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; }
         input[readonly] { background-color: #f9f9f9; color: #007bff; font-weight: bold; }
         .input-with-unit { position: relative; display: flex; align-items: center; }
         .input-with-unit input { padding-right: 55px; }
-        .unit-label { position: absolute; right: 10px; color: #888; font-size: 0.9rem; pointer-events: none; }
+        .unit-label { position: absolute; right: 10px; color: #888; font-size: 0.9rem; }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-save { background: #007bff; color: white; margin-top: 10px; }
         .btn-download { background: #28a745; color: white; margin-top: 25px; font-size: 1.1rem; }
-        .btn-github { background: #6e5494; color: white; margin-top: 15px; font-size: 0.9rem; opacity: 0.8; }
+        
+        /* Upload Sektion */
+        .upload-section { margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee; }
+        .upload-section h3 { font-size: 0.9rem; color: #666; margin-bottom: 10px; }
+        .btn-github { background: #6e5494; color: white; margin-bottom: 10px; font-size: 0.9rem; }
+        .btn-upload-file { background: #6c757d; color: white; font-size: 0.9rem; }
+        .upload-fields { display: none; margin-top: 10px; background: #fdfdfd; border: 1px solid #eee; padding: 10px; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -65,8 +69,24 @@
     </div>
 
     <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
-    
-    <button id="githubDownloadBtn" class="btn-github" style="display: none;">Original-Datei laden</button>
+
+    <div class="upload-section" id="adminArea" style="display: none;">
+        <h3>Datei-Verwaltung (GitHub)</h3>
+        <button id="githubDownloadBtn" class="btn-github">Original-Datei laden</button>
+        <button onclick="toggleUploadFields()" class="btn-upload-file">Geänderte Datei hochladen</button>
+        
+        <div id="uploadFields" class="upload-fields">
+            <div class="field-group">
+                <label>Datei auswählen</label>
+                <input type="file" id="fileInput" accept=".docx">
+            </div>
+            <div class="field-group">
+                <label>GitHub Token (wird nur lokal gespeichert)</label>
+                <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx">
+            </div>
+            <button id="ghUploadBtn" class="btn-save" style="background: #28a745;">Upload starten</button>
+        </div>
+    </div>
 </div>
 
 <div id="addrModal" class="modal"><div class="modal-content"><h2>Adresse</h2><div id="addrModalFields"></div><button class="btn-save" onclick="closeModals()">Fertig</button></div></div>
@@ -80,7 +100,10 @@
     import PizZip from 'https://esm.sh/pizzip@3.1.4';
     import Docxtemplater from 'https://esm.sh/docxtemplater@3.45.0';
 
-    const docPath = '/Protokoll/Heberschutz/PruefungHeberschutz.docx';
+    const GITHUB_USER = 'DEIN_NUTZERNAME'; // Bitte anpassen
+    const GITHUB_REPO = 'DEIN_REPO';      // Bitte anpassen
+    const docPath = 'Protokoll/Heberschutz/PruefungHeberschutz.docx';
+    
     let originalBuffer = null;
     const gefundeneTags = new Set();
     
@@ -100,6 +123,12 @@
         'Gemessen': { label: 'gemessener Unterdruck', unit: 'mbar' }
     };
 
+    window.toggleUploadFields = () => {
+        const div = document.getElementById('uploadFields');
+        div.style.display = div.style.display === 'block' ? 'none' : 'block';
+        document.getElementById('ghToken').value = localStorage.getItem('gh_token') || '';
+    };
+
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
     window.closeModals = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); updatePreviews(); };
     window.dateChanged = () => { localStorage.setItem('form_Datum', document.getElementById('dateInput').value); updatePreviews(); setTimeout(window.closeModals, 150); };
@@ -112,14 +141,13 @@
         if (d === null || h === null || mf === null || ab === null || af === null) { f.value = "Werte fehlen"; return; }
         const med = (document.getElementById('input_Diesel')?.value || "").toLowerCase();
         const fak = med.includes("diesel") ? 0.00081 : 0.00082; 
-        const ergBar = (d + h + mf + ab - af) * fak;
-        f.value = Math.max(0, ergBar * 1000).toFixed(1);
+        f.value = Math.max(0, (d + h + mf + ab - af) * fak * 1000).toFixed(1);
         localStorage.setItem('form_Mindest', f.value);
     }
 
     async function initialisieren() {
         try {
-            const resp = await fetch(docPath + '?t=' + Date.now());
+            const resp = await fetch('/' + docPath + '?t=' + Date.now());
             originalBuffer = await resp.arrayBuffer();
             const zip = new PizZip(originalBuffer);
             const doc = new Docxtemplater(zip, { parser: tag => ({ get: s => { if (!['#', '/', '^', '$'].includes(tag[0])) gefundeneTags.add(tag); return s[tag]; }})});
@@ -133,36 +161,29 @@
                 const conf = fieldConfig[tag];
                 const group = document.createElement('div');
                 group.className = 'field-group';
-                const label = document.createElement('label');
-                label.textContent = conf?.label || tag;
-                const wrap = document.createElement('div');
-                wrap.className = conf?.unit ? 'input-with-unit' : '';
-                const input = document.createElement('input');
-                input.id = `input_${tag}`;
-                input.value = localStorage.getItem('form_'+tag) || '';
-                if (tag === 'Mindest') input.readOnly = true;
-
+                group.innerHTML = `<label>${conf?.label || tag}</label><div class="${conf?.unit ? 'input-with-unit' : ''}">
+                    <input id="input_${tag}" value="${localStorage.getItem('form_'+tag) || ''}" ${tag==='Mindest'?'readonly':''}>
+                    ${conf?.unit ? `<span class="unit-label">${conf.unit}</span>` : ''}
+                </div>`;
+                
+                const input = group.querySelector('input');
                 input.oninput = () => { 
                     localStorage.setItem('form_'+tag, input.value); 
                     if (['Durch', 'Höhe', 'MFüll', 'Abstand', 'AFüll', 'Diesel'].includes(tag)) berechneMindestdruck();
                     updatePreviews(); 
                 };
 
-                wrap.appendChild(input);
-                if (conf?.unit) { const u = document.createElement('span'); u.className = 'unit-label'; u.textContent = conf.unit; wrap.appendChild(u); }
-                group.appendChild(label); group.appendChild(wrap);
-
                 if (adressTags.includes(tag)) document.getElementById(conts.addr).appendChild(group);
                 else if (anlageTags.includes(tag)) document.getElementById(conts.anlage).appendChild(group);
                 else if (mechanikTags.includes(tag)) document.getElementById(conts.mech).appendChild(group);
                 else if (messTags.includes(tag)) document.getElementById(conts.mess).appendChild(group);
-                else { document.getElementById(conts.extra).appendChild(group); document.getElementById('extraPreview').style.display = 'block'; }
+                else document.getElementById(conts.extra).appendChild(group);
             });
 
-            ['addressPreview', 'anlagePreview', 'mechanikPreview', 'messPreview'].forEach(id => document.getElementById(id).style.display = 'block');
+            document.querySelectorAll('.section-preview').forEach(p => p.style.display = 'block');
             document.getElementById('dateInput').value = localStorage.getItem('form_Datum') || new Date().toISOString().split('T')[0];
             document.getElementById('downloadBtn').style.display = 'block';
-            document.getElementById('githubDownloadBtn').style.display = 'block';
+            document.getElementById('adminArea').style.display = 'block';
             berechneMindestdruck(); updatePreviews();
         } catch (e) { document.getElementById('status').textContent = "Fehler beim Laden."; }
     }
@@ -178,37 +199,65 @@
         document.getElementById('previewTextAnlage').textContent = p(anlageTags, true) || "Keine Daten";
         document.getElementById('previewTextMechanik').textContent = p(mechanikTags, true) || "Keine Daten";
         document.getElementById('previewTextMess').textContent = p(messTags, true) || "Keine Daten";
-        const extraAndAuswertung = Array.from(gefundeneTags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, 'Datum'].includes(t));
-        document.getElementById('previewTextExtra').textContent = p(extraAndAuswertung, true) || "Keine Daten";
-
+        const extraTags = Array.from(gefundeneTags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, 'Datum'].includes(t));
+        document.getElementById('previewTextExtra').textContent = p(extraTags, true) || "Keine Daten";
         const d = new Date(document.getElementById('dateInput').value);
         if (!isNaN(d)) document.getElementById('datePreview').textContent = d.toLocaleDateString('de-DE');
     }
 
-    // Original-Datei von GitHub laden (unverändert)
     document.getElementById('githubDownloadBtn').onclick = () => {
-        if (!originalBuffer) return;
-        const blob = new Blob([originalBuffer], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
         const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "PruefungHeberschutz_Original.docx";
-        a.click();
+        a.href = URL.createObjectURL(new Blob([originalBuffer]));
+        a.download = "PruefungHeberschutz_Original.docx"; a.click();
+    };
+
+    document.getElementById('ghUploadBtn').onclick = async () => {
+        const file = document.getElementById('fileInput').files[0];
+        const token = document.getElementById('ghToken').value;
+        if (!file || !token) return alert("Bitte Datei auswählen und Token eingeben.");
+        
+        localStorage.setItem('gh_token', token);
+        const reader = new FileReader();
+        reader.onload = async () => {
+            const content = reader.result.split(',')[1];
+            try {
+                // 1. SHA der existierenden Datei holen
+                const getResp = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${docPath}`, {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+                const getData = await getResp.json();
+                
+                // 2. Datei hochladen
+                const putResp = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${docPath}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: "Struktur-Update via WebApp",
+                        content: content,
+                        sha: getData.sha
+                    })
+                });
+                if (putResp.ok) alert("Erfolgreich hochgeladen! Seite lädt neu.");
+                else alert("Fehler beim Upload. Token korrekt?");
+                location.reload();
+            } catch (e) { alert("Fehler!"); }
+        };
+        reader.readAsDataURL(file);
     };
 
     document.getElementById('downloadBtn').onclick = () => {
         const data = {};
         gefundeneTags.forEach(tag => {
-            if (tag === 'Datum') { data[tag] = new Date(document.getElementById('dateInput').value).toLocaleDateString('de-DE'); }
+            if (tag === 'Datum') data[tag] = new Date(document.getElementById('dateInput').value).toLocaleDateString('de-DE');
             else data[tag] = document.getElementById('input_'+tag)?.value || "";
         });
-        try {
-            const zip = new PizZip(originalBuffer);
-            const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-            doc.render(data);
-            const out = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-            const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = "PruefungHeberschutz.docx"; a.click();
-        } catch (e) { alert("Fehler"); }
+        const zip = new PizZip(originalBuffer);
+        const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+        doc.render(data);
+        const out = doc.getZip().generate({ type: "blob" });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = "Protokoll.docx"; a.click();
     };
+
     initialisieren();
 </script>
 </body>
