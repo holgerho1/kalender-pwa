@@ -157,7 +157,8 @@
         
         let result = "Werte fehlen";
         if (d !== null && h !== null && mf !== null && ab !== null && af !== null) {
-            const fak = (document.getElementById('i_Diesel')?.value || "").toLowerCase().includes("diesel") ? 0.00081 : 0.00082; 
+            // Angepasste Faktoren: Diesel 0.00083, Standard 0.00084
+            const fak = (document.getElementById('i_Diesel')?.value || "").toLowerCase().includes("diesel") ? 0.00083 : 0.00084; 
             result = Math.max(0, (d + h + mf + ab - af) * fak * 1000).toFixed(1);
         }
         
