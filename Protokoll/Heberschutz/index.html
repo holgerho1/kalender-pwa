@@ -220,7 +220,8 @@
         const p = (t_list, showLabel) => t_list.map(t => {
             const v = document.getElementById('i_'+t)?.value;
             if (!v || v === "Werte fehlen") return null;
-            return showLabel ? `${fieldConfig[t]?.label || t}: ${v}` : v;
+            const unit = fieldConfig[t]?.unit ? ` ${fieldConfig[t].unit}` : '';
+            return showLabel ? `${fieldConfig[t]?.label || t}: ${v}${unit}` : v;
         }).filter(x => x).join('\n');
 
         document.getElementById('previewTextAddr').textContent = p(adressTags, false) || "---";
