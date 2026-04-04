@@ -247,7 +247,6 @@
         doc.render(data);
         const out = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
         
-        // Zeitstempel und Namen generieren (Zweistellig, ohne Unterstriche)
         const now = new Date();
         const yy = String(now.getFullYear()).slice(-2);
         const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -259,7 +258,8 @@
         const name = document.getElementById('i_Adress2')?.value.trim().replace(/[^a-z0-9]/gi, '') || "Unbekannt";
         const ort = document.getElementById('i_Adress4')?.value.trim().replace(/[^a-z0-9]/gi, '') || "KeinOrt";
 
-        const fileName = `${yy}${mm}${dd}${hh}${min}${ss}${name}${ort}.docx`;
+        // Muster: YYMMTagHHMMSSHeberschutzNameOrt.docx
+        const fileName = `${yy}${mm}${dd}${hh}${min}${ss}Heberschutz${name}${ort}.docx`;
         
         const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = fileName; a.click();
     };
