@@ -29,21 +29,24 @@
         
         /* Login Styles */
         #auth-overlay { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: #f0f2f5; align-items: center; justify-content: center; flex-direction: column; }
-        .auth-container { text-align: center; }
         .logout-link { display: block; text-align: center; margin-top: 20px; color: #888; font-size: 0.75rem; text-decoration: none; cursor: pointer; border: none; background: none; width: 100%; }
     </style>
 </head>
 <body>
 
 <div id="auth-overlay">
-    <div class="card auth-container">
-        <h2>Zugriff geschützt</h2>
+    <div class="card">
+        <h2 style="text-align: center;">Zugriff geschützt</h2>
         <div class="field-group">
-            <label>Passwort eingeben</label>
+            <label>Benutzername</label>
+            <input type="text" id="admin-user" placeholder="Name">
+        </div>
+        <div class="field-group">
+            <label>Passwort</label>
             <input type="password" id="admin-pw" placeholder="Passwort">
         </div>
         <button class="btn-save" id="loginBtn">Anmelden</button>
-        <p id="auth-error" style="color: red; font-size: 0.8rem; margin-top: 10px;"></p>
+        <p id="auth-error" style="color: red; font-size: 0.8rem; margin-top: 10px; text-align: center;"></p>
     </div>
 </div>
 
@@ -135,20 +138,26 @@
         'Ergebnis': { label: 'Ergebnis' }
     };
 
-    // --- Auth Funktionen ---
+    // --- Auth Logik ---
     async function handleLogin() {
+        const user = document.getElementById('admin-user').value;
         const pw = document.getElementById('admin-pw').value;
-        const resp = await fetch('/api/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: pw })
-        });
+        
+        try {
+            const resp = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pw })
+            });
 
-        if (resp.ok) {
-            localStorage.setItem('editor_auth', 'true');
-            checkAccess();
-        } else {
-            document.getElementById('auth-error').textContent = "Falsches Passwort!";
+            if (resp.ok) {
+                localStorage.setItem('editor_auth', 'true');
+                checkAccess();
+            } else {
+                document.getElementById('auth-error').textContent = "Benutzer oder Passwort falsch!";
+            }
+        } catch (e) {
+            document.getElementById('auth-error').textContent = "Server-Fehler!";
         }
     }
 
@@ -169,12 +178,10 @@
         location.reload();
     }
 
-    // Event Listener für Buttons zuweisen
     document.getElementById('loginBtn').onclick = handleLogin;
     document.getElementById('logoutBtn').onclick = logout;
 
-    // --- Bestehende Logik ---
-
+    // --- Bestehender Editor Code ---
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
     window.closeM = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); update(); };
     window.dateCh = () => { localStorage.setItem('form_Datum', document.getElementById('dateIn').value); update(); setTimeout(window.closeM, 150); };
@@ -333,7 +340,7 @@
         const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = fileName; a.click();
     };
 
-    // Initialer Check beim Laden der Seite
+    // Initialer Check beim Start
     checkAccess();
 </script>
 </body>
