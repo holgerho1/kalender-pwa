@@ -26,39 +26,59 @@
         .btn-save { background: #007bff; color: white; margin-top: 10px; }
         .btn-download { background: #28a745; color: white; margin-top: 25px; font-size: 1.1rem; }
         .admin-note { font-size: 0.7rem; color: #888; margin-bottom: 10px; text-align: center; }
+        
+        /* Login Styles */
+        #auth-overlay { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: #f0f2f5; align-items: center; justify-content: center; flex-direction: column; }
+        .auth-container { text-align: center; }
+        .logout-link { display: block; text-align: center; margin-top: 20px; color: #888; font-size: 0.75rem; text-decoration: none; cursor: pointer; border: none; background: none; width: 100%; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div class="header-row">
-        <h1 ondblclick="openModal('adminModal')">Protokoll-Editor</h1>
-        <div class="date-display" onclick="openModal('dateModal')">
-            <div id="datePreview" class="date-value">--.--.----</div>
+<div id="auth-overlay">
+    <div class="card auth-container">
+        <h2>Zugriff geschützt</h2>
+        <div class="field-group">
+            <label>Passwort eingeben</label>
+            <input type="password" id="admin-pw" placeholder="Passwort">
         </div>
+        <button class="btn-save" id="loginBtn">Anmelden</button>
+        <p id="auth-error" style="color: red; font-size: 0.8rem; margin-top: 10px;"></p>
     </div>
-    <div id="status">Dokument wird geladen...</div>
-    
-    <div id="addressPreview" class="section-preview" onclick="openModal('addrModal')" style="display: none;">
-        <h2>📍 Adresse</h2><div id="previewTextAddr" class="preview-text"></div>
-    </div>
-    <div id="anlagePreview" class="section-preview" onclick="openModal('anlageModal')" style="display: none;">
-        <h2>⚙️ Anlage</h2><div id="previewTextAnlage" class="preview-text"></div>
-    </div>
-    <div id="mechanikPreview" class="section-preview" onclick="openModal('mechanikModal')" style="display: none;">
-        <h2>🔧 mechanische Bewertung</h2><div id="previewTextMechanik" class="preview-text"></div>
-    </div>
-    <div id="messPreview" class="section-preview" onclick="openModal('messModal')" style="display: none;">
-        <h2>📏 messtechnische Bewertung</h2><div id="previewTextMess" class="preview-text"></div>
-    </div>
-    <div id="resultPreview" class="section-preview" onclick="openModal('resultModal')" style="display: none;">
-        <h2>✅ Ergebnis</h2><div id="previewTextResult" class="preview-text"></div>
-    </div>
-    <div id="extraPreview" class="section-preview" onclick="openModal('extraModal')" style="display: none;">
-        <h2>➕ Zusätzliches</h2><div id="previewTextExtra" class="preview-text"></div>
-    </div>
+</div>
 
-    <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
+<div id="main-content" style="display: none;">
+    <div class="card">
+        <div class="header-row">
+            <h1 ondblclick="openModal('adminModal')">Protokoll-Editor</h1>
+            <div class="date-display" onclick="openModal('dateModal')">
+                <div id="datePreview" class="date-value">--.--.----</div>
+            </div>
+        </div>
+        <div id="status">Dokument wird geladen...</div>
+        
+        <div id="addressPreview" class="section-preview" onclick="openModal('addrModal')" style="display: none;">
+            <h2>📍 Adresse</h2><div id="previewTextAddr" class="preview-text"></div>
+        </div>
+        <div id="anlagePreview" class="section-preview" onclick="openModal('anlageModal')" style="display: none;">
+            <h2>⚙️ Anlage</h2><div id="previewTextAnlage" class="preview-text"></div>
+        </div>
+        <div id="mechanikPreview" class="section-preview" onclick="openModal('mechanikModal')" style="display: none;">
+            <h2>🔧 mechanische Bewertung</h2><div id="previewTextMechanik" class="preview-text"></div>
+        </div>
+        <div id="messPreview" class="section-preview" onclick="openModal('messModal')" style="display: none;">
+            <h2>📏 messtechnische Bewertung</h2><div id="previewTextMess" class="preview-text"></div>
+        </div>
+        <div id="resultPreview" class="section-preview" onclick="openModal('resultModal')" style="display: none;">
+            <h2>✅ Ergebnis</h2><div id="previewTextResult" class="preview-text"></div>
+        </div>
+        <div id="extraPreview" class="section-preview" onclick="openModal('extraModal')" style="display: none;">
+            <h2>➕ Zusätzliches</h2><div id="previewTextExtra" class="preview-text"></div>
+        </div>
+
+        <button id="downloadBtn" class="btn-download" style="display: none;">Protokoll speichern</button>
+        <button class="logout-link" id="logoutBtn">Abmelden</button>
+    </div>
 </div>
 
 <div id="addrModal" class="modal"><div class="modal-content"><h2>Adresse</h2><div id="fAddr"></div><button class="btn-save" onclick="closeM()">Fertig</button></div></div>
@@ -114,6 +134,46 @@
         'Gemessen': { label: 'gemessener Unterdruck', unit: 'mbar' },
         'Ergebnis': { label: 'Ergebnis' }
     };
+
+    // --- Auth Funktionen ---
+    async function handleLogin() {
+        const pw = document.getElementById('admin-pw').value;
+        const resp = await fetch('/api/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pw })
+        });
+
+        if (resp.ok) {
+            localStorage.setItem('editor_auth', 'true');
+            checkAccess();
+        } else {
+            document.getElementById('auth-error').textContent = "Falsches Passwort!";
+        }
+    }
+
+    function checkAccess() {
+        const isAuth = localStorage.getItem('editor_auth') === 'true';
+        if (isAuth) {
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            if (!originalBuffer) init(); 
+        } else {
+            document.getElementById('auth-overlay').style.display = 'flex';
+            document.getElementById('main-content').style.display = 'none';
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('editor_auth');
+        location.reload();
+    }
+
+    // Event Listener für Buttons zuweisen
+    document.getElementById('loginBtn').onclick = handleLogin;
+    document.getElementById('logoutBtn').onclick = logout;
+
+    // --- Bestehende Logik ---
 
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
     window.closeM = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); update(); };
@@ -273,7 +333,8 @@
         const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = fileName; a.click();
     };
 
-    init();
+    // Initialer Check beim Laden der Seite
+    checkAccess();
 </script>
 </body>
 </html>
