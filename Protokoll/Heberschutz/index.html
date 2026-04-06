@@ -25,6 +25,7 @@
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-save { background: #007bff; color: white; margin-top: 10px; }
         .btn-download { background: #28a745; color: white; margin-top: 25px; font-size: 1.1rem; }
+        .btn-admin-download { background: #f0ad4e; color: white; margin-bottom: 15px; }
         .admin-note { font-size: 0.7rem; color: #888; margin-bottom: 10px; text-align: center; }
         
         /* Login Styles */
@@ -95,9 +96,14 @@
 <div id="adminModal" class="modal">
     <div class="modal-content">
         <h2>GitHub Update</h2>
-        <p class="admin-note">Vorlage (.docx) auf GitHub aktualisieren</p>
+        <p class="admin-note">Aktuelle Vorlage (.docx) herunterladen oder neue hochladen</p>
+        
+        <button id="adminDlBtn" class="btn-save btn-admin-download">Aktuelle Vorlage laden</button>
+        
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+
         <div class="field-group">
-            <label>Datei auswählen</label>
+            <label>Neue Datei auswählen</label>
             <input type="file" id="fIn" accept=".docx">
         </div>
         <div class="field-group">
@@ -180,6 +186,16 @@
 
     document.getElementById('loginBtn').onclick = handleLogin;
     document.getElementById('logoutBtn').onclick = logout;
+
+    // --- Vorlagen-Download ---
+    document.getElementById('adminDlBtn').onclick = () => {
+        if (!originalBuffer) return alert("Vorlage noch nicht geladen.");
+        const blob = new Blob([originalBuffer], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "PruefungHeberschutz_Vorlage.docx";
+        a.click();
+    };
 
     // --- Bestehender Editor Code ---
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
@@ -340,7 +356,6 @@
         const a = document.createElement("a"); a.href = URL.createObjectURL(out); a.download = fileName; a.click();
     };
 
-    // Initialer Check beim Start
     checkAccess();
 </script>
 </body>
