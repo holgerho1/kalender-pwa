@@ -90,7 +90,7 @@
     .section-title { font-size: 0.85rem; text-transform: uppercase; color: #777; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-weight: 500; }
 
     label { display: block; margin-top: 10px; font-size: 0.8rem; color: var(--primary-color); }
-    input[type="text"] { width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; background: #fafafa; font-family: inherit; }
+    input[type="text"], input[type="password"] { width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; background: #fafafa; font-family: inherit; }
 
     button { font-family: 'Roboto', sans-serif; font-weight: 500; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
@@ -102,59 +102,83 @@
     .hidden { display: none !important; }
 
     #debug-log { font-size: 0.7rem; color: #999; text-align: center; margin-top: 20px; font-family: monospace; }
+
+    /* Login Styles */
+    #auth-overlay { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: #f0f2f5; align-items: center; justify-content: center; flex-direction: column; }
+    .field-group { display: flex; flex-direction: column; margin-bottom: 12px; width: 100%; }
+    .logout-link { display: block; text-align: center; margin-top: 20px; color: #888; font-size: 0.75rem; text-decoration: none; cursor: pointer; border: none; background: none; width: 100%; }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1><span class="material-icons">assignment</span> Arbeitsnachweis</h1>
-    <div id="wocheninfo">Woche wird geladen...</div>
-    
-    <a href="material/mitarbeiter.html" id="admin-link" class="btn-outline">
-      <span class="material-icons" style="font-size: 16px;">people</span> Verwaltung
-    </a>
-  </header>
-
-  <div id="progress-container">
-    <div id="progress-outer">
-      <div id="progress-bar"></div>
+  <div id="auth-overlay">
+    <div class="card" style="max-width: 320px;">
+        <h2 style="text-align: center; color: var(--primary-color); font-size: 1.1rem;">Zugriff geschützt</h2>
+        <div class="field-group">
+            <label>Benutzername</label>
+            <input type="text" id="admin-user" placeholder="Name">
+        </div>
+        <div class="field-group">
+            <label>Passwort</label>
+            <input type="password" id="admin-pw" placeholder="Passwort">
+        </div>
+        <button class="btn-primary" id="loginBtn">Anmelden</button>
+        <p id="auth-error" style="color: red; font-size: 0.8rem; margin-top: 10px; text-align: center;"></p>
     </div>
-    <div id="progress-text">Initialisierung...</div>
   </div>
 
-  <div class="container">
-    <div id="termine"></div>
-
-    <div id="admin-bereich" class="card">
-      <div class="section-title hidden"><span class="material-icons">settings</span> Benutzerverwaltung</div>
-      <label class="hidden">Kürzel (z.B. HH)</label>
-      <input id="kuerzel" type="text" placeholder="Kürzel" class="hidden">
-      <label class="hidden">Vollständiger Name</label>
-      <input id="name" type="text" placeholder="Name" class="hidden">
-      <button class="btn-primary hidden" onclick="speichereBenutzer()">
-        <span class="material-icons">save</span> Benutzer speichern
-      </button>
-      <div id="benutzerListe"></div>
-    </div>
-
-    <div id="links-bereich" class="card">
-      <div class="section-title"><span class="material-icons">link</span> Schnellzugriff</div>
-      <div id="linkListe"></div>
+  <div id="main-content" style="display: none; width: 100%;">
+    <header>
+      <h1><span class="material-icons">assignment</span> Arbeitsnachweis</h1>
+      <div id="wocheninfo">Woche wird geladen...</div>
       
-      <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
-        <a href="material/index.html" class="btn-outline" style="width: 100%;">
-          <span class="material-icons" style="font-size: 16px;">view_list</span> Zeilen Übersicht
-        </a>
-      </div>
+      <a href="material/mitarbeiter.html" id="admin-link" class="btn-outline">
+        <span class="material-icons" style="font-size: 16px;">people</span> Verwaltung
+      </a>
+    </header>
 
-      <div style="margin-top: 12px; font-size: 0.7rem; color: #999; line-height: 1.4; border-top: 1px dashed #eee; padding-top: 8px;">
-        <strong>Status-Legende:</strong><br>
-        1. Start &bull; 2. Google hat Daten geliefert &bull; 3. Mitarbeiter ID aus Supabase ermittelt &bull; 4. Bereit zur Anzeige der Termine &bull; 5. Letzte Daten aus Supabase abgerufen &bull; 6. Fertig<br>
-        <span style="font-style: italic;">(PDF Erstellung nicht berücksichtigt)</span>
+    <div id="progress-container">
+      <div id="progress-outer">
+        <div id="progress-bar"></div>
       </div>
+      <div id="progress-text">Initialisierung...</div>
     </div>
 
-    <div id="debug-log"></div>
+    <div class="container">
+      <div id="termine"></div>
+
+      <div id="admin-bereich" class="card">
+        <div class="section-title hidden"><span class="material-icons">settings</span> Benutzerverwaltung</div>
+        <label class="hidden">Kürzel (z.B. HH)</label>
+        <input id="kuerzel" type="text" placeholder="Kürzel" class="hidden">
+        <label class="hidden">Vollständiger Name</label>
+        <input id="name" type="text" placeholder="Name" class="hidden">
+        <button class="btn-primary hidden" onclick="speichereBenutzer()">
+          <span class="material-icons">save</span> Benutzer speichern
+        </button>
+        <div id="benutzerListe"></div>
+      </div>
+
+      <div id="links-bereich" class="card">
+        <div class="section-title"><span class="material-icons">link</span> Schnellzugriff</div>
+        <div id="linkListe"></div>
+        
+        <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+          <a href="material/index.html" class="btn-outline" style="width: 100%;">
+            <span class="material-icons" style="font-size: 16px;">view_list</span> Zeilen Übersicht
+          </a>
+        </div>
+
+        <div style="margin-top: 12px; font-size: 0.7rem; color: #999; line-height: 1.4; border-top: 1px dashed #eee; padding-top: 8px;">
+          <strong>Status-Legende:</strong><br>
+          1. Start &bull; 2. Google hat Daten geliefert &bull; 3. Mitarbeiter ID aus Supabase ermittelt &bull; 4. Bereit zur Anzeige der Termine &bull; 5. Letzte Daten aus Supabase abgerufen &bull; 6. Fertig<br>
+          <span style="font-style: italic;">(PDF Erstellung nicht berücksichtigt)</span>
+        </div>
+      </div>
+
+      <button class="logout-link" id="logoutBtn">Abmelden</button>
+      <div id="debug-log"></div>
+    </div>
   </div>
 
   <script>
@@ -190,6 +214,53 @@
         }, 800);
       }
     };
+
+    // --- Auth Logik ---
+    async function handleLogin() {
+        const user = document.getElementById('admin-user').value;
+        const pw = document.getElementById('admin-pw').value;
+        try {
+            const resp = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pw })
+            });
+            if (resp.ok) {
+                localStorage.setItem('editor_auth', 'true');
+                localStorage.setItem('editor_user', user);
+                localStorage.setItem('editor_pw', pw);
+                checkAccess();
+            } else {
+                document.getElementById('auth-error').textContent = "Benutzer oder Passwort falsch!";
+            }
+        } catch (e) {
+            document.getElementById('auth-error').textContent = "Server-Fehler!";
+        }
+    }
+
+    function checkAccess() {
+        const isAuth = localStorage.getItem('editor_auth') === 'true';
+        const savedUser = localStorage.getItem('editor_user');
+        const savedPw = localStorage.getItem('editor_pw');
+
+        if (isAuth && savedUser && savedPw) {
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+        } else {
+            document.getElementById('auth-overlay').style.display = 'flex';
+            document.getElementById('main-content').style.display = 'none';
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('editor_auth');
+        localStorage.removeItem('editor_user');
+        localStorage.removeItem('editor_pw');
+        location.reload();
+    }
+
+    document.getElementById('loginBtn').onclick = handleLogin;
+    document.getElementById('logoutBtn').onclick = logout;
   </script>
 
   <script type="module" src="material/db.js"></script>
@@ -210,6 +281,7 @@
     }
 
     window.addEventListener('load', () => {
+      checkAccess();
       checkUrlContext();
       const scrollPos = localStorage.getItem("scrollPos");
       if (scrollPos) {
