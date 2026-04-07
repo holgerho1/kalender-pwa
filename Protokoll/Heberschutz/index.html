@@ -144,6 +144,16 @@
         'Ergebnis': { label: 'Ergebnis' }
     };
 
+    function formatDate(isoString) {
+        if (!isoString) return "";
+        const d = new Date(isoString);
+        if (isNaN(d)) return "";
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}.${month}.${year}`;
+    }
+
     // --- Auth Logik ---
     async function handleLogin() {
         const user = document.getElementById('admin-user').value;
@@ -295,8 +305,9 @@
         document.getElementById('previewTextResult').textContent = p(resPreview, true) || "---";
         const extra = Array.from(tags).filter(t => ![...adressTags, ...anlageTags, ...mechanikTags, ...messTags, ...resultTags, 'Datum'].includes(t));
         document.getElementById('previewTextExtra').textContent = p(extra, true) || "---";
-        const d = new Date(document.getElementById('dateIn').value);
-        if (!isNaN(d)) document.getElementById('datePreview').textContent = d.toLocaleDateString('de-DE');
+        
+        const dVal = document.getElementById('dateIn').value;
+        if (dVal) document.getElementById('datePreview').textContent = formatDate(dVal);
     }
 
     document.getElementById('upBtn').onclick = async () => {
@@ -329,8 +340,12 @@
     document.getElementById('downloadBtn').onclick = () => {
         const data = {};
         tags.forEach(t => {
-            const input = document.getElementById('i_'+t);
-            data[t] = (t === 'Datum') ? new Date(document.getElementById('dateIn').value).toLocaleDateString('de-DE') : (input ? input.value : "");
+            if (t === 'Datum') {
+                data[t] = formatDate(document.getElementById('dateIn').value);
+            } else {
+                const input = document.getElementById('i_'+t);
+                data[t] = input ? input.value : "";
+            }
         });
         const zip = new PizZip(originalBuffer);
         const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
