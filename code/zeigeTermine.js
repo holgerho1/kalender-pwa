@@ -129,11 +129,6 @@ function erstelleTerminKarte(event) {
   const inputStyle = "width:100%; margin-top:8px; border:1px solid #ddd; border-radius:4px; padding:10px; box-sizing:border-box; background:#fafafa; font-family:inherit; font-size:14px;";
 
   const istFeiertag = fuzzyMatch(event.titel, ["feiertag"]);
-  
-  // Kollegen-Feld nur anzeigen, wenn kein Feiertag
-  const kollegenHTML = istFeiertag 
-    ? `<input type="hidden" class="mit-input" value="">` 
-    : `<textarea class="mit-input" rows="1" style="${inputStyle}" placeholder="Kollegen"></textarea>`;
 
   block.innerHTML = `
     <div style="font-weight:500; color:${PRIMARY}; display:flex; align-items:center; gap:5px; margin-bottom:10px;">
@@ -147,7 +142,7 @@ function erstelleTerminKarte(event) {
     </div>
     <textarea class="desc-input" rows="3" style="${inputStyle}" placeholder="Beschreibung"></textarea>
     <textarea class="mat-input" rows="2" style="${inputStyle}" placeholder="Material"></textarea>
-    ${kollegenHTML}
+    <textarea class="mit-input" rows="1" style="${inputStyle}" placeholder="Kollegen"></textarea>
     <button class="btn-delete" style="width:100%; margin-top:12px; background:none; border:none; color:#cf6679; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; font-size:13px;">
       <span class="material-icons" style="font-size:16px;">delete</span> Termin entfernen
     </button>
@@ -156,7 +151,9 @@ function erstelleTerminKarte(event) {
   block.querySelector(".titel-input").value = event.titel || "";
   block.querySelector(".desc-input").value = event.beschreibung || "";
   block.querySelector(".mat-input").value = event.material || "";
-  if (!istFeiertag) block.querySelector(".mit-input").value = event.mitarbeiter || "";
+  
+  // Wenn Feiertag, wird das Feld geleert, ansonsten befüllt
+  block.querySelector(".mit-input").value = istFeiertag ? "" : (event.mitarbeiter || "");
 
   block.querySelector(".btn-delete").onclick = () => {
     if(!confirm("Diesen Termin wirklich löschen?")) return;
@@ -335,8 +332,14 @@ function renderSteuerung(container, mDaten, zeitraum) {
         ev.titel = block.querySelector(".titel-input").value;
         ev.beschreibung = block.querySelector(".desc-input").value;
         ev.material = block.querySelector(".mat-input").value;
-        const mitInput = block.querySelector(".mit-input");
-        if (mitInput && mitInput.type !== "hidden") ev.mitarbeiter = mitInput.value;
+        
+        // Mitarbeiter-Eintrag entfernen, wenn es ein Feiertag ist
+        if (fuzzyMatch(ev.titel, ["feiertag"])) {
+          ev.mitarbeiter = "";
+        } else {
+          ev.mitarbeiter = block.querySelector(".mit-input").value;
+        }
+        
         block.querySelectorAll(".stunden-input").forEach(i => ev[i.dataset.field] = i.value);
       }
     });
