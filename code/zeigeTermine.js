@@ -20,7 +20,6 @@ const CARD_SHADOW = "0 2px 10px rgba(0,0,0,0.1)";
    ========================================================================== */
 
 export async function zeigeTermine(targetId = null) {
-  // --- PUNKT 4: ANZEIGE STARTET ---
   if (window.setLadePunkt) window.setLadePunkt(4);
 
   const mitarbeiterDaten = await ladeMitarbeiterId();
@@ -40,14 +39,11 @@ export async function zeigeTermine(targetId = null) {
   if (!container) return;
   container.innerHTML = "";
 
-  // Vorhandene Termine holen
   let gefiltert = holeGefilterteTermine(zeitraum);
 
-  // --- ERWEITERUNG: PRÜFUNG AUF FEHLENDE WERKSTAGE ---
   const vorhandeneTage = gefiltert.map(t => new Date(t.timestamp).getDay());
   const fehlendeKarten = [];
 
-  // Montag (1) bis Freitag (5) prüfen
   for (let i = 1; i <= 5; i++) {
     if (!vorhandeneTage.includes(i)) {
       const fehlendesDatum = new Date(zeitraum.montag);
@@ -62,7 +58,6 @@ export async function zeigeTermine(targetId = null) {
     }
   }
 
-  // Fehlende Karten in die Liste mischen und nach Datum sortieren
   const anzeigeListe = [...gefiltert, ...fehlendeKarten].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
   if (anzeigeListe.length === 0) {
@@ -81,7 +76,6 @@ export async function zeigeTermine(targetId = null) {
     wochenFarbenLogik(gefiltert);
   }
 
-  // --- PUNKT 5: ZUSATZDATEN (Z1/Z2) ---
   if (hatZ1) {
     const stats = berechneWochenStats(gefiltert);
     renderDatenbox1(container, stats, zeitraum);
@@ -96,7 +90,6 @@ export async function zeigeTermine(targetId = null) {
 
   renderSteuerung(container, mitarbeiterDaten, zeitraum);
 
-  // --- PUNKT 6: FERTIG ---
   if (window.setLadePunkt) window.setLadePunkt(6);
 
   if (targetId) {
@@ -135,34 +128,56 @@ function erstelleTerminKarte(event) {
   const datumStr = `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")} (${wochentage[d.getDay()]})`;
   const inputStyle = "width:100%; margin-top:8px; border:1px solid #ddd; border-radius:4px; padding:10px; box-sizing:border-box; background:#fafafa; font-family:inherit; font-size:14px;";
 
-  block.innerHTML = `
-    <div style="font-weight:500; color:${PRIMARY}; display:flex; align-items:center; gap:5px; margin-bottom:10px;">
-      <span class="material-icons" style="font-size:18px;">event</span> ${datumStr}
-    </div>
-    <textarea class="titel-input" rows="2" style="${inputStyle} font-weight:500;" placeholder="Titel / Ort"></textarea>
-    <div style="display: flex; gap: 8px; margin-top: 8px; width: 100%;">
-      <input type="text" inputmode="decimal" class="stunden-input" data-field="arbeit" value="${event.arbeit || ""}" placeholder="Arbeit" style="${inputStyle} width:33.33%; margin-top:0; text-align:center;">
-      <input type="text" inputmode="decimal" class="stunden-input" data-field="fahr" value="${event.fahr || ""}" placeholder="Fahr" style="${inputStyle} width:33.33%; margin-top:0; text-align:center;">
-      <input type="text" inputmode="decimal" class="stunden-input" data-field="über" value="${event.über || ""}" placeholder="Über" style="${inputStyle} width:33.33%; margin-top:0; text-align:center;">
-    </div>
-    <textarea class="desc-input" rows="3" style="${inputStyle}" placeholder="Beschreibung"></textarea>
-    <textarea class="mat-input" rows="2" style="${inputStyle}" placeholder="Material"></textarea>
-    <textarea class="mit-input" rows="1" style="${inputStyle}" placeholder="Kollegen"></textarea>
-    <button class="btn-delete" style="width:100%; margin-top:12px; background:none; border:none; color:#cf6679; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; font-size:13px;">
-      <span class="material-icons" style="font-size:16px;">delete</span> Termin entfernen
-    </button>
-  `;
+  // Prüfung auf Feiertag
+  const istFeiertag = fuzzyMatch(event.titel, ["feiertag"]);
 
-  block.querySelector(".titel-input").value = event.titel || "";
-  block.querySelector(".desc-input").value = event.beschreibung || "";
-  block.querySelector(".mat-input").value = event.material || "";
-  block.querySelector(".mit-input").value = event.mitarbeiter || "";
+  if (istFeiertag) {
+    block.style.backgroundColor = "#f1f8e9";
+    block.style.borderLeftColor = SECONDARY;
+    block.innerHTML = `
+      <div style="font-weight:bold; color:${PRIMARY}; display:flex; align-items:center; gap:5px; margin-bottom:5px;">
+        <span class="material-icons" style="font-size:18px;">celebration</span> ${datumStr}
+      </div>
+      <div style="font-size: 16px; font-weight: bold; color: #2e7d32; padding: 5px 0;">${event.titel}</div>
+      <div style="font-size: 12px; color: #666; font-style: italic;">An Feiertagen werden keine Arbeitszeiten erfasst.</div>
+      <input type="hidden" class="titel-input" value="${event.titel || ""}">
+      <input type="hidden" class="stunden-input" data-field="arbeit" value="">
+      <input type="hidden" class="stunden-input" data-field="fahr" value="">
+      <input type="hidden" class="stunden-input" data-field="über" value="">
+      <textarea class="desc-input" style="display:none;"></textarea>
+      <textarea class="mat-input" style="display:none;"></textarea>
+      <textarea class="mit-input" style="display:none;"></textarea>
+    `;
+  } else {
+    block.innerHTML = `
+      <div style="font-weight:500; color:${PRIMARY}; display:flex; align-items:center; gap:5px; margin-bottom:10px;">
+        <span class="material-icons" style="font-size:18px;">event</span> ${datumStr}
+      </div>
+      <textarea class="titel-input" rows="2" style="${inputStyle} font-weight:500;" placeholder="Titel / Ort"></textarea>
+      <div style="display: flex; gap: 8px; margin-top: 8px; width: 100%;">
+        <input type="text" inputmode="decimal" class="stunden-input" data-field="arbeit" value="${event.arbeit || ""}" placeholder="Arbeit" style="${inputStyle} width:33.33%; margin-top:0; text-align:center;">
+        <input type="text" inputmode="decimal" class="stunden-input" data-field="fahr" value="${event.fahr || ""}" placeholder="Fahr" style="${inputStyle} width:33.33%; margin-top:0; text-align:center;">
+        <input type="text" inputmode="decimal" class="stunden-input" data-field="über" value="${event.über || ""}" placeholder="Über" style="${inputStyle} width:33.33%; margin-top:0; text-align:center;">
+      </div>
+      <textarea class="desc-input" rows="3" style="${inputStyle}" placeholder="Beschreibung"></textarea>
+      <textarea class="mat-input" rows="2" style="${inputStyle}" placeholder="Material"></textarea>
+      <textarea class="mit-input" rows="1" style="${inputStyle}" placeholder="Kollegen"></textarea>
+      <button class="btn-delete" style="width:100%; margin-top:12px; background:none; border:none; color:#cf6679; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; font-size:13px;">
+        <span class="material-icons" style="font-size:16px;">delete</span> Termin entfernen
+      </button>
+    `;
 
-  block.querySelector(".btn-delete").onclick = () => {
-    if(!confirm("Diesen Termin wirklich löschen?")) return;
-    setTermine(getTermine().filter(t => t.id !== event.id));
-    zeigeTermine();
-  };
+    block.querySelector(".titel-input").value = event.titel || "";
+    block.querySelector(".desc-input").value = event.beschreibung || "";
+    block.querySelector(".mat-input").value = event.material || "";
+    block.querySelector(".mit-input").value = event.mitarbeiter || "";
+
+    block.querySelector(".btn-delete").onclick = () => {
+      if(!confirm("Diesen Termin wirklich löschen?")) return;
+      setTermine(getTermine().filter(t => t.id !== event.id));
+      zeigeTermine();
+    };
+  }
   return block;
 }
 
@@ -295,7 +310,6 @@ function renderSteuerung(container, mDaten, zeitraum) {
   const pdfBtnText = hatZ ? "PDF Export & Speichern" : "PDF Export";
 
   const pdfBtn = btn(pdfBtnText, "picture_as_pdf", "nav-pdf", async () => {
-    // PDF-Start: Wir zeigen den Fortschritt beim Speichern
     if (window.setLadePunkt) window.setLadePunkt(4);
 
     const mitarbeiter = await ladeMitarbeiterId();
@@ -333,11 +347,22 @@ function renderSteuerung(container, mDaten, zeitraum) {
     document.querySelectorAll("#termine > div[data-id]").forEach(block => {
       const ev = tOriginal.find(t => t.id === block.dataset.id);
       if (ev) {
-        ev.titel = block.querySelector(".titel-input").value;
-        ev.beschreibung = block.querySelector(".desc-input").value;
-        ev.material = block.querySelector(".mat-input").value;
-        ev.mitarbeiter = block.querySelector(".mit-input").value;
-        block.querySelectorAll(".stunden-input").forEach(i => ev[i.dataset.field] = i.value);
+        const tInput = block.querySelector(".titel-input");
+        if (tInput) ev.titel = tInput.value;
+        
+        const dInput = block.querySelector(".desc-input");
+        if (dInput && dInput.style.display !== "none") ev.beschreibung = dInput.value;
+        
+        const mInput = block.querySelector(".mat-input");
+        if (mInput && mInput.style.display !== "none") ev.material = mInput.value;
+        
+        const cInput = block.querySelector(".mit-input");
+        if (cInput && cInput.style.display !== "none") ev.mitarbeiter = cInput.value;
+        
+        block.querySelectorAll(".stunden-input").forEach(i => {
+          if (i.type !== "hidden") ev[i.dataset.field] = i.value;
+          else if (fuzzyMatch(ev.titel, ["feiertag"])) ev[i.dataset.field] = ""; 
+        });
       }
     });
     setTermine(tOriginal);
@@ -382,7 +407,6 @@ function wochenFarbenLogik(gefiltert) {
     let s = 0, u = 0, sonder = false;
 
     tEvents.forEach(ev => {
-      // Prüfen auf Urlaub, Feiertag, Krank oder Bereitschaft
       if (fuzzyMatch(ev.titel, ["urlaub", "feiertag", "krank", "bereitschaft"])) {
         sonder = true;
       }
@@ -390,7 +414,6 @@ function wochenFarbenLogik(gefiltert) {
       u += (parseFloat(String(ev.über || 0).replace(",", ".")) || 0);
     });
 
-    // Karte grün färben, wenn Sonderstatus vorliegt ODER die Stundenanzahl exakt passt
     const farbe = sonder || (Math.abs(s - (8 + u)) < 0.01) ? COLOR_GREEN : COLOR_RED;
     
     const el = document.querySelector(`div[data-id="${e.id}"]`);
